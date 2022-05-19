@@ -1,0 +1,12 @@
+--- vector256.stdout.exp	2026-08-01 20:53:09.885413740 +0800
++++ vector256.stdout.out	2026-08-01 21:00:26.820885351 +0800
+@@ -1330,7 +1330,8 @@
+ insn xvpermi.w.1b:
+   v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+   v_arg2   = ff0f1e2d3c4b5a69 | 788796a5b4c3d2e1 | f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+-  v_result = 5342312097867564 | 3c4b5a69ff0f1e2d | 3423128178675645 | 4c5b6a79f01f2e3d
++  v_result = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211 | ff0f1e2d3c4b5a69 | 788796a5b4c3d2e1
++FAIL xvpermi.w.1b
+ insn xvpermi.d.00:
+   v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+   imm      = 0000000000000000
