@@ -71,12 +71,11 @@ noinst_HEADERS = \
 	priv/host_mips_defs.h \
 	priv/host_nanomips_defs.h \
 	priv/common_nanomips_defs.h \
-	priv/host_riscv64_defs.h \
+        priv/host_riscv64_defs.h \
 	priv/host_loongarch64_defs.h \
 	priv/objdump/dis-asm.h \
 	priv/objdump/s390.h \
 	priv/objdump/stubs.h
->>>>>>> conflict 1 of 2 ends
 
 BUILT_SOURCES = pub/libvex_guest_offsets.h
 CLEANFILES    = pub/libvex_guest_offsets.h
