@@ -1,4 +1,10 @@
 *.o
+/compile_commands.json
+/.vscode
+/conf*/
+/confdefs.h
+/conftest*
+/.cache
 
 # /
 /.in_place
