@@ -3010,14 +3010,25 @@ static void iselV256Expr_wrk ( HReg* hi, HReg* lo,
                *lo = iselV128Expr(env, e->Iex.Binop.arg2);
                return;
             }
-            case Iop_OrV256: case Iop_XorV256:
+            case Iop_Add8x32:   case Iop_Add16x16:   case Iop_Add32x8:   case Iop_Add64x4:
+            case Iop_Sub8x32:   case Iop_Sub16x16:   case Iop_Sub32x8:   case Iop_Sub64x4:
+            case Iop_AndV256:   case Iop_OrV256:     case Iop_XorV256:
             case Iop_CmpEQ8x32: case Iop_CmpEQ16x16: case Iop_CmpEQ32x8: case Iop_CmpEQ64x4:
-            case Iop_Max8Sx32: case Iop_Max16Sx16: case Iop_Max32Sx8: case Iop_Max64Sx4:
-            case Iop_Max8Ux32: case Iop_Max16Ux16: case Iop_Max32Ux8: case Iop_Max64Ux4:
-            case Iop_Min8Sx32: case Iop_Min16Sx16: case Iop_Min32Sx8: case Iop_Min64Sx4:
-            case Iop_Min8Ux32: case Iop_Min16Ux16: case Iop_Min32Ux8: case Iop_Min64Ux4: {
+            case Iop_Max8Sx32:  case Iop_Max16Sx16:  case Iop_Max32Sx8:  case Iop_Max64Sx4:
+            case Iop_Max8Ux32:  case Iop_Max16Ux16:  case Iop_Max32Ux8:  case Iop_Max64Ux4:
+            case Iop_Min8Sx32:  case Iop_Min16Sx16:  case Iop_Min32Sx8:  case Iop_Min64Sx4:
+            case Iop_Min8Ux32:  case Iop_Min16Ux16:  case Iop_Min32Ux8:  case Iop_Min64Ux4: {
                LOONGARCH64VecBinOp op;
                switch (e->Iex.Binop.op) {
+                  case Iop_Add8x32:    op = LAvecbin_VADD_B; break;
+                  case Iop_Add16x16:   op = LAvecbin_VADD_H; break;
+                  case Iop_Add32x8:    op = LAvecbin_VADD_W; break;
+                  case Iop_Add64x4:    op = LAvecbin_VADD_D; break;
+                  case Iop_Sub8x32:    op = LAvecbin_VSUB_B; break;
+                  case Iop_Sub16x16:   op = LAvecbin_VSUB_H; break;
+                  case Iop_Sub32x8:    op = LAvecbin_VSUB_W; break;
+                  case Iop_Sub64x4:    op = LAvecbin_VSUB_D; break;
+                  case Iop_AndV256:    op = LAvecbin_VAND_V; break;
                   case Iop_OrV256:     op = LAvecbin_VOR_V; break;
                   case Iop_XorV256:    op = LAvecbin_VXOR_V; break;
                   case Iop_CmpEQ8x32:  op = LAvecbin_VSEQ_B; break;
