@@ -903,7 +903,7 @@ void getSyscallArgsFromGuestState ( /*OUT*/SyscallArgs*       canonical,
 
 #elif defined(VGP_loongarch64_linux)
    VexGuestLOONGARCH64State* gst = (VexGuestLOONGARCH64State*)gst_vanilla;
-   canonical->sysno = gst->guest_R11; /* a7 */
+   canonical->canonical_sysno = gst->guest_R11; /* a7 */
    canonical->arg1  = gst->guest_R4;  /* a0 */
    canonical->arg2  = gst->guest_R5;  /* a1 */
    canonical->arg3  = gst->guest_R6;  /* a2 */
@@ -1231,7 +1231,7 @@ void putSyscallArgsIntoGuestState ( /*IN*/ SyscallArgs*       canonical,
 
 #elif defined(VGP_loongarch64_linux)
    VexGuestLOONGARCH64State* gst = (VexGuestLOONGARCH64State*)gst_vanilla;
-   gst->guest_R11 = canonical->sysno;
+   gst->guest_R11 = canonical->canonical_sysno;
    gst->guest_R4  = canonical->arg1;
    gst->guest_R5  = canonical->arg2;
    gst->guest_R6  = canonical->arg3;
