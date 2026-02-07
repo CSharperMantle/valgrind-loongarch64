@@ -7565,6 +7565,60 @@ static Bool gen_vaddi_vsubi ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_vclo_vclz ( DisResult* dres, UInt insn,
+                            const VexArchInfo* archinfo,
+                            const VexAbiInfo* abiinfo )
+{
+   UInt vd      = SLICE(insn, 4, 0);
+   UInt vj      = SLICE(insn, 9, 5);
+   UInt insSz   = SLICE(insn, 11, 10);
+   UInt insType = SLICE(insn, 13, 12);
+
+   IRTemp res = newTemp(Ity_V128);
+
+   static const char* nm[2] = { "vclo", "vclz" };
+
+   IROp op;
+   switch (insType) {
+      case 0b00: {
+         switch (insSz) {
+            case 0b00: op = Iop_Cls8x16; break;
+            case 0b01: op = Iop_Cls16x8; break;
+            case 0b10: op = Iop_Cls32x4; break;
+            case 0b11: op = Iop_Cls64x2; break;
+            default:
+               vassert(0);
+               break;
+         }
+         break;
+      }
+      case 0b01: {
+         switch (insSz) {
+            case 0b00: op = Iop_Clz8x16; break;
+            case 0b01: op = Iop_Clz16x8; break;
+            case 0b10: op = Iop_Clz32x4; break;
+            case 0b11: op = Iop_Clz64x2; break;
+            default:
+               vassert(0);
+               break;
+         }
+         break;
+      }
+      default:
+         vassert(0);
+         break;
+   }
+
+   DIP("%s.%s %s, %s\n", nm[insType], mkInsSize(insSz), nameVReg(vd), nameVReg(vj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   assign(res, unop(op, getVReg(vj)));
+   putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
 static Bool gen_vpcnt ( DisResult* dres, UInt insn,
                         const VexArchInfo* archinfo,
                         const VexAbiInfo* abiinfo )
@@ -11482,6 +11536,28 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0100 ( DisResult* dres, UInt insn,
    return ok;
 }
 
+static Bool disInstr_LOONGARCH64_WRK_01_1100_1010_01110_000 ( DisResult* dres, UInt insn,
+                                                              const VexArchInfo* archinfo,
+                                                              const VexAbiInfo*  abiinfo )
+{
+   Bool ok;
+
+   switch (SLICE(insn, 13, 12)) {
+      case 0b00:
+      case 0b01:
+         ok = gen_vclo_vclz(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b10:
+         ok = gen_vpcnt(dres, insn, archinfo, abiinfo);
+         break;
+      default:
+         ok = False;
+         break;
+   }
+
+   return ok;
+}
+
 static Bool disInstr_LOONGARCH64_WRK_01_1100_1010_01110_101 ( DisResult* dres, UInt insn,
                                                               const VexArchInfo* archinfo,
                                                               const VexAbiInfo*  abiinfo )
@@ -11529,11 +11605,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1010_01110 ( DisResult* dres, UInt 
 
    switch (SLICE(insn, 16, 14)) {
       case 0b000:
-         if (SLICE(insn, 13, 12) == 0b10) {
-            ok = gen_vpcnt(dres, insn, archinfo, abiinfo);
-         } else {
-            ok = False;
-         }
+         ok = disInstr_LOONGARCH64_WRK_01_1100_1010_01110_000(dres, insn, archinfo, abiinfo);
          break;
       case 0b001:
          ok = gen_vmsk(dres, insn, archinfo, abiinfo);
