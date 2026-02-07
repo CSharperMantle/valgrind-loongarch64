@@ -958,6 +958,7 @@ void ppIROp ( IROp op )
       case Iop_Cls8x16: vex_printf("Cls8x16"); return;
       case Iop_Cls16x8: vex_printf("Cls16x8"); return;
       case Iop_Cls32x4: vex_printf("Cls32x4"); return;
+      case Iop_Cls64x2: vex_printf("Cls64x2"); return;
       case Iop_Ctz8x16: vex_printf("Iop_Ctz8x16"); return;
       case Iop_Ctz16x8: vex_printf("Iop_Ctz16x8"); return;
       case Iop_Ctz32x4: vex_printf("Iop_Ctz32x4"); return;
@@ -1723,7 +1724,7 @@ Bool primopMightTrap ( IROp op )
    case Iop_CmpGT64Ux2:
    case Iop_Cnt8x16:
    case Iop_Clz8x16: case Iop_Clz16x8: case Iop_Clz32x4:
-   case Iop_Cls8x16: case Iop_Cls16x8: case Iop_Cls32x4:
+   case Iop_Cls8x16: case Iop_Cls16x8: case Iop_Cls32x4: case Iop_Cls64x2:
    case Iop_ShlN8x16: case Iop_ShlN16x8: case Iop_ShlN32x4: case Iop_ShlN64x2:
    case Iop_ShrN8x16: case Iop_ShrN16x8: case Iop_ShrN32x4: case Iop_ShrN64x2:
    case Iop_SarN8x16: case Iop_SarN16x8: case Iop_SarN32x4: case Iop_SarN64x2:
@@ -3817,7 +3818,7 @@ void typeOfPrimop ( IROp op,
       case Iop_CmpNEZ32x4: case Iop_CmpNEZ64x2: case Iop_CmpNEZ128x1:
       case Iop_Cnt8x16:
       case Iop_Clz8x16: case Iop_Clz16x8: case Iop_Clz32x4: case Iop_Clz64x2:
-      case Iop_Cls8x16: case Iop_Cls16x8: case Iop_Cls32x4:
+      case Iop_Cls8x16: case Iop_Cls16x8: case Iop_Cls32x4: case Iop_Cls64x2:
       case Iop_PwAddL8Ux16: case Iop_PwAddL16Ux8: case Iop_PwAddL32Ux4:
       case Iop_PwAddL64Ux2:
       case Iop_PwAddL8Sx16: case Iop_PwAddL16Sx8: case Iop_PwAddL32Sx4:
