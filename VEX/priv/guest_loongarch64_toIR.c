@@ -12520,6 +12520,8 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1100 ( DisResult* dres, UInt insn,
          ok = gen_vbiti(dres, insn, archinfo, abiinfo);
          break;
       case 0b1011:
+      case 0b1100:
+      case 0b1101:
          ok = gen_vshift_imm(dres, insn, archinfo, abiinfo);
          break;
       default:
