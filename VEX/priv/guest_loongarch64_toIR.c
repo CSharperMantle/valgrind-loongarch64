@@ -9667,6 +9667,53 @@ static Bool gen_vpickve2gr ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvpickve2gr ( DisResult* dres, UInt insn,
+                             const VexArchInfo* archinfo,
+                             const VexAbiInfo* abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt xj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 15, 10);
+   UInt isS    = SLICE(insn, 18, 18);
+
+   IRTemp res = newTemp(Ity_I64);
+   IRTemp src = newTemp(Ity_V256);
+   assign(src, getXReg(xj));
+
+   UInt uImm, insSz;
+   if ((insImm & 0x38) == 0x30) {        // 110mmm; w
+      IRTemp s[8] = {IRTemp_INVALID, IRTemp_INVALID, IRTemp_INVALID,
+                     IRTemp_INVALID, IRTemp_INVALID, IRTemp_INVALID,
+                     IRTemp_INVALID, IRTemp_INVALID};
+      breakupV256to32s(src, &s[7], &s[6], &s[5], &s[4], &s[3], &s[2], &s[1],
+                       &s[0]);
+      uImm  = insImm & 0b111;
+      insSz = 2;
+      assign(res, isS ? extendS(Ity_I32, mkexpr(s[uImm]))
+                      : extendU(Ity_I32, mkexpr(s[uImm])));
+   } else if ((insImm & 0x3c) == 0x38) { // 1110mm; d
+      IRTemp s[4] = {IRTemp_INVALID, IRTemp_INVALID, IRTemp_INVALID,
+                     IRTemp_INVALID};
+      breakupV256to64s(src, &s[3], &s[2], &s[1], &s[0]);
+      uImm  = insImm & 0b11;
+      insSz = 3;
+      assign(res, binop(Iop_Or64, mkU64(0), mkexpr(s[uImm])));
+   } else {
+      vassert(0);
+      return False;
+   }
+
+   UInt nmId = isS ? insSz : (insSz + 4);
+
+   DIP("xvpickve2gr.%s %s, %s", mkInsSize(nmId), nameIReg(xd), nameXReg(xj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putIReg(xd, mkexpr(res));
+
+   return True;
+}
+
 static Bool gen_vreplgr2vr ( DisResult* dres, UInt insn,
                              const VexArchInfo* archinfo,
                              const VexAbiInfo*  abiinfo )
@@ -12496,6 +12543,25 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1010 ( DisResult* dres, UInt insn,
    return ok;
 }
 
+static Bool disInstr_LOONGARCH64_WRK_01_1101_1011 ( DisResult* dres, UInt insn,
+                                                    const VexArchInfo* archinfo,
+                                                    const VexAbiInfo*  abiinfo )
+{
+   Bool ok;
+
+   switch (SLICE(insn, 21, 18)) {
+      case 0b1011:
+      case 0b1100:
+         ok = gen_xvpickve2gr(dres, insn, archinfo, abiinfo);
+         break;
+      default:
+         ok = False;
+         break;
+   }
+
+   return ok;
+}
+
 static Bool disInstr_LOONGARCH64_WRK_01_1101_1100 ( DisResult* dres, UInt insn,
                                                     const VexArchInfo* archinfo,
                                                     const VexAbiInfo*  abiinfo )
@@ -12571,6 +12637,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101 ( DisResult* dres, UInt insn,
          break;
       case 0b1010:
          ok = disInstr_LOONGARCH64_WRK_01_1101_1010(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b1011:
+         ok = disInstr_LOONGARCH64_WRK_01_1101_1011(dres, insn, archinfo, abiinfo);
          break;
       case 0b1100:
          ok = disInstr_LOONGARCH64_WRK_01_1101_1100(dres, insn, archinfo, abiinfo);
