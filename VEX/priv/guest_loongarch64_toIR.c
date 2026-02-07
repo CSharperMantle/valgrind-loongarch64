@@ -12638,6 +12638,15 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0100 ( DisResult* dres, UInt insn,
       case 0b1001:
          ok = gen_logical_xv(dres, insn, archinfo, abiinfo);
          break;
+      case 0b1010:
+         switch (SLICE(insn, 17, 15)) {
+            case 0b000: case 0b001:
+               ok = gen_logical_xv(dres, insn, archinfo, abiinfo);
+               break;
+            default:
+               ok = False;
+               break;
+         }
       default:
          ok = False;
          break;
