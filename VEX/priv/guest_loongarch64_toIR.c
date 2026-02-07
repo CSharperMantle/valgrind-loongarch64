@@ -7421,6 +7421,22 @@ static IROp mkVecSUB ( UInt size )
    return ops[size];
 }
 
+static IROp mkXVecADD ( UInt size )
+{
+   const IROp ops[5]
+      = { Iop_Add8x32, Iop_Add16x16, Iop_Add32x8, Iop_Add64x4, Iop_Add128x2 };
+   vassert(size < 5);
+   return ops[size];
+}
+
+static IROp mkXVecSUB ( UInt size )
+{
+   const IROp ops[5]
+      = { Iop_Sub8x32, Iop_Sub16x16, Iop_Sub32x8, Iop_Sub64x4, Iop_Sub128x2 };
+   vassert(size < 5);
+   return ops[size];
+}
+
 static IROp mkVecMAXU ( UInt size )
 {
    const IROp ops[4]
@@ -7532,6 +7548,51 @@ static Bool gen_vadd_vsub ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvadd_xvsub_bhwd ( DisResult* dres, UInt insn,
+                                   const VexArchInfo* archinfo,
+                                   const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isAdd = SLICE(insn, 17, 17);
+
+   static const HChar* nm[2] = { "xvsub", "xvadd" };
+   IROp mathOp = isAdd ? mkXVecADD(insSz): mkXVecSUB(insSz);
+
+   DIP("%s.%s %s, %s, %s\n", nm[isAdd], mkInsSize(insSz),
+                             nameXReg(xd), nameXReg(xj), nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, binop(mathOp, getXReg(xj), getXReg(xk)));
+
+   return True;
+}
+
+static Bool gen_xvadd_xvsub_q ( DisResult* dres, UInt insn,
+                                const VexArchInfo* archinfo,
+                                const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt isSub = SLICE(insn, 15, 15);
+
+   static const HChar* nm[2] = { "xvadd", "xvsub" };
+   IROp mathOp = isSub ? mkXVecSUB(4): mkXVecADD(4);
+
+   DIP("%s.q %s, %s, %s\n", nm[isSub],
+                             nameXReg(xd), nameXReg(xj), nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, binop(mathOp, getXReg(xj), getXReg(xk)));
+
+   return True;
+}
+
 static Bool gen_vaddi_vsubi ( DisResult* dres, UInt insn,
                               const VexArchInfo* archinfo,
                               const VexAbiInfo* abiinfo )
@@ -7546,11 +7607,13 @@ static Bool gen_vaddi_vsubi ( DisResult* dres, UInt insn,
    IROp mathOp = isAdd ? mkVecADD(insSz) : mkVecSUB(insSz);
 
    switch (insSz) {
-      case 0b00: assign(res, unop(Iop_Dup8x16, mkU8(ui5)));                  break;
-      case 0b01: assign(res, unop(Iop_Dup16x8, mkU16(ui5)));                 break;
-      case 0b10: assign(res, unop(Iop_Dup32x4, mkU32(ui5)));                 break;
-      case 0b11: assign(res, binop(Iop_64HLtoV128, mkU64(ui5), mkU64(ui5))); break;
-      default:   vassert(0);                                                 break;
+      case 0b00: assign(res, unop(Iop_Dup8x16, mkU8(ui5)));  break;
+      case 0b01: assign(res, unop(Iop_Dup16x8, mkU16(ui5))); break;
+      case 0b10: assign(res, unop(Iop_Dup32x4, mkU32(ui5))); break;
+      case 0b11:
+         assign(res, binop(Iop_64HLtoV128, mkU64(ui5), mkU64(ui5)));
+         break;
+      default: vassert(0); break;
    }
 
    static const HChar* nm[2] = { "vsubi", "vaddi" };
@@ -11801,6 +11864,10 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0000 ( DisResult* dres, UInt insn,
       case 0b0000:
          ok = gen_xvcmp_integer(dres, insn, archinfo, abiinfo);
          break;
+      case 0b0010:
+      case 0b0011:
+         ok = gen_xvadd_xvsub_bhwd(dres, insn, archinfo, abiinfo);
+         break;
       default:
          ok = False;
          break;
@@ -11841,6 +11908,16 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0100 ( DisResult* dres, UInt insn,
          switch (SLICE(insn, 17, 15)) {
             case 0b000: case 0b001:
                ok = gen_logical_xv(dres, insn, archinfo, abiinfo);
+               break;
+            default:
+               ok = False;
+               break;
+         }
+         break;
+      case 0b1011:
+         switch (SLICE(insn, 17, 16)) {
+            case 0b01:
+               ok = gen_xvadd_xvsub_q(dres, insn, archinfo, abiinfo);
                break;
             default:
                ok = False;
