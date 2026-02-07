@@ -8613,6 +8613,56 @@ static Bool gen_vshift_imm ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvshift_imm ( DisResult* dres, UInt insn,
+                              const VexArchInfo* archinfo,
+                              const VexAbiInfo* abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt xj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 17, 10);
+   UInt insTy  = SLICE(insn, 19, 18);
+
+   IRTemp src   = newTemp(Ity_V256);
+   IRTemp srcHi = IRTemp_INVALID;
+   IRTemp srcLo = IRTemp_INVALID;
+   assign(src, getXReg(xj));
+   breakupV256toV128s(src, &srcHi, &srcLo);
+
+   UInt insSz, uImm;
+   if ((insImm & 0xf8) == 0x8) {         // 00001mmm; b
+      uImm  = insImm & 0x07;
+      insSz = 0;
+   } else if ((insImm & 0xf0) == 0x10) { // 0001mmmm; h
+      uImm  = insImm & 0x0f;
+      insSz = 1;
+   } else if ((insImm & 0xe0) == 0x20) { // 001mmmmm; w
+      uImm  = insImm & 0x1f;
+      insSz = 2;
+   } else if ((insImm & 0xc0) == 0x40) { // 01mmmmmm; d
+      uImm  = insImm & 0x3f;
+      insSz = 3;
+   } else {
+      vassert(0);
+   }
+
+   static const HChar* nm[4] = {"xvsrli", "xvsrai", "", "xvslli"};
+   DIP("%s.%s %s, %s, %u\n", nm[insTy], mkInsSize(insSz), nameXReg(xd),
+       nameXReg(xj), uImm);
+
+   IROp op = Iop_INVALID;
+   switch (insTy) {
+      case 0b11: op = mkV128SHLN(insSz); break;
+      case 0b00: op = mkV128SHRN(insSz); break;
+      case 0b01: op = mkV128SARN(insSz); break;
+      default: vassert(0); break;
+   }
+
+   putXReg(xd, binop(Iop_V128HLtoV256, binop(op, mkexpr(srcHi), mkU8(uImm)),
+                     binop(op, mkexpr(srcLo), mkU8(uImm))));
+
+   return True;
+}
+
 static Bool gen_vbiti ( DisResult* dres, UInt insn,
                         const VexArchInfo* archinfo,
                         const VexAbiInfo*  abiinfo )
@@ -12335,6 +12385,11 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1100 ( DisResult* dres, UInt insn,
    switch (SLICE(insn, 21, 18)) {
       case 0b0000:
          ok = gen_xvpickve(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b1011:
+      case 0b1100:
+      case 0b1101:
+         ok = gen_xvshift_imm(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
