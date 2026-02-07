@@ -8745,6 +8745,92 @@ static Bool gen_vbiti ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvbiti ( DisResult* dres, UInt insn,
+                         const VexArchInfo* archinfo,
+                         const VexAbiInfo*  abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt xj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 17, 10);
+   UInt insTy  = SLICE(insn, 19, 18);
+
+   IRTemp src   = newTemp(Ity_V256);
+   IRTemp srcHi = IRTemp_INVALID;
+   IRTemp srcLo = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   IRTemp c1    = newTemp(Ity_V128);
+   IRTemp argR  = newTemp(Ity_V128);
+   assign(src, getXReg(xj));
+   breakupV256toV128s(src, &srcHi, &srcLo);
+
+   UInt insSz, uImm;
+   if ((insImm & 0xf8) == 0x8) {         // 00001mmm; b
+      uImm  = insImm & 0x07;
+      insSz = 0;
+   } else if ((insImm & 0xf0) == 0x10) { // 0001mmmm; h
+      uImm  = insImm & 0x0f;
+      insSz = 1;
+   } else if ((insImm & 0xe0) == 0x20) { // 001mmmmm; w
+      uImm  = insImm & 0x1f;
+      insSz = 2;
+   } else if ((insImm & 0xc0) == 0x40) { // 01mmmmmm; d
+      uImm  = insImm & 0x3f;
+      insSz = 3;
+   } else {
+      vassert(0);
+   }
+
+   switch (insSz) {
+      case 0b00:
+         assign(c1, unop(Iop_Dup8x16, mkU8(1)));
+         break;
+      case 0b01:
+         assign(c1, unop(Iop_Dup16x8, mkU16(1)));
+         break;
+      case 0b10:
+         assign(c1, unop(Iop_Dup32x4, mkU32(1)));
+         break;
+      case 0b11:
+         assign(c1, binop(Iop_64HLtoV128, mkU64(1), mkU64(1)));
+         break;
+      default:
+         vassert(0);
+         break;
+   }
+
+   assign(argR, binop(mkVecSHLN(insSz), mkexpr(c1), mkU8(uImm)));
+   switch (insTy) {
+      case 0b00:
+         assign(resHi, binop(Iop_AndV128, mkexpr(srcHi),
+                             unop(Iop_NotV128, mkexpr(argR))));
+         assign(resLo, binop(Iop_AndV128, mkexpr(srcLo),
+                             unop(Iop_NotV128, mkexpr(argR))));
+         break;
+      case 0b01:
+         assign(resHi, binop(Iop_OrV128, mkexpr(srcHi), mkexpr(argR)));
+         assign(resLo, binop(Iop_OrV128, mkexpr(srcLo), mkexpr(argR)));
+         break;
+      case 0b10:
+         assign(resHi, binop(Iop_XorV128, mkexpr(srcHi), mkexpr(argR)));
+         assign(resLo, binop(Iop_XorV128, mkexpr(srcLo), mkexpr(argR)));
+         break;
+      default:
+         vassert(0);
+         break;
+   }
+
+   static const HChar* nm[3] = {"xvbitrevi", "xvbitclri", "xvbitseti"};
+
+   DIP("%s.%s %s, %u\n", nm[insTy], mkInsSize(insSz), nameXReg(xd), uImm);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 
 /*------------------------------------------------------------*/
 /*--- Helpers for vector string processing insns           ---*/
@@ -12419,6 +12505,11 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1100 ( DisResult* dres, UInt insn,
    switch (SLICE(insn, 21, 18)) {
       case 0b0000:
          ok = gen_xvpickve(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b0100:
+      case 0b0101:
+      case 0b0110:
+         ok = gen_xvbiti(dres, insn, archinfo, abiinfo);
          break;
       case 0b1011:
       case 0b1100:
