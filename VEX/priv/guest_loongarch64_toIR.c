@@ -9323,29 +9323,40 @@ static Bool gen_xvset ( DisResult* dres, UInt insn,
    UInt insSz = SLICE(insn, 11, 10);
    UInt insTy = SLICE(insn, 13, 12);
 
-   IROp ops64  = Iop_INVALID;
-   IRTemp res  = newTemp(Ity_V256);
-   IRTemp z128 = newTemp(Ity_V128);
-   IRTemp src = newTemp(Ity_V256);
+   IROp   ops64 = Iop_INVALID;
+   IRTemp res   = newTemp(Ity_V256);
+   IRTemp z128  = newTemp(Ity_V128);
+   IRTemp src   = newTemp(Ity_V256);
+   IRTemp srcHi = IRTemp_INVALID;
+   IRTemp srcLo = IRTemp_INVALID;
    assign(z128, mkV128(0x0000));
    assign(src, getXReg(xj));
+   breakupV256toV128s(src, &srcHi, &srcLo);
 
    switch (insTy) {
       case 0b01: {
+         IRTemp resHi = newTemp(Ity_V128);
+         IRTemp resLo = newTemp(Ity_V128);
          if (SLICE(insn, 10, 10) == 0b0) {
             DIP("xvseteqz.v %u, %s", cd, nameXReg(xj));
 
             STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
-            IRTemp hi, lo;
-            hi = lo = IRTemp_INVALID;
-            breakupV256toV128s(src, &hi, &lo);
-            assign(res, binop(Iop_V128HLtoV256,
-                              binop(Iop_CmpEQ64x2, mkexpr(hi), mkexpr(z128)),
-                              binop(Iop_CmpEQ64x2, mkexpr(hi), mkexpr(z128))));
+            assign(resHi, binop(Iop_CmpEQ64x2, mkexpr(srcHi), mkexpr(z128)));
+            assign(resLo, binop(Iop_CmpEQ64x2, mkexpr(srcLo), mkexpr(z128)));
+            assign(res, mkV256from128s(resHi, resLo));
             ops64 = Iop_And64;
          } else {
-            return False;
+            DIP("xvsetnez.v %u, %s", cd, nameXReg(xj));
+
+            STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+            assign(resHi, unop(Iop_NotV128, binop(Iop_CmpEQ64x2, mkexpr(srcHi),
+                                                  mkexpr(z128))));
+            assign(resLo, unop(Iop_NotV128, binop(Iop_CmpEQ64x2, mkexpr(srcLo),
+                                                  mkexpr(z128))));
+            assign(res, mkV256from128s(resHi, resLo));
+            ops64 = Iop_Or64;
          }
          break;
       }
@@ -9357,11 +9368,9 @@ static Bool gen_xvset ( DisResult* dres, UInt insn,
 
          IRTemp eqHi = newTemp(Ity_V128);
          IRTemp eqLo = newTemp(Ity_V128);
-         IRTemp hi, lo;
-         hi = lo = IRTemp_INVALID;
-         breakupV256toV128s(src, &hi, &lo);
-         assign(eqHi, binop(mkVecCMPEQ(insSz), mkexpr(hi), mkexpr(z128)));
-         assign(eqLo, binop(mkVecCMPEQ(insSz), mkexpr(lo), mkexpr(z128)));
+         breakupV256toV128s(src, &srcHi, &srcLo);
+         assign(eqHi, binop(mkVecCMPEQ(insSz), mkexpr(srcHi), mkexpr(z128)));
+         assign(eqLo, binop(mkVecCMPEQ(insSz), mkexpr(srcLo), mkexpr(z128)));
          assign(res, binop(Iop_V128HLtoV256,
                            unop(Iop_NotV128,
                                 binop(Iop_CmpEQ64x2, mkexpr(eqHi), mkexpr(z128))),
@@ -9371,12 +9380,30 @@ static Bool gen_xvset ( DisResult* dres, UInt insn,
          break;
       }
 
+      case 0b11: {
+         DIP("xvsetallnez.%s %u, %s", mkInsSize(insSz), cd, nameXReg(xj));
+
+         STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+         IRTemp eqHi = newTemp(Ity_V128);
+         IRTemp eqLo = newTemp(Ity_V128);
+         assign(eqHi, binop(mkVecCMPEQ(insSz), mkexpr(srcHi), mkexpr(z128)));
+         assign(eqLo, binop(mkVecCMPEQ(insSz), mkexpr(srcLo), mkexpr(z128)));
+         assign(res, binop(Iop_V128HLtoV256,
+                           binop(Iop_CmpEQ64x2, mkexpr(eqHi), mkexpr(z128)),
+                           binop(Iop_CmpEQ64x2, mkexpr(eqLo), mkexpr(z128))));
+         ops64 = Iop_And64;
+         break;
+      }
+
       default:
          return False;
    }
 
-   IRTemp r1, r2, r3, r4;
-   r1 = r2 = r3 = r4 = IRTemp_INVALID;
+   IRTemp r1 = IRTemp_INVALID;
+   IRTemp r2 = IRTemp_INVALID;
+   IRTemp r3 = IRTemp_INVALID;
+   IRTemp r4 = IRTemp_INVALID;
    breakupV256to64s(res, &r1, &r2, &r3, &r4);
    putFCC(cd, unop(Iop_64to8, binop(ops64,
                                     binop(ops64, mkexpr(r1), mkexpr(r2)),
@@ -12319,6 +12346,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1010_01110 ( DisResult* dres, UInt 
       case 0b00110:
          ok = gen_xvmsk(dres, insn, archinfo, abiinfo);
          break;
+      case 0b01001:
       case 0b01010:
       case 0b01011:
          ok = gen_xvset(dres, insn, archinfo, abiinfo);
