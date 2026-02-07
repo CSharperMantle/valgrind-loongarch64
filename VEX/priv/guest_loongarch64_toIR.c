@@ -9109,6 +9109,11 @@ static Bool gen_xvset ( DisResult* dres, UInt insn,
 /*--- Helpers for vector moving and shuffling insns        ---*/
 /*------------------------------------------------------------*/
 
+/*
+ * Valgrind's Iop_PackEvenLanesNxM is actually `vpickod.*` in LoongArch.
+ * It maps to MIPS64 MSA's `pckod.*`:
+ * <https://doc.bccnsoft.com/docs/rust-1.36.0-docs-html/core/arch/mips64/fn.__msa_pckod_b.html>
+ */
 static IROp mkVecPACKOD ( UInt size )
 {
    const IROp ops[4]
@@ -9118,6 +9123,11 @@ static IROp mkVecPACKOD ( UInt size )
    return ops[size];
 }
 
+/*
+ * Valgrind's Iop_PackEvenLanesNxM is actually `vpickev.*` in LoongArch.
+ * It maps to MIPS64 MSA's `pckev.*`:
+ * <https://doc.bccnsoft.com/docs/rust-1.36.0-docs-html/core/arch/mips64/fn.__msa_pckev_b.html>
+ */
 static IROp mkVecPACKEV ( UInt size )
 {
    const IROp ops[4]
@@ -9526,7 +9536,7 @@ static Bool gen_vreplvei ( DisResult* dres, UInt insn,
    return True;
 }
 
-static Bool gen_evod ( DisResult* dres, UInt insn,
+static Bool gen_vevod ( DisResult* dres, UInt insn,
                        const VexArchInfo* archinfo,
                        const VexAbiInfo* abiinfo )
 {
@@ -9599,6 +9609,98 @@ static Bool gen_evod ( DisResult* dres, UInt insn,
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
    putVReg(vd, mkexpr(res));
+   return True;
+}
+
+static Bool gen_xvevod ( DisResult* dres, UInt insn,
+                       const VexArchInfo* archinfo,
+                       const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+
+   const HChar* nm;
+   IRTemp argLLo = newTemp(Ity_V128);
+   IRTemp argRLo = newTemp(Ity_V128);
+   IRTemp argLHi = newTemp(Ity_V128);
+   IRTemp argRHi = newTemp(Ity_V128);
+   IRTemp resLo  = newTemp(Ity_V128);
+   IRTemp resHi  = newTemp(Ity_V128);
+   IRTemp res    = newTemp(Ity_V256);
+   IRTemp srcJ   = newTemp(Ity_V256);
+   IRTemp srcK   = newTemp(Ity_V256);
+
+   IRTemp jHi = IRTemp_INVALID;
+   IRTemp jLo = IRTemp_INVALID;
+   IRTemp kHi = IRTemp_INVALID;
+   IRTemp kLo = IRTemp_INVALID;
+
+   assign(srcJ, getXReg(xj));
+   assign(srcK, getXReg(xk));
+   breakupV256toV128s(srcJ, &jHi, &jLo);
+   breakupV256toV128s(srcK, &kHi, &kLo);
+
+   switch (SLICE(insn, 19, 17)) {
+      case 0b011:
+         nm = "xvpackev";
+         assign(argLLo, binop(mkVecPACKEV(insSz), mkexpr(jLo), mkV128(0x0000)));
+         assign(argRLo, binop(mkVecPACKEV(insSz), mkexpr(kLo), mkV128(0x0000)));
+         assign(resLo, binop(mkVecINTERLEAVEHI(insSz), mkexpr(argLLo),
+                             mkexpr(argRLo)));
+         assign(argLHi, binop(mkVecPACKEV(insSz), mkexpr(jHi), mkV128(0x0000)));
+         assign(argRHi, binop(mkVecPACKEV(insSz), mkexpr(kHi), mkV128(0x0000)));
+         assign(resHi, binop(mkVecINTERLEAVEHI(insSz), mkexpr(argLHi),
+                             mkexpr(argRHi)));
+         break;
+      case 0b100:
+         nm = "xvpackod";
+         assign(argLLo, binop(mkVecPACKOD(insSz), mkexpr(jLo), mkV128(0x0000)));
+         assign(argRLo, binop(mkVecPACKOD(insSz), mkexpr(kLo), mkV128(0x0000)));
+         assign(resLo, binop(mkVecINTERLEAVEHI(insSz), mkexpr(argLLo),
+                             mkexpr(argRLo)));
+         assign(argLHi, binop(mkVecPACKOD(insSz), mkexpr(jHi), mkV128(0x0000)));
+         assign(argRHi, binop(mkVecPACKOD(insSz), mkexpr(kHi), mkV128(0x0000)));
+         assign(resHi, binop(mkVecINTERLEAVEHI(insSz), mkexpr(argLHi),
+                             mkexpr(argRHi)));
+         break;
+      case 0b101:
+         nm = "xvilvl";
+         assign(resLo,
+                binop(mkVecINTERLEAVELO(insSz), mkexpr(jLo), mkexpr(kLo)));
+         assign(resHi,
+                binop(mkVecINTERLEAVELO(insSz), mkexpr(jHi), mkexpr(kHi)));
+         break;
+      case 0b110:
+         nm = "xvilvh";
+         assign(resLo,
+                binop(mkVecINTERLEAVEHI(insSz), mkexpr(jLo), mkexpr(kLo)));
+         assign(resHi,
+                binop(mkVecINTERLEAVEHI(insSz), mkexpr(jHi), mkexpr(kHi)));
+         break;
+      case 0b111:
+         nm = "xvpickev";
+         assign(resLo, binop(mkVecPACKEV(insSz), mkexpr(jLo), mkexpr(kLo)));
+         assign(resHi, binop(mkVecPACKEV(insSz), mkexpr(jHi), mkexpr(kHi)));
+         break;
+      case 0b000:
+         nm = "xvpickod";
+         assign(resLo, binop(mkVecPACKOD(insSz), mkexpr(jLo), mkexpr(kLo)));
+         assign(resHi, binop(mkVecPACKOD(insSz), mkexpr(jHi), mkexpr(kHi)));
+         break;
+      default:
+         return False;
+   }
+
+   assign(res, binop(Iop_V128HLtoV256, mkexpr(resHi), mkexpr(resLo)));
+
+   DIP("%s.%s %s, %s, %s\n", nm, mkInsSize(insSz),
+                             nameXReg(xd), nameXReg(xj), nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkexpr(res));
    return True;
 }
 
@@ -11582,7 +11684,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0100 ( DisResult* dres, UInt insn,
       case 0b01110:
       case 0b01111:
       case 0b10000:
-         ok = gen_evod(dres, insn, archinfo, abiinfo);
+         ok = gen_vevod(dres, insn, archinfo, abiinfo);
          break;
       case 0b10001:
          ok = gen_vreplve(dres, insn, archinfo, abiinfo);
@@ -11900,30 +12002,23 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0100 ( DisResult* dres, UInt insn,
 {
    Bool ok;
 
-   switch (SLICE(insn, 21, 18)) {
-      case 0b1001:
+   switch (SLICE(insn, 21, 17)) {
+      case 0b01011:
+      case 0b01100:
+      case 0b01101:
+      case 0b01110:
+      case 0b01111:
+      case 0b10000:
+         ok = gen_xvevod(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b10011:
+      case 0b10100:
          ok = gen_logical_xv(dres, insn, archinfo, abiinfo);
          break;
-      case 0b1010:
-         switch (SLICE(insn, 17, 15)) {
-            case 0b000: case 0b001:
-               ok = gen_logical_xv(dres, insn, archinfo, abiinfo);
-               break;
-            default:
-               ok = False;
-               break;
-         }
+      case 0b10110:
+         ok = gen_xvadd_xvsub_q(dres, insn, archinfo, abiinfo);
          break;
-      case 0b1011:
-         switch (SLICE(insn, 17, 16)) {
-            case 0b01:
-               ok = gen_xvadd_xvsub_q(dres, insn, archinfo, abiinfo);
-               break;
-            default:
-               ok = False;
-               break;
-         }
-         break;
+         
       default:
          ok = False;
          break;
