@@ -11846,6 +11846,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0100 ( DisResult* dres, UInt insn,
                ok = False;
                break;
          }
+         break;
       default:
          ok = False;
          break;
