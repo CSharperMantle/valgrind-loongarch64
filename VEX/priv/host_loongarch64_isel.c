@@ -3109,6 +3109,76 @@ static void iselV256Expr_wrk ( HReg* hi, HReg* lo,
          }
       }
 
+      case Iex_Const: {
+         IRConst *con = e->Iex.Const.con;
+
+         if (con->tag != Ico_V256) {
+            vpanic("iselV256Expr.const(LoongArch)");
+            goto irreducible;
+         }
+
+         HReg dstHi = newVRegV(env);
+         HReg dstLo = newVRegV(env);
+         UInt val = con->Ico.V256;
+
+         if (val == 0) {
+            addInstr(env, LOONGARCH64Instr_VecUnary(LAvecun_VREPLGR2VR_D,
+                                                    hregZERO(), dstLo));
+            addInstr(env, LOONGARCH64Instr_VecUnary(LAvecun_VREPLGR2VR_D,
+                                                    hregZERO(), dstHi));
+         } else {
+            HReg r_tmp = newVRegI(env);
+            UInt val_lo = val & 0xffffu;
+            UInt val_hi = (val >> 16) & 0xffffu;
+            addInstr(env, LOONGARCH64Instr_LI(0xfful, r_tmp));
+
+            if (val_lo & 1) {
+               addInstr(env, LOONGARCH64Instr_VecUnary(LAvecun_VREPLGR2VR_B,
+                                                       r_tmp, dstLo));
+            } else {
+               addInstr(env, LOONGARCH64Instr_VecUnary(LAvecun_VREPLGR2VR_B,
+                                                       hregZERO(), dstLo));
+            }
+            for (UInt i = 1; i < 16; i++) {
+               val_lo >>= 1;
+               if (val_lo & 1) {
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VINSGR2VR_B,
+                                   LOONGARCH64RI_I(i, 4, False), r_tmp, dstLo));
+               } else {
+                  addInstr(env,
+                           LOONGARCH64Instr_VecBinary(
+                              LAvecbin_VINSGR2VR_B,
+                              LOONGARCH64RI_I(i, 4, False), hregZERO(), dstLo));
+               }
+            }
+
+            if (val_hi & 1) {
+               addInstr(env, LOONGARCH64Instr_VecUnary(LAvecun_VREPLGR2VR_B,
+                                                       r_tmp, dstHi));
+            } else {
+               addInstr(env, LOONGARCH64Instr_VecUnary(LAvecun_VREPLGR2VR_B,
+                                                       hregZERO(), dstHi));
+            }
+            for (UInt i = 1; i < 16; i++) {
+               val_hi >>= 1;
+               if (val_hi & 1) {
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VINSGR2VR_B,
+                                   LOONGARCH64RI_I(i, 4, False), r_tmp, dstHi));
+               } else {
+                  addInstr(env,
+                           LOONGARCH64Instr_VecBinary(
+                              LAvecbin_VINSGR2VR_B,
+                              LOONGARCH64RI_I(i, 4, False), hregZERO(), dstHi));
+               }
+            }
+         }
+         *hi = dstHi;
+         *lo = dstLo;
+         return;
+      }
+
       default:
          break;
    }
