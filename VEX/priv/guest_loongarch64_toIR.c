@@ -10144,6 +10144,55 @@ static Bool gen_xvevod ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_vbitsel_v ( DisResult* dres, UInt insn,
+                            const VexArchInfo* archinfo,
+                            const VexAbiInfo*  abiinfo )
+{
+   UInt vd = SLICE(insn, 4, 0);
+   UInt vj = SLICE(insn, 9, 5);
+   UInt vk = SLICE(insn, 14, 10);
+   UInt va = SLICE(insn, 19, 15);
+
+   IRTemp a = newTemp(Ity_V128);
+   IRTemp b = newTemp(Ity_V128);
+   assign(a, binop(Iop_AndV128, getVReg(vj), unop(Iop_NotV128, getVReg(va))));
+
+   assign(b, binop(Iop_AndV128, getVReg(vk), getVReg(va)));
+
+   DIP("vbitsel.v %s, %s, %s, %s", nameVReg(vd), nameVReg(vj), nameVReg(vk),
+       nameVReg(va));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, binop(Iop_OrV128, mkexpr(b), mkexpr(a)));
+
+   return True;
+}
+
+static Bool gen_xvbitsel_v ( DisResult* dres, UInt insn,
+                            const VexArchInfo* archinfo,
+                            const VexAbiInfo*  abiinfo )
+{
+   UInt xd = SLICE(insn, 4, 0);
+   UInt xj = SLICE(insn, 9, 5);
+   UInt xk = SLICE(insn, 14, 10);
+   UInt xa = SLICE(insn, 19, 15);
+
+   IRTemp a = newTemp(Ity_V256);
+   IRTemp b = newTemp(Ity_V256);
+   assign(a, binop(Iop_AndV256, getXReg(xj), unop(Iop_NotV256, getXReg(xa))));
+   assign(b, binop(Iop_AndV256, getXReg(xk), getXReg(xa)));
+
+   DIP("xvbitsel.v %s, %s, %s, %s", nameXReg(xd), nameXReg(xj), nameXReg(xk),
+       nameXReg(xa));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, binop(Iop_OrV256, mkexpr(b), mkexpr(a)));
+
+   return True;
+}
+
 static Bool gen_vshuf_b ( DisResult* dres, UInt insn,
                           const VexArchInfo* archinfo,
                           const VexAbiInfo*  abiinfo )
@@ -11965,6 +12014,12 @@ static Bool disInstr_LOONGARCH64_WRK_00 ( DisResult* dres, UInt insn,
                } else {
                   ok = False;
                }
+               break;
+            case 0b010001:
+               ok = gen_vbitsel_v(dres, insn, archinfo, abiinfo);
+               break;
+            case 0b010010:
+               ok = gen_xvbitsel_v(dres, insn, archinfo, abiinfo);
                break;
             case 0b010101:
                ok = gen_vshuf_b(dres, insn, archinfo, abiinfo);
