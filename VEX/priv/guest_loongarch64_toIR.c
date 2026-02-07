@@ -8277,6 +8277,61 @@ static Bool gen_vlogical_u8 ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvlogical_u8 ( DisResult* dres, UInt insn,
+                              const VexArchInfo* archinfo,
+                              const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt ui8   = SLICE(insn, 17, 10);
+   UInt insTy = SLICE(insn, 19, 18);
+
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   IRTemp src   = newTemp(Ity_V256);
+   IRTemp srcHi = IRTemp_INVALID;
+   IRTemp srcLo = IRTemp_INVALID;
+   IRTemp imm   = newTemp(Ity_V128);
+   
+   assign(src, getXReg(xj));
+   assign(imm, unop(Iop_Dup8x16, mkU8(ui8)));
+   breakupV256toV128s(src, &srcHi, &srcLo);
+
+   switch (insTy) {
+      case 0b00:
+         assign(resHi, binop(Iop_AndV128, mkexpr(srcHi), mkexpr(imm)));
+         assign(resLo, binop(Iop_AndV128, mkexpr(srcLo), mkexpr(imm)));
+         break;
+      case 0b01:
+         assign(resHi, binop(Iop_OrV128, mkexpr(srcHi), mkexpr(imm)));
+         assign(resLo, binop(Iop_OrV128, mkexpr(srcLo), mkexpr(imm)));
+         break;
+      case 0b10:
+         assign(resHi, binop(Iop_XorV128, mkexpr(srcHi), mkexpr(imm)));
+         assign(resLo, binop(Iop_XorV128, mkexpr(srcLo), mkexpr(imm)));
+         break;
+      case 0b11:
+         assign(resHi, unop(Iop_NotV128,
+                            binop(Iop_OrV128, mkexpr(srcHi), mkexpr(imm))));
+         assign(resLo, unop(Iop_NotV128,
+                            binop(Iop_OrV128, mkexpr(srcLo), mkexpr(imm))));
+         break;
+      default:
+         vassert(0);
+         break;
+   }
+
+   static const HChar* nm[4] = { "xvandi.b", "xvori.b", "xvxori.b", "xvnori.b" };
+
+   DIP("%s %s, %s, %u\n", nm[insTy], nameXReg(xd), nameXReg(xj), ui8);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, binop(Iop_V128HLtoV256, mkexpr(resHi), mkexpr(resLo)));
+
+   return True;
+}
+
 static Bool gen_vshift_imm ( DisResult* dres, UInt insn,
                              const VexArchInfo* archinfo,
                              const VexAbiInfo* abiinfo )
@@ -11794,6 +11849,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1111 ( DisResult* dres, UInt insn,
    Bool ok;
 
    switch (SLICE(insn, 21, 18)) {
+      case 0b0100:
+      case 0b0101:
+      case 0b0110:
+      case 0b0111:
+         ok = gen_xvlogical_u8(dres, insn, archinfo, abiinfo);
+         break;
       case 0b1001:
       case 0b1010:
       case 0b1011:
