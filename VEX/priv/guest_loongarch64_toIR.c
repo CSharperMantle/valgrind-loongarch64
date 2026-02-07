@@ -8596,10 +8596,6 @@ static Bool gen_vshift_imm ( DisResult* dres, UInt insn,
       vassert(0);
    }
 
-   static const HChar* nm[4] = { "vsrli", "vsrai", "", "vslli" };
-   DIP("%s.%s %s, %s, %u\n", nm[insTy], mkInsSize(insSz),
-                             nameVReg(vd), nameVReg(vj), uImm);
-
    IROp op = Iop_INVALID;
    switch (insTy) {
       case 0b11: op = mkV128SHLN(insSz); break;
@@ -8607,6 +8603,13 @@ static Bool gen_vshift_imm ( DisResult* dres, UInt insn,
       case 0b01: op = mkV128SARN(insSz); break;
       default: vassert(0);
    }
+
+   static const HChar* nm[4] = { "vsrli", "vsrai", "", "vslli" };
+
+   DIP("%s.%s %s, %s, %u\n", nm[insTy], mkInsSize(insSz),
+                             nameVReg(vd), nameVReg(vj), uImm);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
    putVReg(vd, binop(op, getVReg(vj), mkU8(uImm)));
 
@@ -8645,10 +8648,6 @@ static Bool gen_xvshift_imm ( DisResult* dres, UInt insn,
       vassert(0);
    }
 
-   static const HChar* nm[4] = {"xvsrli", "xvsrai", "", "xvslli"};
-   DIP("%s.%s %s, %s, %u\n", nm[insTy], mkInsSize(insSz), nameXReg(xd),
-       nameXReg(xj), uImm);
-
    IROp op = Iop_INVALID;
    switch (insTy) {
       case 0b11: op = mkV128SHLN(insSz); break;
@@ -8656,6 +8655,13 @@ static Bool gen_xvshift_imm ( DisResult* dres, UInt insn,
       case 0b01: op = mkV128SARN(insSz); break;
       default: vassert(0); break;
    }
+
+   static const HChar* nm[4] = {"xvsrli", "xvsrai", "", "xvslli"};
+
+   DIP("%s.%s %s, %s, %u\n", nm[insTy], mkInsSize(insSz), nameXReg(xd),
+       nameXReg(xj), uImm);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
    putXReg(xd, binop(Iop_V128HLtoV256, binop(op, mkexpr(srcHi), mkU8(uImm)),
                      binop(op, mkexpr(srcLo), mkU8(uImm))));
