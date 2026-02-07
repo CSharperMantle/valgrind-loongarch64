@@ -3104,6 +3104,21 @@ static void iselV256Expr_wrk ( HReg* hi, HReg* lo,
                *lo = dstLo;
                return;
             }
+            case Iop_NotV256: {
+               HReg srcHi, srcLo;
+               iselV256Expr(&srcHi, &srcLo, env, e->Iex.Unop.arg);
+               HReg dstHi = newVRegV(env);
+               HReg dstLo = newVRegV(env);
+               addInstr(env, LOONGARCH64Instr_VecBinary(LAvecbin_VNOR_V,
+                                                        LOONGARCH64RI_R(srcHi),
+                                                        srcHi, dstHi));
+               addInstr(env, LOONGARCH64Instr_VecBinary(LAvecbin_VNOR_V,
+                                                        LOONGARCH64RI_R(srcLo),
+                                                        srcLo, dstLo));
+               *hi = dstHi;
+               *lo = dstLo;
+               return;
+            }
             default:
                goto irreducible;
          }
