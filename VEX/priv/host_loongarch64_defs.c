@@ -790,6 +790,8 @@ static inline const HChar* showLOONGARCH64VecUnOp ( LOONGARCH64VecUnOp op )
          return "vclo.h";
       case LAvecun_VCLO_W:
          return "vclo.w";
+      case LAvecun_VCLO_D:
+         return "vclo.d";
       case LAvecun_VCLZ_B:
          return "vclz.b";
       case LAvecun_VCLZ_H:
@@ -3001,6 +3003,7 @@ static inline UInt* mkVecUnary ( UInt* p, LOONGARCH64VecUnOp op, HReg src, HReg 
       case LAvecun_VCLO_B:
       case LAvecun_VCLO_H:
       case LAvecun_VCLO_W:
+      case LAvecun_VCLO_D:
       case LAvecun_VCLZ_B:
       case LAvecun_VCLZ_H:
       case LAvecun_VCLZ_W:
