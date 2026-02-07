@@ -9665,7 +9665,7 @@ static Bool gen_vset ( DisResult* dres, UInt insn,
       }
 
       case 0b11: {
-         DIP("vsetqllnez.%s %u, %s", mkInsSize(insSz), cd, nameVReg(vj));
+         DIP("vsetallnez.%s %u, %s", mkInsSize(insSz), cd, nameVReg(vj));
 
          if (!(archinfo->hwcaps & VEX_HWCAPS_LOONGARCH_LSX)) {
             dres->jk_StopHere = Ijk_SigILL;
