@@ -439,6 +439,12 @@ static IRExpr* mkV128from64s ( IRTemp t1, IRTemp t0 )
    return binop(Iop_64HLtoV128, mkexpr(t1), mkexpr(t0));
 }
 
+/* Construct a V256-bit value from two 128-bit ints. */
+static IRExpr* mkV256from128s ( IRTemp t1, IRTemp t0 )
+{
+   return binop(Iop_V128HLtoV256, mkexpr(t1), mkexpr(t0));
+}
+
 /* Construct a V256-bit value from four 64-bit ints. */
 static IRExpr* mkV256from64s ( IRTemp t3, IRTemp t2,
                                IRTemp t1, IRTemp t0 )
@@ -8516,7 +8522,7 @@ static Bool gen_xvlogical_u8 ( DisResult* dres, UInt insn,
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
-   putXReg(xd, binop(Iop_V128HLtoV256, mkexpr(resHi), mkexpr(resLo)));
+   putXReg(xd, mkV256from128s(resHi, resLo));
 
    return True;
 }
@@ -9415,7 +9421,7 @@ static Bool gen_xvreplgr2vr ( DisResult* dres, UInt insn,
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
-   putXReg(xd, binop(Iop_V128HLtoV256, mkexpr(res), mkexpr(res)));
+   putXReg(xd, mkV256from128s(res, res));
 
    return True;
 }
@@ -9765,7 +9771,7 @@ static Bool gen_xvevod ( DisResult* dres, UInt insn,
          return False;
    }
 
-   assign(res, binop(Iop_V128HLtoV256, mkexpr(resHi), mkexpr(resLo)));
+   assign(res, mkV256from128s(resHi, resLo));
 
    DIP("%s.%s %s, %s, %s\n", nm, mkInsSize(insSz),
                              nameXReg(xd), nameXReg(xj), nameXReg(xk));
@@ -9894,7 +9900,7 @@ static Bool gen_xvpermi ( DisResult* dres, UInt insn,
          s[3] = s[2] = s[1] = s[0] = IRTemp_INVALID;
          breakupV256toV128s(sJ, &s[1], &s[0]);
          breakupV256toV128s(sD, &s[3], &s[2]);
-         assign(res, binop(Iop_V128HLtoV256, mkexpr(s[id2]), mkexpr(s[id0])));
+         assign(res, mkV256from128s(s[id2], s[id0]));
          break;
       }
       default:
