@@ -8190,8 +8190,28 @@ static Bool gen_logical_xv ( DisResult* dres, UInt insn,
    assign(sR, getXReg(xk));
 
    switch (insTy) {
+      case 0b100:
+         assign(res, binop(Iop_AndV256, mkexpr(sL), mkexpr(sR)));
+         break;
+      case 0b101:
+         assign(res, binop(Iop_OrV256, mkexpr(sL), mkexpr(sR)));
+         break;
       case 0b110:
          assign(res, binop(Iop_XorV256, mkexpr(sL), mkexpr(sR)));
+         break;
+      case 0b111:
+         assign(res, unop(Iop_NotV256, binop(Iop_OrV256,
+                                             mkexpr(sL), mkexpr(sR))));
+         break;
+      case 0b000: 
+         assign(res, binop(Iop_AndV256,
+                           unop(Iop_NotV256, mkexpr(sL)),
+                           mkexpr(sR)));
+         break;
+      case 0b001:
+         assign(res, binop(Iop_OrV256,
+                           mkexpr(sL),
+                           unop(Iop_NotV256, mkexpr(sR))));
          break;
       default:
          return False;
