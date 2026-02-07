@@ -1016,7 +1016,7 @@ typedef
       Iop_Cnt8x8,
       Iop_Clz8x8, Iop_Clz16x4, Iop_Clz32x2,
       Iop_Cls8x8, Iop_Cls16x4, Iop_Cls32x2,
-      Iop_Clz64x2,
+      Iop_Clz64x2, Iop_Cls64x2,
 
       /*Vector COUNT trailing zeros */
       Iop_Ctz8x16, Iop_Ctz16x8, Iop_Ctz32x4, Iop_Ctz64x2, 

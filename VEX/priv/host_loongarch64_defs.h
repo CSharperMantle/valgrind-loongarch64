@@ -375,6 +375,7 @@ typedef enum {
    LAvecun_VCLO_B       = 0x729c0000,
    LAvecun_VCLO_H       = 0x729c0400,
    LAvecun_VCLO_W       = 0x729c0800,
+   LAvecun_VCLO_D       = 0x729c0c00,
    LAvecun_VCLZ_B       = 0x729c1000,
    LAvecun_VCLZ_H       = 0x729c1400,
    LAvecun_VCLZ_W       = 0x729c1800,
