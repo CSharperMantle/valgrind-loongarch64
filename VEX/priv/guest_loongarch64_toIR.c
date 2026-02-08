@@ -7907,7 +7907,7 @@ static Bool gen_xvmax_xvmin ( DisResult* dres, UInt insn,
    return True;
 }
 
-static IRTemp gen_vmsk_b ( IRTemp shr )
+static IRTemp macro_v128msk_b ( IRTemp shr )
 {
    UInt i;
    IRTemp tmp[16];
@@ -7943,7 +7943,7 @@ static IRTemp gen_vmsk_b ( IRTemp shr )
    return res;
 }
 
-static IRTemp gen_vmsk_h ( IRTemp shr )
+static IRTemp macro_v128msk_h ( IRTemp shr )
 {
    UInt i;
    IRTemp tmp[8];
@@ -7971,7 +7971,7 @@ static IRTemp gen_vmsk_h ( IRTemp shr )
    return res;
 }
 
-static IRTemp gen_vmsk_w ( IRTemp shr )
+static IRTemp macro_v128msk_w ( IRTemp shr )
 {
    UInt i;
    IRTemp tmp[4];
@@ -7994,7 +7994,7 @@ static IRTemp gen_vmsk_w ( IRTemp shr )
    return res;
 }
 
-static IRTemp gen_vmsk_d ( IRTemp shr )
+static IRTemp macro_v128msk_d ( IRTemp shr )
 {
    UInt i;
    IRTemp tmp[2];
@@ -8032,19 +8032,20 @@ static Bool gen_vmsk ( DisResult* dres, UInt insn,
       case 0b00: {
          UInt shrNum[4] = {7, 15, 31, 63};
 
-         DIP("vmskltz.%s %s, %s\n", mkInsSize(insSz), nameVReg(vd), nameVReg(vj));
+         DIP("vmskltz.%s %s, %s\n", mkInsSize(insSz), nameVReg(vd),
+             nameVReg(vj));
 
          STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
          assign(cmp, binop(mkVecCMPGTS(insSz), mkV128(0x0000), mkexpr(src)));
          assign(shr, binop(mkVecSHRN(insSz), mkexpr(cmp), mkU8(shrNum[insSz])));
 
-         switch(insSz) {
-            case 0b00: res = gen_vmsk_b(shr); break;
-            case 0b01: res = gen_vmsk_h(shr); break;
-            case 0b10: res = gen_vmsk_w(shr); break;
-            case 0b11: res = gen_vmsk_d(shr); break;
-            default:   vassert(0);            break;
+         switch (insSz) {
+            case 0b00: res = macro_v128msk_b(shr); break;
+            case 0b01: res = macro_v128msk_h(shr); break;
+            case 0b10: res = macro_v128msk_w(shr); break;
+            case 0b11: res = macro_v128msk_d(shr); break;
+            default:   vassert(0); break;
          }
          break;
       }
@@ -8058,7 +8059,7 @@ static Bool gen_vmsk ( DisResult* dres, UInt insn,
                            binop(Iop_CmpGT8Sx16, mkexpr(src), mkV128(0x0000)),
                            binop(Iop_CmpEQ8x16, mkV128(0x0000), mkexpr(src))));
          assign(shr, binop(Iop_ShrN8x16, mkexpr(cmp), mkU8(7)));
-         res = gen_vmsk_b(shr);
+         res = macro_v128msk_b(shr);
          break;
       }
 
@@ -8069,12 +8070,11 @@ static Bool gen_vmsk ( DisResult* dres, UInt insn,
          assign(cmp, unop(Iop_NotV128,
                           binop(Iop_CmpEQ8x16, mkV128(0x0000), mkexpr(src))));
          assign(shr, binop(Iop_ShrN8x16, mkexpr(cmp), mkU8(7)));
-         res = gen_vmsk_b(shr);
+         res = macro_v128msk_b(shr);
          break;
       }
 
-      default:
-         return False;
+      default: return False;
    }
 
    putVReg(vd, mkexpr(res));
@@ -8121,24 +8121,26 @@ static Bool gen_xvmsk ( DisResult* dres, UInt insn,
 
          switch (insSz) {
             case 0b00:
-               assign(res, binop(Iop_V128HLtoV256, mkexpr(gen_vmsk_b(shrHi)),
-                                 mkexpr(gen_vmsk_b(shrLo))));
+               assign(res,
+                      binop(Iop_V128HLtoV256, mkexpr(macro_v128msk_b(shrHi)),
+                            mkexpr(macro_v128msk_b(shrLo))));
                break;
             case 0b01:
-               assign(res, binop(Iop_V128HLtoV256, mkexpr(gen_vmsk_h(shrHi)),
-                                 mkexpr(gen_vmsk_h(shrLo))));
+               assign(res,
+                      binop(Iop_V128HLtoV256, mkexpr(macro_v128msk_h(shrHi)),
+                            mkexpr(macro_v128msk_h(shrLo))));
                break;
             case 0b10:
-               assign(res, binop(Iop_V128HLtoV256, mkexpr(gen_vmsk_w(shrHi)),
-                                 mkexpr(gen_vmsk_w(shrLo))));
+               assign(res,
+                      binop(Iop_V128HLtoV256, mkexpr(macro_v128msk_w(shrHi)),
+                            mkexpr(macro_v128msk_w(shrLo))));
                break;
             case 0b11:
-               assign(res, binop(Iop_V128HLtoV256, mkexpr(gen_vmsk_d(shrHi)),
-                                 mkexpr(gen_vmsk_d(shrLo))));
+               assign(res,
+                      binop(Iop_V128HLtoV256, mkexpr(macro_v128msk_d(shrHi)),
+                            mkexpr(macro_v128msk_d(shrLo))));
                break;
-            default:
-               vassert(0);
-               break;
+            default: vassert(0); break;
          }
          break;
       }
@@ -8160,8 +8162,8 @@ static Bool gen_xvmsk ( DisResult* dres, UInt insn,
                              binop(Iop_CmpGT8Sx16, mkexpr(lo), mkV128(0x0000)),
                              binop(Iop_CmpEQ8x16, mkV128(0x0000), mkexpr(lo))));
          assign(shrLo, binop(Iop_ShrN8x16, mkexpr(cmpLo), mkU8(7)));
-         assign(res, binop(Iop_V128HLtoV256, mkexpr(gen_vmsk_b(shrHi)),
-                           mkexpr(gen_vmsk_b(shrLo))));
+         assign(res, binop(Iop_V128HLtoV256, mkexpr(macro_v128msk_b(shrHi)),
+                           mkexpr(macro_v128msk_b(shrLo))));
          break;
       }
       case 0b10: {
@@ -8180,13 +8182,12 @@ static Bool gen_xvmsk ( DisResult* dres, UInt insn,
          assign(cmpLo, unop(Iop_NotV128,
                             binop(Iop_CmpEQ8x16, mkV128(0x0000), mkexpr(lo))));
          assign(shrLo, binop(Iop_ShrN8x16, mkexpr(cmpLo), mkU8(7)));
-         assign(res, binop(Iop_V128HLtoV256, mkexpr(gen_vmsk_b(shrHi)),
-                           mkexpr(gen_vmsk_b(shrLo))));
+         assign(res, binop(Iop_V128HLtoV256, mkexpr(macro_v128msk_b(shrHi)),
+                           mkexpr(macro_v128msk_b(shrLo))));
          break;
       }
 
-      default:
-         return False;
+      default: return False;
    }
 
    DIP("%s.%s %s, %s\n", nm, mkInsSize(insSz), nameXReg(xd), nameXReg(xj));
