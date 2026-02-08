@@ -10364,19 +10364,55 @@ static Bool gen_vshuf_b ( DisResult* dres, UInt insn,
    UInt vj = SLICE(insn, 9, 5);
    UInt vd = SLICE(insn, 4, 0);
 
-   IRTemp sHi = newTemp(Ity_V128);
-   IRTemp sLo = newTemp(Ity_V128);
-   IRTemp sId = newTemp(Ity_V128);
-   assign(sHi, getVReg(vj));
-   assign(sLo, getVReg(vk));
-   assign(sId, getVReg(va));
+   IRTemp hi = newTemp(Ity_V128);
+   IRTemp lo = newTemp(Ity_V128);
+   IRTemp id = newTemp(Ity_V128);
+   assign(hi, getVReg(vj));
+   assign(lo, getVReg(vk));
+   assign(id, getVReg(va));
 
    DIP("vshuf.b %s, %s, %s, %s\n", nameVReg(vd), nameVReg(vj), nameVReg(vk),
        nameVReg(va));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
-   putVReg(vd, mkexpr(macro_v128shuf_b(sHi, sLo, sId)));
+   putVReg(vd, mkexpr(macro_v128shuf_b(hi, lo, id)));
+
+   return True;
+}
+
+static Bool gen_xvshuf_b ( DisResult* dres, UInt insn,
+                           const VexArchInfo* archinfo,
+                           const VexAbiInfo*  abiinfo )
+{
+   UInt xa = SLICE(insn, 19, 15);
+   UInt xk = SLICE(insn, 14, 10);
+   UInt xj = SLICE(insn, 9, 5);
+   UInt xd = SLICE(insn, 4, 0);
+
+   IRTemp hi   = newTemp(Ity_V128);
+   IRTemp lo   = newTemp(Ity_V128);
+   IRTemp id   = newTemp(Ity_V128);
+   IRTemp hiHi = IRTemp_INVALID;
+   IRTemp hiLo = IRTemp_INVALID;
+   IRTemp loHi = IRTemp_INVALID;
+   IRTemp loLo = IRTemp_INVALID;
+   IRTemp idHi = IRTemp_INVALID;
+   IRTemp idLo = IRTemp_INVALID;
+   assign(hi, getXReg(xj));
+   assign(lo, getXReg(xk));
+   assign(id, getXReg(xa));
+   breakupV256toV128s(hi, &hiHi, &hiLo);
+   breakupV256toV128s(lo, &loHi, &loLo);
+   breakupV256toV128s(id, &idHi, &idLo);
+
+   DIP("xvshuf.b %s, %s, %s, %s\n", nameXReg(xd), nameXReg(xj), nameXReg(xk),
+       nameXReg(xa));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(macro_v128shuf_b(hiHi, loHi, idHi),
+                              macro_v128shuf_b(hiLo, loLo, idLo)));
 
    return True;
 }
@@ -12138,6 +12174,9 @@ static Bool disInstr_LOONGARCH64_WRK_00 ( DisResult* dres, UInt insn,
                break;
             case 0b010101:
                ok = gen_vshuf_b(dres, insn, archinfo, abiinfo);
+               break;
+            case 0b010110:
+               ok = gen_xvshuf_b(dres, insn, archinfo, abiinfo);
                break;
             default:
                ok = False;
