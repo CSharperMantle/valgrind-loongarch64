@@ -10275,31 +10275,70 @@ static Bool gen_vbsll_vbsrl ( DisResult* dres, UInt insn,
 
    IROp op = Iop_INVALID;
    switch (insTy) {
-      case 0b00: {
-         DIP("vbsll.v %s, %s, %u", nameVReg(vd), nameVReg(vj), ui5);
-
-         STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
-
-         op = Iop_ShlV128;
-
-         break;
-      }
-
-      case 0b01: {
-         DIP("vbsrl.v %s, %s, %u", nameVReg(vd), nameVReg(vj), ui5);
-
-         STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
-
-         op = Iop_ShrV128;
-
-         break;
-      }
-
-      default:
-         return False;
+      case 0b00: op = Iop_ShlV128; break;
+      case 0b01: op = Iop_ShrV128; break;
+      default:   return False;
    }
 
+   static const HChar* nm[2] = {"vbsll.v", "vbsrl.v"};
+
+   DIP("%s %s, %s, %u", nm[insTy], nameVReg(vd), nameVReg(vj), ui5);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
    putVReg(vd, binop(op, getVReg(vj), mkU8(ui5)));
+
+   return True;
+}
+
+static Bool gen_xvbsll_xvbsrl ( DisResult* dres, UInt insn,
+                                const VexArchInfo* archinfo,
+                                const VexAbiInfo*  abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt ui5   = SLICE(insn, 14, 10);
+   UInt insTy = SLICE(insn, 16, 15);
+
+   IRTemp src   = newTemp(Ity_V256);
+   IRTemp srcHi = IRTemp_INVALID;
+   IRTemp srcLo = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(src, getXReg(xj));
+   breakupV256toV128s(src, &srcHi, &srcLo);
+
+   if (insTy == 0b00) {
+      if (ui5 < 16) {
+         assign(resHi,
+                binop(Iop_OrV128, binop(Iop_ShlV128, mkexpr(srcHi), mkU8(ui5)),
+                      binop(Iop_ShrV128, mkexpr(srcLo), mkU8(16 - ui5))));
+         assign(resLo, binop(Iop_ShlV128, mkexpr(srcLo), mkU8(ui5)));
+      } else {
+         assign(resHi, binop(Iop_ShlV128, mkexpr(srcLo), mkU8(ui5 - 16)));
+         assign(resLo, mkV128(0x0000));
+      }
+   } else if (insTy == 0b01) {
+      if (ui5 < 16) {
+         assign(resLo,
+                binop(Iop_OrV128, binop(Iop_ShrV128, mkexpr(srcLo), mkU8(ui5)),
+                      binop(Iop_ShlV128, mkexpr(srcHi), mkU8(16 - ui5))));
+         assign(resHi, binop(Iop_ShrV128, mkexpr(srcHi), mkU8(ui5)));
+      } else {
+         assign(resLo, binop(Iop_ShrV128, mkexpr(srcHi), mkU8(ui5 - 16)));
+         assign(resHi, mkV128(0x0000));
+      }
+   } else {
+      return False;
+   }
+
+   static const HChar* nm[2] = {"xvbsll.v", "xvbsrl.v"};
+
+   DIP("%s %s, %s, %u", nm[insTy], nameXReg(xd), nameXReg(xj), ui5);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
 
    return True;
 }
@@ -13510,6 +13549,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1010 ( DisResult* dres, UInt insn,
       case 0b00101:
       case 0b00110:
          ok = gen_xvaddi_xvsubi_u(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b00111:
+         ok = gen_xvbsll_xvbsrl(dres, insn, archinfo, abiinfo);
          break;
       case 0b01101:
          ok = gen_xvfrstpi(dres, insn, archinfo, abiinfo);
