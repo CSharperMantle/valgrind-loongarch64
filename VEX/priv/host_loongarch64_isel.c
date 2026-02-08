@@ -3275,6 +3275,7 @@ static void iselStmtStore ( ISelEnv* env, IRStmt* stmt )
       addInstr(env, LOONGARCH64Instr_VecStore(vop, am, lo));
       addInstr(env, LOONGARCH64Instr_VecStore(LAvecstore_VST, am16, hi));
    } else {
+      ppIRType(tyd);
       vpanic("iselStmt(loongarch64): Ist_Store");
    }
 }
@@ -3414,6 +3415,7 @@ static void iselStmtTmp ( ISelEnv* env, IRStmt* stmt )
          break;
       }
       default:
+         ppIRType(ty);
          vpanic("iselStmt(loongarch64): Ist_WrTmp");
          break;
    }
@@ -3543,6 +3545,7 @@ static void iselStmtLLSC ( ISelEnv* env, IRStmt* stmt )
             op = LAllsc_LL_D;
             break;
          default:
+            ppIRType(ty);
             vpanic("iselStmt(loongarch64): Ist_LLSC");
             break;
       }
@@ -3561,6 +3564,7 @@ static void iselStmtLLSC ( ISelEnv* env, IRStmt* stmt )
             op = LAllsc_SC_D;
             break;
          default:
+            ppIRType(tyd);
             vpanic("iselStmt(loongarch64): Ist_LLSC");
             break;
       }
@@ -3593,6 +3597,7 @@ static void iselStmtCas ( ISelEnv* env, IRStmt* stmt )
             size64 = True;
             break;
          default:
+            ppIRType(ty);
             vpanic("iselStmt(loongarch64): Ist_CAS");
             break;
       }
@@ -3613,6 +3618,7 @@ static void iselStmtMBE ( ISelEnv* env, IRStmt* stmt )
          addInstr(env, LOONGARCH64Instr_Bar(LAbar_IBAR, 0));
          break;
       default:
+         ppIRMBusEvent(stmt->Ist.MBE.event);
          vpanic("iselStmt(loongarch64): Ist_MBE");
          break;
    }
