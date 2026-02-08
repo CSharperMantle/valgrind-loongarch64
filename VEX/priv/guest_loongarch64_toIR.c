@@ -9124,6 +9124,35 @@ static Bool gen_xvbiti ( DisResult* dres, UInt insn,
 /*--- Helpers for vector string processing insns           ---*/
 /*------------------------------------------------------------*/
 
+static IRTemp macro_v128frstp ( IRTemp src, IRTemp dst, UInt insSz, IRExpr* index )
+{
+   IRTemp data[2];
+   IRTemp res = newTemp(Ity_V128);
+
+   for (UInt i = 0; i < 2; i++) {
+      data[i] = newTemp(Ity_I64);
+      assign(data[i], binop(Iop_GetElem64x2, mkexpr(src), mkU8(i)));
+   }
+
+   IRExpr** arg = mkIRExprVec_3(mkU64(insSz), mkexpr(data[1]), mkexpr(data[0]));
+   IRExpr* call = mkIRExprCCall(Ity_I64, 0, "loongarch64_calculate_negative_id",
+                                &loongarch64_calculate_negative_id, arg);
+
+   switch (insSz) {
+      case 0b00:
+         assign(res, triop(Iop_SetElem8x16, mkexpr(dst), index,
+                           unop(Iop_64to8, call)));
+         break;
+      case 0b01:
+         assign(res, triop(Iop_SetElem16x8, mkexpr(dst), index,
+                           unop(Iop_64to16, call)));
+         break;
+      default: vassert(0); break;
+   }
+
+   return res;
+}
+
 static Bool gen_vfrstpi ( DisResult* dres, UInt insn,
                           const VexArchInfo* archinfo,
                           const VexAbiInfo*  abiinfo )
@@ -9133,43 +9162,54 @@ static Bool gen_vfrstpi ( DisResult* dres, UInt insn,
    UInt ui5   = SLICE(insn, 14, 10);
    UInt insSz = SLICE(insn, 16, 15);
 
-   UInt i;
-   IRTemp data[2];
-   IRTemp res = newTemp(Ity_V128);
+   IRTemp  j     = newTemp(Ity_V128);
+   IRTemp  k     = newTemp(Ity_V128);
+   IRExpr* index = (insSz == 0b00) ? mkU8(ui5 % 16) : mkU8(ui5 % 8);
+   assign(j, getVReg(vj));
+   assign(k, getVReg(vd));
 
-   for (i = 0; i < 2; i++) {
-      data[i] = newTemp(Ity_I64);
-      assign(data[i], binop(Iop_GetElem64x2, getVReg(vj), mkU8(i)));
-   }
+   IRTemp res = macro_v128frstp(j, k, insSz, index);
 
-   IRExpr** arg = mkIRExprVec_3(mkU64(insSz), mkexpr(data[1]), mkexpr(data[0]));
-   IRExpr* call = mkIRExprCCall(Ity_I64, 0/*regparms*/,
-                                "loongarch64_calculate_negative_id",
-                                &loongarch64_calculate_negative_id,
-                                arg);
-
-   switch (insSz) {
-      case 0b00:
-         assign(res, triop(Iop_SetElem8x16,
-                           getVReg(vd),
-                           mkU8(ui5 % 16),
-                           unop(Iop_64to8, call)));
-         break;
-      case 0b01:
-         assign(res, triop(Iop_SetElem16x8,
-                           getVReg(vd),
-                           mkU8(ui5 % 8),
-                           unop(Iop_64to16, call)));
-         break;
-      default:
-         return False;
-   }
-
-   DIP("vfrstpi.%s %s, %s, %u\n", mkInsSize(insSz), nameVReg(vd), nameVReg(vj), ui5);
+   DIP("vfrstpi.%s %s, %s, %u\n", mkInsSize(insSz), nameVReg(vd), nameVReg(vj),
+       ui5);
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
    putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvfrstpi ( DisResult* dres, UInt insn,
+                           const VexArchInfo* archinfo,
+                           const VexAbiInfo*  abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt ui5   = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+
+   IRTemp  j     = newTemp(Ity_V256);
+   IRTemp  k     = newTemp(Ity_V256);
+   IRTemp  jHi   = IRTemp_INVALID;
+   IRTemp  jLo   = IRTemp_INVALID;
+   IRTemp  kHi   = IRTemp_INVALID;
+   IRTemp  kLo   = IRTemp_INVALID;
+   IRExpr* index = (insSz == 0b00) ? mkU8(ui5 % 16) : mkU8(ui5 % 8);
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xd));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(k, &kHi, &kLo);
+
+   IRTemp resHi = macro_v128frstp(jHi, kHi, insSz, index);
+   IRTemp resLo = macro_v128frstp(jLo, kLo, insSz, index);
+
+   DIP("xvfrstpi.%s %s, %s, %u\n", mkInsSize(insSz), nameXReg(xd), nameXReg(xj),
+       ui5);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
 
    return True;
 }
@@ -13412,6 +13452,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1010 ( DisResult* dres, UInt insn,
       case 0b00101:
       case 0b00110:
          ok = gen_xvaddi_xvsubi_u(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b01101:
+         ok = gen_xvfrstpi(dres, insn, archinfo, abiinfo);
          break;
       case 0b01110:
          ok = disInstr_LOONGARCH64_WRK_01_1101_1010_01110(dres, insn, archinfo, abiinfo);
