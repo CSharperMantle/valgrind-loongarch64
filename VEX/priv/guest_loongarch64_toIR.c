@@ -11381,6 +11381,41 @@ static Bool gen_xvshuf4i ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_vpermi ( DisResult* dres, UInt insn,
+                         const VexArchInfo* archinfo,
+                         const VexAbiInfo*  abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt ui8   = SLICE(insn, 17, 10);
+   UInt insSz = SLICE(insn, 19, 18);
+
+   UInt id0 = SLICE(ui8, 1, 0);
+   UInt id1 = SLICE(ui8, 3, 2);
+   UInt id2 = SLICE(ui8, 5, 4);
+   UInt id3 = SLICE(ui8, 7, 6);
+
+   if (insSz != 0b01 /* w */) {
+      return False;
+   }
+
+   IRTemp s[8];
+   for (UInt i = 0; i < 4; i++) {
+      s[i]     = newTemp(Ity_I32);
+      s[i + 4] = newTemp(Ity_I32);
+      assign(s[i], binop(Iop_GetElem32x4, getVReg(vj), mkU8(i)));
+      assign(s[i + 4], binop(Iop_GetElem32x4, getVReg(vd), mkU8(i)));
+   }
+
+   DIP("vpermi.w %s, %s, %u\n", nameVReg(vd), nameVReg(vj), ui8);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkV128from32s(s[id3 + 4], s[id2 + 4], s[id1], s[id0]));
+
+   return True;
+}
+
 static Bool gen_xvpermi ( DisResult* dres, UInt insn,
                           const VexArchInfo* archinfo,
                           const VexAbiInfo*  abiinfo )
@@ -11388,53 +11423,48 @@ static Bool gen_xvpermi ( DisResult* dres, UInt insn,
    UInt xd    = SLICE(insn, 4, 0);
    UInt xj    = SLICE(insn, 9, 5);
    UInt ui8   = SLICE(insn, 17, 10);
-   UInt InsSz = SLICE(insn, 19, 18);
+   UInt insSz = SLICE(insn, 19, 18);
 
-   UInt id0 = ui8 & 0x03;
-   UInt id1 = (ui8 & 0x0c) >> 2;
-   UInt id2 = (ui8 & 0x30) >> 4;
-   UInt id3 = (ui8 & 0xc0) >> 6;
+   UInt id0 = SLICE(ui8, 1, 0);
+   UInt id1 = SLICE(ui8, 3, 2);
+   UInt id2 = SLICE(ui8, 5, 4);
+   UInt id3 = SLICE(ui8, 7, 6);
 
    IRTemp res = newTemp(Ity_V256);
-   IRTemp sJ = newTemp(Ity_V256);
+   IRTemp sJ  = newTemp(Ity_V256);
+   IRTemp sD  = newTemp(Ity_V256);
    assign(sJ, getXReg(xj));
-   IRTemp sD = newTemp(Ity_V256);
    assign(sD, getXReg(xd));
 
-   switch (InsSz) {
+   switch (insSz) {
       case 0b01: {
          IRTemp s[16];
-         s[7] = s[6] = s[5] = s[4] = s[3] = s[2] = s[1] = s[0] = IRTemp_INVALID;
-         s[15] = s[14] = s[13] = s[12] = s[11] = s[10] = s[9] = s[8] = IRTemp_INVALID;
-         breakupV256to32s(sJ, &s[7], &s[6], &s[5], &s[4],
-                              &s[3], &s[2], &s[1], &s[0]);
-         breakupV256to32s(sD, &s[15], &s[14], &s[13], &s[12],
-                              &s[11], &s[10], &s[9], &s[8]);
-         assign(res, mkV256from32s(s[id0], s[id1], s[id2], s[id3],
-                                   s[id0 + 4], s[id1 + 4], s[id2 + 4], s[id3 + 4]));
+         breakupV256to32s(sJ, &s[7], &s[6], &s[5], &s[4], &s[3], &s[2], &s[1],
+                          &s[0]);
+         breakupV256to32s(sD, &s[15], &s[14], &s[13], &s[12], &s[11], &s[10],
+                          &s[9], &s[8]);
+         assign(res, mkV256from32s(s[id0], s[id1], s[id2], s[id3], s[id0 + 4],
+                                   s[id1 + 4], s[id2 + 4], s[id3 + 4]));
          break;
       }
       case 0b10: {
          IRTemp s[4];
-         s[3] = s[2] = s[1] = s[0] = IRTemp_INVALID;
          breakupV256to64s(sJ, &s[3], &s[2], &s[1], &s[0]);
          assign(res, mkV256from64s(s[id0], s[id1], s[id2], s[id3]));
          break;
       }
       case 0b11: {
          IRTemp s[4];
-         s[3] = s[2] = s[1] = s[0] = IRTemp_INVALID;
          breakupV256toV128s(sJ, &s[1], &s[0]);
          breakupV256toV128s(sD, &s[3], &s[2]);
          assign(res, mkV256from128s(s[id2], s[id0]));
          break;
       }
-      default:
-         vassert(0);
-         break;
+      default: return False;
    }
 
-   DIP("xvpermi.%s %s, %s, %u\n", mkInsSize(InsSz), nameXReg(xd), nameXReg(xj), ui8);
+   DIP("xvpermi.%s %s, %s, %u\n", mkInsSize(insSz), nameXReg(xd), nameXReg(xj),
+       ui8);
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
@@ -13752,6 +13782,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1111 ( DisResult* dres, UInt insn,
       case 0b1000:
          ok = gen_vldi_xvldi(dres, insn, archinfo, abiinfo);
          break;
+      case 0b1001:
+         ok = gen_vpermi(dres, insn, archinfo, abiinfo);
+         break;
       default:
          ok = False;
          break;
@@ -14118,13 +14151,13 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1111 ( DisResult* dres, UInt insn,
       case 0b0111:
          ok = gen_xvlogical_u8(dres, insn, archinfo, abiinfo);
          break;
+      case 0b1000:
+         ok = gen_vldi_xvldi(dres, insn, archinfo, abiinfo);
+         break;
       case 0b1001:
       case 0b1010:
       case 0b1011:
          ok = gen_xvpermi(dres, insn, archinfo, abiinfo);
-         break;
-      case 0b1000:
-         ok = gen_vldi_xvldi(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
