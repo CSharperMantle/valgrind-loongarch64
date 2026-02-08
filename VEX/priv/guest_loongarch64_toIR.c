@@ -8728,6 +8728,143 @@ static Bool gen_xvshift_imm ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_vbit ( DisResult* dres, UInt insn,
+                       const VexArchInfo* archinfo,
+                       const VexAbiInfo*  abiinfo )
+{
+   UInt vd     = SLICE(insn, 4, 0);
+   UInt vj     = SLICE(insn, 9, 5);
+   UInt vk     = SLICE(insn, 14, 10);
+   UInt insSz  = SLICE(insn, 16, 15);
+   UInt insTy  = SLICE(insn, 18, 17);
+
+   IRTemp c1   = newTemp(Ity_V128);
+   IRTemp argR = newTemp(Ity_V128);
+   IRTemp res  = newTemp(Ity_V128);
+
+   switch (insSz) {
+      case 0b00:
+         assign(c1, unop(Iop_Dup8x16, mkU8(1)));
+         break;
+      case 0b01:
+         assign(c1, unop(Iop_Dup16x8, mkU16(1)));
+         break;
+      case 0b10:
+         assign(c1, unop(Iop_Dup32x4, mkU32(1)));
+         break;
+      case 0b11:
+         assign(c1, binop(Iop_64HLtoV128, mkU64(1), mkU64(1)));
+         break;
+      default: vassert(0); break;
+   }
+
+   assign(argR, binop(mkV128SHL(insSz), mkexpr(c1), getVReg(vk)));
+
+   switch (insTy) {
+      case 0b10:
+         assign(res, binop(Iop_AndV128, getVReg(vj),
+                           unop(Iop_NotV128, mkexpr(argR))));
+         break;
+      case 0b11:
+         assign(res, binop(Iop_OrV128, getVReg(vj), mkexpr(argR)));
+         break;
+      case 0b00:
+         assign(res, binop(Iop_XorV128, getVReg(vj), mkexpr(argR)));
+         break;
+      default: vassert(0); break;
+   }
+
+   static const HChar* nm[4] = {"vbitrev", "", "vbitclr", "vbitset"};
+
+   DIP("%s.%s %s, %s, %s\n", nm[insTy], mkInsSize(insSz), nameVReg(vd),
+       nameVReg(vj), nameVReg(vk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvbit ( DisResult* dres, UInt insn,
+                        const VexArchInfo* archinfo,
+                        const VexAbiInfo*  abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt xj     = SLICE(insn, 9, 5);
+   UInt xk     = SLICE(insn, 14, 10);
+   UInt insSz  = SLICE(insn, 16, 15);
+   UInt insTy  = SLICE(insn, 18, 17);
+
+   IRTemp j      = newTemp(Ity_V256);
+   IRTemp k      = newTemp(Ity_V256);
+   IRTemp jHi    = IRTemp_INVALID;
+   IRTemp jLo    = IRTemp_INVALID;
+   IRTemp kHi    = IRTemp_INVALID;
+   IRTemp kLo    = IRTemp_INVALID;
+   IRTemp c1     = newTemp(Ity_V128);
+   IRTemp argRHi = newTemp(Ity_V128);
+   IRTemp argRLo = newTemp(Ity_V128);
+   IRTemp resHi  = newTemp(Ity_V128);
+   IRTemp resLo  = newTemp(Ity_V128);
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xk));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(k, &kHi, &kLo);
+
+   switch (insSz) {
+      case 0b00:
+         assign(c1, unop(Iop_Dup8x16, mkU8(1)));
+         break;
+      case 0b01:
+         assign(c1, unop(Iop_Dup16x8, mkU16(1)));
+         break;
+      case 0b10:
+         assign(c1, unop(Iop_Dup32x4, mkU32(1)));
+         break;
+      case 0b11:
+         assign(c1, binop(Iop_64HLtoV128, mkU64(1), mkU64(1)));
+         break;
+      default:
+         vassert(0);
+         break;
+   }
+
+   assign(argRHi, binop(mkV128SHL(insSz), mkexpr(c1), mkexpr(kHi)));
+   assign(argRLo, binop(mkV128SHL(insSz), mkexpr(c1), mkexpr(kLo)));
+
+   switch (insTy) {
+      case 0b10:
+         assign(resHi, binop(Iop_AndV128, mkexpr(jHi),
+                             unop(Iop_NotV128, mkexpr(argRHi))));
+         assign(resLo, binop(Iop_AndV128, mkexpr(jLo),
+                             unop(Iop_NotV128, mkexpr(argRLo))));
+         break;
+      case 0b11:
+         assign(resHi, binop(Iop_OrV128, mkexpr(jHi), mkexpr(argRHi)));
+         assign(resLo, binop(Iop_OrV128, mkexpr(jLo), mkexpr(argRLo)));
+         break;
+      case 0b00:
+         assign(resHi, binop(Iop_XorV128, mkexpr(jHi), mkexpr(argRHi)));
+         assign(resLo, binop(Iop_XorV128, mkexpr(jLo), mkexpr(argRLo)));
+         break;
+      default:
+         vassert(0);
+         break;
+   }
+
+   static const HChar* nm[4] = {"xvbitrev", "", "xvbitclr", "xvbitset"};
+
+   DIP("%s.%s %s, %s, %s\n", nm[insTy], mkInsSize(insSz), nameXReg(xd),
+       nameXReg(xj), nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_vbiti ( DisResult* dres, UInt insn,
                         const VexArchInfo* archinfo,
                         const VexAbiInfo*  abiinfo )
@@ -12556,6 +12693,11 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0100 ( DisResult* dres, UInt insn,
    Bool ok;
 
    switch (SLICE(insn, 21, 17)) {
+      case 0b00110:
+      case 0b00111:
+      case 0b01000:
+         ok = gen_vbit(dres, insn, archinfo, abiinfo);
+         break;
       case 0b01011:
       case 0b01100:
       case 0b01101:
@@ -12925,6 +13067,11 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0100 ( DisResult* dres, UInt insn,
    Bool ok;
 
    switch (SLICE(insn, 21, 17)) {
+      case 0b00110:
+      case 0b00111:
+      case 0b01000:
+         ok = gen_xvbit(dres, insn, archinfo, abiinfo);
+         break;
       case 0b01011:
       case 0b01100:
       case 0b01101:
