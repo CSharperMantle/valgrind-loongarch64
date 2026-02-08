@@ -723,6 +723,20 @@ static IROp mkV128INTERLEAVEHI ( UInt size )
    return ops[size];
 }
 
+static IROp mkV128EXTHTS ( UInt size ) {
+   const IROp ops[4] = {Iop_WidenHIto16Sx8, Iop_WidenHIto32Sx4,
+                        Iop_WidenHIto64Sx2, Iop_WidenHIto128Sx1};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128EXTHTU ( UInt size ) {
+   const IROp ops[4] = {Iop_WidenHIto16Ux8, Iop_WidenHIto32Ux4,
+                        Iop_WidenHIto64Ux2, Iop_WidenHIto128Ux1};
+   vassert(size < 4);
+   return ops[size];
+}
+
 static IROp mkV128GETELEM ( UInt size )
 {
    const IROp ops[4]
@@ -8266,6 +8280,68 @@ static Bool gen_xvmul_xvmuh ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_vexth ( DisResult* dres, UInt insn,
+                        const VexArchInfo* archinfo,
+                        const VexAbiInfo*  abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt insSz = SLICE(insn, 11, 10);
+   UInt isU   = SLICE(insn, 12, 12);
+
+   IROp op = isU ? mkV128EXTHTU(insSz) : mkV128EXTHTS(insSz);
+   UInt id = isU ? (insSz + 4) : insSz;
+
+   const HChar* insSizeFrom = mkInsSize(id);
+   const HChar* insSizeTo =
+      (id == 3 /* d */) ? "q" : ((id == 7 /* du */) ? "qu" : mkInsSize(id + 1));
+
+   DIP("vexth.%s.%s %s, %s\n", insSizeTo, insSizeFrom, nameVReg(vd),
+       nameVReg(vj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, unop(op, getVReg(vj)));
+   return True;
+}
+
+static Bool gen_xvexth ( DisResult* dres, UInt insn,
+                         const VexArchInfo* archinfo,
+                         const VexAbiInfo*  abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt insSz = SLICE(insn, 11, 10);
+   UInt isU   = SLICE(insn, 12, 12);
+
+   IRTemp src   = newTemp(Ity_V256);
+   IRTemp srcHi = IRTemp_INVALID;
+   IRTemp srcLo = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(src, getXReg(xj));
+   breakupV256toV128s(src, &srcHi, &srcLo);
+
+   IROp op = isU ? mkV128EXTHTU(insSz) : mkV128EXTHTS(insSz);
+   UInt id = isU ? (insSz + 4) : insSz;
+
+   assign(resHi, unop(op, mkexpr(srcHi)));
+   assign(resLo, unop(op, mkexpr(srcLo)));
+
+   const HChar* insSizeFrom = mkInsSize(id);
+   const HChar* insSizeTo =
+      (id == 3 /* d */) ? "q" : ((id == 7 /* du */) ? "qu" : mkInsSize(id + 1));
+
+   DIP("xvexth.%s.%s %s, %s\n", insSizeTo, insSizeFrom, nameXReg(xd),
+       nameXReg(xj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_vldi_xvldi ( DisResult* dres, UInt insn,
                              const VexArchInfo* archinfo,
                              const VexAbiInfo* abiinfo )
@@ -13363,8 +13439,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1010_01111 ( DisResult* dres, UInt 
 {
    Bool ok;
 
-   switch (SLICE(insn, 16, 14)) {
-      case 0b100:
+   switch (SLICE(insn, 16, 12)) {
+      case 0b01110:
+      case 0b01111:
+         ok = gen_vexth(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b10000:
          ok = gen_vreplgr2vr(dres, insn, archinfo, abiinfo);
          break;
       default:
@@ -13707,6 +13787,10 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1010_01111 ( DisResult* dres, UInt 
    Bool ok;
 
    switch (SLICE(insn, 16, 12)) {
+      case 0b01110:
+      case 0b01111:
+         ok = gen_xvexth(dres, insn, archinfo, abiinfo);
+         break;
       case 0b10000:
          ok = gen_xvreplgr2vr(dres, insn, archinfo, abiinfo);
          break;
