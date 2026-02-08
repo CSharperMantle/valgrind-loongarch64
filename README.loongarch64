@@ -47,11 +47,13 @@ A new IRJumpKind:
 Limitations
 ~~~~~~~~~~~
 
+* A small number of non-privileged integer instructions are NOT yet supported.
 * Only the fallback LLSC implementation is supported.
-* Not all vector instructions are supported.
+* Only a selection of LSX and LASX instructions are supported.
+* Binary translation instructions are NOT supported.
 * Tests need to be added for vector instructions.
 
-Unimplemented vector instructions (in loongson-community/loongarch-opcodes notation):
+Unimplemented LSX and LASX instructions (in loongson-community/loongarch-opcodes notation):
 
 	00_0010_0100_01????????????????????,vfmadd.s,VdVjVkVa
 	00_0010_0100_10????????????????????,vfmadd.d,VdVjVkVa
