@@ -433,6 +433,26 @@ static void breakupV256to32s ( IRTemp t256,
    breakupV128to32s(t128_0, t3, t2, t1, t0);
 }
 
+/* Construct a V128-bit value from 16 8-bit ints. */
+static IRExpr* mkV128from8s ( IRTemp t15, IRTemp t14, IRTemp t13, IRTemp t12,
+                              IRTemp t11, IRTemp t10, IRTemp t9,  IRTemp t8,
+                              IRTemp t7,  IRTemp t6,  IRTemp t5,  IRTemp t4,
+                              IRTemp t3,  IRTemp t2,  IRTemp t1,  IRTemp t0 )
+{
+   return binop(
+      Iop_64HLtoV128,
+      binop(Iop_32HLto64,
+            binop(Iop_16HLto32, binop(Iop_8HLto16, mkexpr(t15), mkexpr(t14)),
+                  binop(Iop_8HLto16, mkexpr(t13), mkexpr(t12))),
+            binop(Iop_16HLto32, binop(Iop_8HLto16, mkexpr(t11), mkexpr(t10)),
+                  binop(Iop_8HLto16, mkexpr(t9), mkexpr(t8)))),
+      binop(Iop_32HLto64,
+            binop(Iop_16HLto32, binop(Iop_8HLto16, mkexpr(t7), mkexpr(t6)),
+                  binop(Iop_8HLto16, mkexpr(t5), mkexpr(t4))),
+            binop(Iop_16HLto32, binop(Iop_8HLto16, mkexpr(t3), mkexpr(t2)),
+                  binop(Iop_8HLto16, mkexpr(t1), mkexpr(t0)))));
+}
+
 /* Construct a V128-bit value from 2 64-bit ints. */
 static IRExpr* mkV128from64s ( IRTemp t1, IRTemp t0 )
 {
@@ -10298,6 +10318,43 @@ static Bool gen_xvbitsel_v ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_v128shuf_b ( IRTemp sHi, IRTemp sLo, IRTemp sId )
+{
+   IRTemp id[16], res[16];
+   IRTemp out = newTemp(Ity_V128);
+
+   for (UInt i = 0; i < 16; i++) {
+      id[i]  = newTemp(Ity_I8);
+      res[i] = newTemp(Ity_I8);
+
+      assign(id[i], binop(Iop_GetElem8x16, mkexpr(sId), mkU8(i)));
+
+      assign(
+         res[i],
+         IRExpr_ITE(
+            binop(Iop_CmpEQ64,
+                  extendU(Ity_I8, binop(Iop_And8, mkexpr(id[i]), mkU8(0xC0))),
+                  mkU64(0x0)),
+            IRExpr_ITE(
+               binop(
+                  Iop_CmpLT64U,
+                  extendU(Ity_I8, binop(Iop_And8, mkexpr(id[i]), mkU8(0x1F))),
+                  mkU64(0x10)),
+               binop(Iop_GetElem8x16, mkexpr(sLo), mkexpr(id[i])),
+               binop(Iop_GetElem8x16, mkexpr(sHi),
+                     unop(Iop_64to8,
+                          binop(Iop_Sub64, extendU(Ity_I8, mkexpr(id[i])),
+                                mkU64(0x10))))),
+            mkU8(0x0)));
+   }
+
+   assign(out, mkV128from8s(res[15], res[14], res[13], res[12], res[11],
+                            res[10], res[9], res[8], res[7], res[6], res[5],
+                            res[4], res[3], res[2], res[1], res[0]));
+
+   return out;
+}
+
 static Bool gen_vshuf_b ( DisResult* dres, UInt insn,
                           const VexArchInfo* archinfo,
                           const VexAbiInfo*  abiinfo )
@@ -10307,66 +10364,19 @@ static Bool gen_vshuf_b ( DisResult* dres, UInt insn,
    UInt vj = SLICE(insn, 9, 5);
    UInt vd = SLICE(insn, 4, 0);
 
-   DIP("vshuf.b %s, %s, %s, %s\n", nameVReg(vd), nameVReg(vj), nameVReg(vk),
-                                   nameVReg(va));
-
-   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
-
    IRTemp sHi = newTemp(Ity_V128);
    IRTemp sLo = newTemp(Ity_V128);
    IRTemp sId = newTemp(Ity_V128);
    assign(sHi, getVReg(vj));
    assign(sLo, getVReg(vk));
    assign(sId, getVReg(va));
-   UInt i;
-   IRTemp id[16], res[16];
 
-   for (i = 0; i < 16; i++) {
-         id[i] = newTemp(Ity_I8);
-         res[i] = newTemp(Ity_I8);
+   DIP("vshuf.b %s, %s, %s, %s\n", nameVReg(vd), nameVReg(vj), nameVReg(vk),
+       nameVReg(va));
 
-         assign(id[i], binop(Iop_GetElem8x16, mkexpr(sId), mkU8(i)));
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
-         assign(res[i], IRExpr_ITE(
-                           binop(Iop_CmpEQ64,
-                                 extendU(Ity_I8, binop(Iop_And8,
-                                                       mkexpr(id[i]),
-                                                       mkU8(0xC0))),
-                                 mkU64(0x0)),
-                           IRExpr_ITE(
-                              binop(Iop_CmpLT64U,
-                                    extendU(Ity_I8, binop(Iop_And8,
-                                                          mkexpr(id[i]),
-                                                          mkU8(0x1F))),
-                                    mkU64(0x10)),
-                              binop(Iop_GetElem8x16,
-                                    mkexpr(sLo),
-                                    mkexpr(id[i])),
-                              binop(Iop_GetElem8x16,
-                                    mkexpr(sHi),
-                                    unop(Iop_64to8,
-                                         binop(Iop_Sub64,
-                                               extendU(Ity_I8, mkexpr(id[i])),
-                                               mkU64(0x10))))),
-                           mkU8(0x0)));
-   }
-
-   putVReg(vd,
-            binop(Iop_64HLtoV128,
-                  binop(Iop_32HLto64,
-                        binop(Iop_16HLto32,
-                              binop(Iop_8HLto16, mkexpr(res[15]), mkexpr(res[14])),
-                              binop(Iop_8HLto16, mkexpr(res[13]), mkexpr(res[12]))),
-                        binop(Iop_16HLto32,
-                              binop(Iop_8HLto16, mkexpr(res[11]), mkexpr(res[10])),
-                              binop(Iop_8HLto16, mkexpr(res[9]), mkexpr(res[8])))),
-                  binop(Iop_32HLto64,
-                        binop(Iop_16HLto32,
-                              binop(Iop_8HLto16, mkexpr(res[7]), mkexpr(res[6])),
-                              binop(Iop_8HLto16, mkexpr(res[5]), mkexpr(res[4]))),
-                        binop(Iop_16HLto32,
-                              binop(Iop_8HLto16, mkexpr(res[3]), mkexpr(res[2])),
-                              binop(Iop_8HLto16, mkexpr(res[1]), mkexpr(res[0]))))));
+   putVReg(vd, mkexpr(macro_v128shuf_b(sHi, sLo, sId)));
 
    return True;
 }
