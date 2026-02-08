@@ -7769,6 +7769,135 @@ static Bool gen_vclo_vclz ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvclo_xvclz ( DisResult* dres, UInt insn,
+                              const VexArchInfo* archinfo,
+                              const VexAbiInfo* abiinfo )
+{
+   UInt xd      = SLICE(insn, 4, 0);
+   UInt xj      = SLICE(insn, 9, 5);
+   UInt insSz   = SLICE(insn, 11, 10);
+   UInt insType = SLICE(insn, 13, 12);
+
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   IRTemp src   = newTemp(Ity_V256);
+   IRTemp srcHi = IRTemp_INVALID;
+   IRTemp srcLo = IRTemp_INVALID;
+   assign(src, getXReg(xj));
+   breakupV256toV128s(src, &srcHi, &srcLo);
+
+   IROp op;
+   switch (insType) {
+      case 0b00: {
+         switch (insSz) {
+            case 0b00: op = Iop_Cls8x16; break;
+            case 0b01: op = Iop_Cls16x8; break;
+            case 0b10: op = Iop_Cls32x4; break;
+            case 0b11: op = Iop_Cls64x2; break;
+            default:   vassert(0); break;
+         }
+         break;
+      }
+      case 0b01: {
+         switch (insSz) {
+            case 0b00: op = Iop_Clz8x16; break;
+            case 0b01: op = Iop_Clz16x8; break;
+            case 0b10: op = Iop_Clz32x4; break;
+            case 0b11: op = Iop_Clz64x2; break;
+            default:   vassert(0); break;
+         }
+         break;
+      }
+      default: vassert(0); break;
+   }
+
+   assign(resHi, unop(op, mkexpr(srcHi)));
+   assign(resLo, unop(op, mkexpr(srcLo)));
+
+   static const char* nm[2] = {"xvclo", "xvclz"};
+
+   DIP("%s.%s %s, %s\n", nm[insType], mkInsSize(insSz), nameXReg(xd),
+       nameXReg(xj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
+static IRTemp macro_v128pcnt ( IRTemp src, UInt insSz )
+{
+   IRTemp res   = newTemp(Ity_V128);
+   IRTemp cnt8  = newTemp(Ity_V128);
+   IRTemp add16 = newTemp(Ity_V128);
+   IRTemp add32 = newTemp(Ity_V128);
+
+   switch (insSz) {
+      case 0b00: {
+         assign(res, unop(Iop_Cnt8x16, mkexpr(src)));
+         break;
+      }
+      case 0b01: {
+         assign(cnt8, unop(Iop_Cnt8x16, mkexpr(src)));
+         assign(res, binop(Iop_Add16x8,
+                           unop(Iop_WidenHIto16Ux8,
+                                binop(Iop_PackEvenLanes8x16, mkexpr(cnt8),
+                                      mkV128(0x0000))),
+                           unop(Iop_WidenHIto16Ux8,
+                                binop(Iop_PackOddLanes8x16, mkexpr(cnt8),
+                                      mkV128(0x0000)))));
+         break;
+      }
+      case 0b10: {
+         assign(cnt8, unop(Iop_Cnt8x16, mkexpr(src)));
+         assign(add16, binop(Iop_Add16x8,
+                             unop(Iop_WidenHIto16Ux8,
+                                  binop(Iop_PackEvenLanes8x16, mkexpr(cnt8),
+                                        mkV128(0x0000))),
+                             unop(Iop_WidenHIto16Ux8,
+                                  binop(Iop_PackOddLanes8x16, mkexpr(cnt8),
+                                        mkV128(0x0000)))));
+         assign(res, binop(Iop_Add32x4,
+                           unop(Iop_WidenHIto32Ux4,
+                                binop(Iop_PackEvenLanes16x8, mkexpr(add16),
+                                      mkV128(0x0000))),
+                           unop(Iop_WidenHIto32Ux4,
+                                binop(Iop_PackOddLanes16x8, mkexpr(add16),
+                                      mkV128(0x0000)))));
+         break;
+      }
+      case 0b11: {
+         assign(cnt8, unop(Iop_Cnt8x16, mkexpr(src)));
+         assign(add16, binop(Iop_Add16x8,
+                             unop(Iop_WidenHIto16Ux8,
+                                  binop(Iop_PackEvenLanes8x16, mkexpr(cnt8),
+                                        mkV128(0x0000))),
+                             unop(Iop_WidenHIto16Ux8,
+                                  binop(Iop_PackOddLanes8x16, mkexpr(cnt8),
+                                        mkV128(0x0000)))));
+         assign(add32, binop(Iop_Add32x4,
+                             unop(Iop_WidenHIto32Ux4,
+                                  binop(Iop_PackEvenLanes16x8, mkexpr(add16),
+                                        mkV128(0x0000))),
+                             unop(Iop_WidenHIto32Ux4,
+                                  binop(Iop_PackOddLanes16x8, mkexpr(add16),
+                                        mkV128(0x0000)))));
+         assign(res, binop(Iop_Add64x2,
+                           unop(Iop_WidenHIto64Ux2,
+                                binop(Iop_PackEvenLanes32x4, mkexpr(add32),
+                                      mkV128(0x0000))),
+                           unop(Iop_WidenHIto64Ux2,
+                                binop(Iop_PackOddLanes32x4, mkexpr(add32),
+                                      mkV128(0x0000)))));
+         break;
+      }
+      default: vassert(0); break;
+   }
+
+   return res;
+}
+
 static Bool gen_vpcnt ( DisResult* dres, UInt insn,
                         const VexArchInfo* archinfo,
                         const VexAbiInfo* abiinfo )
@@ -7777,80 +7906,42 @@ static Bool gen_vpcnt ( DisResult* dres, UInt insn,
    UInt vj    = SLICE(insn, 9, 5);
    UInt insSz = SLICE(insn, 11, 10);
 
-   IRTemp res   = newTemp(Ity_V128);
-   IRTemp cnt8  = newTemp(Ity_V128);
-   IRTemp add16 = newTemp(Ity_V128);
-   IRTemp add32 = newTemp(Ity_V128);
+   IRTemp src = newTemp(Ity_V128);
+   assign(src, getVReg(vj));
 
-   switch (insSz) {
-      case 0b00: {
-         assign(res, unop(Iop_Cnt8x16, getVReg(vj)));
-         break;
-      }
-      case 0b01: {
-         assign(cnt8, unop(Iop_Cnt8x16, getVReg(vj)));
-         assign(res, binop(Iop_Add16x8,
-                            unop(Iop_WidenHIto16Ux8,
-                                 binop(Iop_PackEvenLanes8x16,
-                                       mkexpr(cnt8), mkV128(0x0000))),
-                            unop(Iop_WidenHIto16Ux8,
-                                 binop(Iop_PackOddLanes8x16,
-                                       mkexpr(cnt8), mkV128(0x0000)))));
-         break;
-      }
-      case 0b10: {
-         assign(cnt8, unop(Iop_Cnt8x16, getVReg(vj)));
-         assign(add16, binop(Iop_Add16x8,
-                             unop(Iop_WidenHIto16Ux8,
-                                  binop(Iop_PackEvenLanes8x16,
-                                        mkexpr(cnt8), mkV128(0x0000))),
-                             unop(Iop_WidenHIto16Ux8,
-                                  binop(Iop_PackOddLanes8x16,
-                                        mkexpr(cnt8), mkV128(0x0000)))));
-         assign(res, binop(Iop_Add32x4,
-                            unop(Iop_WidenHIto32Ux4,
-                                 binop(Iop_PackEvenLanes16x8,
-                                       mkexpr(add16), mkV128(0x0000))),
-                            unop(Iop_WidenHIto32Ux4,
-                                 binop(Iop_PackOddLanes16x8,
-                                       mkexpr(add16), mkV128(0x0000)))));
-         break;
-      }
-      case 0b11: {
-         assign(cnt8, unop(Iop_Cnt8x16, getVReg(vj)));
-         assign(add16, binop(Iop_Add16x8,
-                             unop(Iop_WidenHIto16Ux8,
-                                  binop(Iop_PackEvenLanes8x16,
-                                        mkexpr(cnt8), mkV128(0x0000))),
-                             unop(Iop_WidenHIto16Ux8,
-                                  binop(Iop_PackOddLanes8x16,
-                                        mkexpr(cnt8), mkV128(0x0000)))));
-         assign(add32, binop(Iop_Add32x4,
-                             unop(Iop_WidenHIto32Ux4,
-                                  binop(Iop_PackEvenLanes16x8,
-                                        mkexpr(add16), mkV128(0x0000))),
-                             unop(Iop_WidenHIto32Ux4,
-                                  binop(Iop_PackOddLanes16x8,
-                                        mkexpr(add16), mkV128(0x0000)))));
-         assign(res, binop(Iop_Add64x2,
-                            unop(Iop_WidenHIto64Ux2,
-                                 binop(Iop_PackEvenLanes32x4,
-                                       mkexpr(add32), mkV128(0x0000))),
-                            unop(Iop_WidenHIto64Ux2,
-                                 binop(Iop_PackOddLanes32x4,
-                                       mkexpr(add32), mkV128(0x0000)))));
-         break;
-      }
-      default:
-         vassert(0);
-         break;
-   }
+   IRTemp res = macro_v128pcnt(src, insSz);
 
    DIP("vpcnt.%s %s, %s\n", mkInsSize(insSz), nameVReg(vd), nameVReg(vj));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
    putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvpcnt ( DisResult* dres, UInt insn,
+                         const VexArchInfo* archinfo,
+                         const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt insSz = SLICE(insn, 11, 10);
+
+   IRTemp src   = newTemp(Ity_V256);
+   IRTemp srcHi = IRTemp_INVALID;
+   IRTemp srcLo = IRTemp_INVALID;
+   assign(src, getXReg(xj));
+   breakupV256toV128s(src, &srcHi, &srcLo);
+
+   IRTemp resHi = macro_v128pcnt(srcHi, insSz);
+   IRTemp resLo = macro_v128pcnt(srcLo, insSz);
+
+   DIP("xvpcnt.%s %s, %s\n", mkInsSize(insSz), nameXReg(xd), nameXReg(xj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
 
    return True;
 }
@@ -13260,6 +13351,13 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1010_01110 ( DisResult* dres, UInt 
    Bool ok;
 
    switch (SLICE(insn, 16, 12)) {
+      case 0b00000:
+      case 0b00001:
+         ok = gen_xvclo_xvclz(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b00010:
+         ok = gen_xvpcnt(dres, insn, archinfo, abiinfo);
+         break;
       case 0b00100:
       case 0b00101:
       case 0b00110:
