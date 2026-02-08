@@ -11439,6 +11439,8 @@ static Bool gen_xvpermi ( DisResult* dres, UInt insn,
    switch (insSz) {
       case 0b01: {
          IRTemp s[16];
+         s[0] = s[1] = s[2] = s[3] = s[4] = s[5] = s[6] = s[7] = s[8] = s[9] =
+            s[10] = s[11] = s[12] = s[13] = s[14] = s[15] = IRTemp_INVALID;
          breakupV256to32s(sJ, &s[7], &s[6], &s[5], &s[4], &s[3], &s[2], &s[1],
                           &s[0]);
          breakupV256to32s(sD, &s[15], &s[14], &s[13], &s[12], &s[11], &s[10],
@@ -11449,12 +11451,14 @@ static Bool gen_xvpermi ( DisResult* dres, UInt insn,
       }
       case 0b10: {
          IRTemp s[4];
+         s[0] = s[1] = s[2] = s[3] = IRTemp_INVALID;
          breakupV256to64s(sJ, &s[3], &s[2], &s[1], &s[0]);
          assign(res, mkV256from64s(s[id0], s[id1], s[id2], s[id3]));
          break;
       }
       case 0b11: {
          IRTemp s[4];
+         s[0] = s[1] = s[2] = s[3] = IRTemp_INVALID;
          breakupV256toV128s(sJ, &s[1], &s[0]);
          breakupV256toV128s(sD, &s[3], &s[2]);
          assign(res, mkV256from128s(s[id2], s[id0]));
