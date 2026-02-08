@@ -8290,9 +8290,9 @@ static Bool gen_xvmsk ( DisResult* dres, UInt insn,
    return True;
 }
 
-static Bool gen_vldi ( DisResult* dres, UInt insn,
-                       const VexArchInfo* archinfo,
-                       const VexAbiInfo* abiinfo )
+static Bool gen_vldi_xvldi ( DisResult* dres, UInt insn,
+                             const VexArchInfo* archinfo,
+                             const VexAbiInfo* abiinfo )
 {
    UInt vd  = SLICE(insn, 4, 0);
    Int i13  = SLICE(insn, 17, 5);
@@ -13178,8 +13178,8 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1111 ( DisResult* dres, UInt insn,
       case 0b0111:
          ok = gen_vlogical_u8(dres, insn, archinfo, abiinfo);
          break;
-       case 0b1000:
-         ok = gen_vldi(dres, insn, archinfo, abiinfo);
+      case 0b1000:
+         ok = gen_vldi_xvldi(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
@@ -13493,7 +13493,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1111 ( DisResult* dres, UInt insn,
          ok = gen_xvpermi(dres, insn, archinfo, abiinfo);
          break;
       case 0b1000:
-         ok = gen_vldi(dres, insn, archinfo, abiinfo);
+         ok = gen_vldi_xvldi(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
