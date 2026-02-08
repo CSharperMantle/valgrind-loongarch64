@@ -1226,7 +1226,7 @@ static HReg iselIntExpr_R_wrk ( ISelEnv* env, IRExpr* e )
                addInstr(env, LOONGARCH64Instr_Binary(LAbin_SRLI_D, ri, dst, dst));
                return dst;
             }
-            case Iop_1Sto32: case Iop_1Sto64: {
+            case Iop_1Sto8: case Iop_1Sto16: case Iop_1Sto32: case Iop_1Sto64: {
                HReg           dst = newVRegI(env);
                HReg           src = iselCondCode_R(env, e->Iex.Unop.arg);
                LOONGARCH64RI* ri = LOONGARCH64RI_I(63, 6, False);
@@ -1234,7 +1234,7 @@ static HReg iselIntExpr_R_wrk ( ISelEnv* env, IRExpr* e )
                addInstr(env, LOONGARCH64Instr_Binary(LAbin_SRAI_D, ri, dst, dst));
                return dst;
             }
-            case Iop_1Uto8: case Iop_1Uto64: {
+            case Iop_1Uto8: case Iop_1Uto32: case Iop_1Uto64: {
                HReg          dst = newVRegI(env);
                HReg          src = iselCondCode_R(env, e->Iex.Unop.arg);
                LOONGARCH64RI* ri = LOONGARCH64RI_I(0x1, 12, False);
