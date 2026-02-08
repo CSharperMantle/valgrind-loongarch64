@@ -11473,6 +11473,109 @@ static Bool gen_xvpermi ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_v128extrins ( IRTemp j, IRTemp d, UInt ui8, UInt insSz )
+{
+   IRTemp res = newTemp(Ity_V128);
+
+   switch (insSz) {
+      case 0b11: { // b
+         UInt idS = SLICE(ui8, 3, 0);
+         UInt idD = SLICE(ui8, 7, 4);
+         assign(res, triop(Iop_SetElem8x16, mkexpr(d), mkU8(idD),
+                           binop(Iop_GetElem8x16, mkexpr(j), mkU8(idS))));
+         break;
+      }
+      case 0b10: { // h
+         UInt idS = SLICE(ui8, 2, 0);
+         UInt idD = SLICE(ui8, 6, 4);
+         assign(res, triop(Iop_SetElem16x8, mkexpr(d), mkU8(idD),
+                           binop(Iop_GetElem16x8, mkexpr(j), mkU8(idS))));
+         break;
+      }
+      case 0b01: { // w
+         UInt idS = SLICE(ui8, 1, 0);
+         UInt idD = SLICE(ui8, 5, 4);
+         assign(res, triop(Iop_SetElem32x4, mkexpr(d), mkU8(idD),
+                           binop(Iop_GetElem32x4, mkexpr(j), mkU8(idS))));
+         break;
+      }
+      case 0b00: { // d
+         UInt idS = SLICE(ui8, 0, 0);
+         UInt idD = SLICE(ui8, 4, 4);
+         if (idD == 0) {
+            assign(res, binop(Iop_64HLtoV128, unop(Iop_V128HIto64, mkexpr(d)),
+                              binop(Iop_GetElem64x2, mkexpr(j), mkU8(idS))));
+         } else {
+            assign(res, binop(Iop_64HLtoV128,
+                              binop(Iop_GetElem64x2, mkexpr(j), mkU8(idS)),
+                              unop(Iop_V128to64, mkexpr(d))));
+         }
+         break;
+      }
+      default: vassert(0); break;
+   }
+
+   return res;
+}
+
+static Bool gen_vextrins ( DisResult* dres, UInt insn,
+                           const VexArchInfo* archinfo,
+                           const VexAbiInfo*  abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt ui8   = SLICE(insn, 17, 10);
+   UInt insSz = SLICE(insn, 19, 18);
+
+   IRTemp j = newTemp(Ity_V128);
+   IRTemp d = newTemp(Ity_V128);
+   assign(j, getVReg(vj));
+   assign(d, getVReg(vd));
+
+   IRTemp res = macro_v128extrins(j, d, ui8, insSz);
+   DIP("vextrins.%s %s, %s, %u\n", mkInsSize(3 - insSz), nameVReg(vd),
+       nameVReg(vj), ui8);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvextrins ( DisResult* dres, UInt insn,
+                            const VexArchInfo* archinfo,
+                            const VexAbiInfo*  abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt ui8   = SLICE(insn, 17, 10);
+   UInt insSz = SLICE(insn, 19, 18);
+
+   IRTemp j   = newTemp(Ity_V256);
+   IRTemp d   = newTemp(Ity_V256);
+   IRTemp jHi = IRTemp_INVALID;
+   IRTemp jLo = IRTemp_INVALID;
+   IRTemp dHi = IRTemp_INVALID;
+   IRTemp dLo = IRTemp_INVALID;
+   assign(j, getXReg(xj));
+   assign(d, getXReg(xd));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(d, &dHi, &dLo);
+
+   IRTemp rHi = macro_v128extrins(jHi, dHi, ui8, insSz);
+   IRTemp rLo = macro_v128extrins(jLo, dLo, ui8, insSz);
+
+   DIP("xvextrins.%s %s, %s, %u\n", mkInsSize(3 - insSz), nameXReg(xd),
+       nameXReg(xj), ui8);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(rHi, rLo));
+
+   return True;
+}
+
 
 /*------------------------------------------------------------*/
 /*--- Helpers for vector load/store insns                  ---*/
@@ -13752,6 +13855,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1110 ( DisResult* dres, UInt insn,
    Bool ok;
 
    switch (SLICE(insn, 21, 18)) {
+      case 0b0000:
+      case 0b0001:
+      case 0b0010:
+      case 0b0011:
+         ok = gen_vextrins(dres, insn, archinfo, abiinfo);
+         break;
       case 0b0100:
       case 0b0101:
       case 0b0110:
@@ -14124,6 +14233,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1110 ( DisResult* dres, UInt insn,
    Bool ok;
 
    switch (SLICE(insn, 21, 18)) {
+      case 0b0000:
+      case 0b0001:
+      case 0b0010:
+      case 0b0011:
+         ok = gen_xvextrins(dres, insn, archinfo, abiinfo);
+         break;
       case 0b0100:
       case 0b0101:
       case 0b0110:
