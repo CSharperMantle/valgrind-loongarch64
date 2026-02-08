@@ -11381,6 +11381,41 @@ static Bool gen_xvshuf4i ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_vpermi ( DisResult* dres, UInt insn,
+                         const VexArchInfo* archinfo,
+                         const VexAbiInfo*  abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt ui8   = SLICE(insn, 17, 10);
+   UInt insSz = SLICE(insn, 19, 18);
+
+   UInt id0 = SLICE(ui8, 1, 0);
+   UInt id1 = SLICE(ui8, 3, 2);
+   UInt id2 = SLICE(ui8, 5, 4);
+   UInt id3 = SLICE(ui8, 7, 6);
+
+   if (insSz != 0b01 /* w */) {
+      return False;
+   }
+
+   IRTemp s[8];
+   for (UInt i = 0; i < 4; i++) {
+      s[i]     = newTemp(Ity_I32);
+      s[i + 4] = newTemp(Ity_I32);
+      assign(s[i], binop(Iop_GetElem32x4, getVReg(vj), mkU8(i)));
+      assign(s[i + 4], binop(Iop_GetElem32x4, getVReg(vd), mkU8(i)));
+   }
+
+   DIP("vpermi.w %s, %s, %u\n", nameVReg(vd), nameVReg(vj), ui8);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkV128from32s(s[id3 + 4], s[id2 + 4], s[id1], s[id0]));
+
+   return True;
+}
+
 static Bool gen_xvpermi ( DisResult* dres, UInt insn,
                           const VexArchInfo* archinfo,
                           const VexAbiInfo*  abiinfo )
@@ -13753,6 +13788,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1111 ( DisResult* dres, UInt insn,
          break;
       case 0b1000:
          ok = gen_vldi_xvldi(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b1001:
+         ok = gen_vpermi(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
