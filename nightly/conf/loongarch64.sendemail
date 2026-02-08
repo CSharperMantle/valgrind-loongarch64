@@ -4,4 +4,7 @@ subject=$1
 body=$2
 file=$3
 
-(cat "$body" "$file") | /usr/bin/mail -s "$subject" valgrind-testresults@lists.sourceforge.net -r "Feiyang Chen <chris.chenfeiyang@gmail.com>"
+SENDER='noreply@nonexistent.invalid'
+RECEIVER='Rong Bao <rong.bao@csmantle.top>'
+
+(cat "$body" "$file") | /usr/bin/mail -s "$subject" -r "$SENDER" "$RECEIVER"
