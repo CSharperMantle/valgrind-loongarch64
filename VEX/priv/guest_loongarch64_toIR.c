@@ -8280,6 +8280,238 @@ static Bool gen_xvmul_xvmuh ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_v128divmod_b ( IRTemp argL, IRTemp argR, UInt isMod, UInt isU )
+{
+   IRTemp tI8[16];
+   IRTemp res = newTemp(Ity_V128);
+
+   IROp widenOp = isU ? Iop_8Uto32 : Iop_8Sto32;
+   IROp mathOp  = isMod ? (isU ? Iop_DivModU32to32 : Iop_DivModS32to32)
+                        : (isU ? Iop_DivU32 : Iop_DivS32);
+
+   for (UInt i = 0; i < 16; i++) {
+      tI8[i] = newTemp(Ity_I8);
+      if (isMod) {
+         IRTemp tmp = newTemp(Ity_I64);
+         assign(tmp, binop(mathOp,
+                           unop(widenOp,
+                                binop(Iop_GetElem8x16, mkexpr(argL), mkU8(i))),
+                           unop(widenOp, binop(Iop_GetElem8x16, mkexpr(argR),
+                                               mkU8(i)))));
+         assign(tI8[i], unop(Iop_32to8, unop(Iop_64HIto32, mkexpr(tmp))));
+      } else {
+         IRTemp tmp = newTemp(Ity_I32);
+         assign(tmp, binop(mathOp,
+                           unop(widenOp,
+                                binop(Iop_GetElem8x16, mkexpr(argL), mkU8(i))),
+                           unop(widenOp, binop(Iop_GetElem8x16, mkexpr(argR),
+                                               mkU8(i)))));
+         assign(tI8[i], unop(Iop_32to8, mkexpr(tmp)));
+      }
+   }
+
+   assign(res, mkV128from8s(tI8[15], tI8[14], tI8[13], tI8[12], tI8[11],
+                            tI8[10], tI8[9], tI8[8], tI8[7], tI8[6], tI8[5],
+                            tI8[4], tI8[3], tI8[2], tI8[1], tI8[0]));
+
+   return res;
+}
+
+static IRTemp macro_v128divmod_h ( IRTemp argL, IRTemp argR, UInt isMod, UInt isU )
+{
+   IRTemp tI16[8];
+   IRTemp res = newTemp(Ity_V128);
+
+   IROp widenOp = isU ? Iop_16Uto32 : Iop_16Sto32;
+   IROp mathOp  = isMod ? (isU ? Iop_DivModU32to32 : Iop_DivModS32to32)
+                        : (isU ? Iop_DivU32 : Iop_DivS32);
+
+   for (UInt i = 0; i < 8; i++) {
+      tI16[i] = newTemp(Ity_I16);
+      if (isMod) {
+         IRTemp math = newTemp(Ity_I64);
+         assign(math, binop(mathOp,
+                            unop(widenOp,
+                                 binop(Iop_GetElem16x8, mkexpr(argL), mkU8(i))),
+                            unop(widenOp, binop(Iop_GetElem16x8, mkexpr(argR),
+                                                mkU8(i)))));
+         assign(tI16[i], unop(Iop_32to16, unop(Iop_64HIto32, mkexpr(math))));
+      } else {
+         IRTemp math = newTemp(Ity_I32);
+         assign(math, binop(mathOp,
+                            unop(widenOp,
+                                 binop(Iop_GetElem16x8, mkexpr(argL), mkU8(i))),
+                            unop(widenOp, binop(Iop_GetElem16x8, mkexpr(argR),
+                                                mkU8(i)))));
+         assign(tI16[i], unop(Iop_32to16, mkexpr(math)));
+      }
+   }
+
+   assign(res, mkV128from16s(tI16[7], tI16[6], tI16[5], tI16[4], tI16[3],
+                             tI16[2], tI16[1], tI16[0]));
+   return res;
+}
+
+static IRTemp macro_v128divmod_w ( IRTemp argL, IRTemp argR, UInt isMod, UInt isU )
+{
+   IRTemp tI32[4];
+   IRTemp res = newTemp(Ity_V128);
+
+   IROp mathOp = isMod ? (isU ? Iop_DivModU32to32 : Iop_DivModS32to32)
+                       : (isU ? Iop_DivU32 : Iop_DivS32);
+
+   for (UInt i = 0; i < 4; i++) {
+      tI32[i] = newTemp(Ity_I32);
+      if (isMod) {
+         IRTemp math = newTemp(Ity_I64);
+         assign(math,
+                binop(mathOp, binop(Iop_GetElem32x4, mkexpr(argL), mkU8(i)),
+                      binop(Iop_GetElem32x4, mkexpr(argR), mkU8(i))));
+         assign(tI32[i], unop(Iop_64HIto32, mkexpr(math)));
+      } else {
+         IRTemp math = newTemp(Ity_I32);
+         assign(math,
+                binop(mathOp, binop(Iop_GetElem32x4, mkexpr(argL), mkU8(i)),
+                      binop(Iop_GetElem32x4, mkexpr(argR), mkU8(i))));
+         assign(tI32[i], mkexpr(math));
+      }
+   }
+
+   assign(res, mkV128from32s(tI32[3], tI32[2], tI32[1], tI32[0]));
+
+   return res;
+}
+
+static IRTemp macro_v128divmod_d ( IRTemp argL, IRTemp argR, UInt isMod, UInt isU )
+{
+   IRTemp lHi = newTemp(Ity_I64);
+   IRTemp rHi = newTemp(Ity_I64);
+   IRTemp lLo = newTemp(Ity_I64);
+   IRTemp rLo = newTemp(Ity_I64);
+   IRTemp res = newTemp(Ity_V128);
+   assign(lHi, unop(Iop_V128HIto64, mkexpr(argL)));
+   assign(rHi, unop(Iop_V128HIto64, mkexpr(argR)));
+   assign(lLo, unop(Iop_V128to64, mkexpr(argL)));
+   assign(rLo, unop(Iop_V128to64, mkexpr(argR)));
+
+   IROp mathOp = isMod ? (isU ? Iop_DivModU64to64 : Iop_DivModS64to64)
+                       : (isU ? Iop_DivU64 : Iop_DivS64);
+
+   if (isMod) {
+      assign(
+         res,
+         binop(Iop_64HLtoV128,
+               unop(Iop_128HIto64, binop(mathOp, mkexpr(lHi), mkexpr(rHi))),
+               unop(Iop_128HIto64, binop(mathOp, mkexpr(lLo), mkexpr(rLo)))));
+   } else {
+      assign(res, binop(Iop_64HLtoV128, binop(mathOp, mkexpr(lHi), mkexpr(rHi)),
+                        binop(mathOp, mkexpr(lLo), mkexpr(rLo))));
+   }
+
+   return res;
+}
+
+static Bool gen_vdiv_vmod ( DisResult* dres, UInt insn,
+                            const VexArchInfo* archinfo,
+                            const VexAbiInfo* abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt vk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isMod = SLICE(insn, 17, 17);
+   UInt isU   = SLICE(insn, 18, 18);
+
+   IRTemp j   = newTemp(Ity_V128);
+   IRTemp k   = newTemp(Ity_V128);
+   IRTemp res = IRTemp_INVALID;
+   assign(j, getVReg(vj));
+   assign(k, getVReg(vk));
+
+   switch (insSz) {
+      case 0b00: res = macro_v128divmod_b(j, k, isMod, isU); break;
+      case 0b01: res = macro_v128divmod_h(j, k, isMod, isU); break;
+      case 0b10: res = macro_v128divmod_w(j, k, isMod, isU); break;
+      case 0b11: res = macro_v128divmod_d(j, k, isMod, isU); break;
+      default:   vassert(0); break;
+   }
+
+   UInt szId = isU ? (insSz + 4) : insSz;
+
+   static const HChar* nm[2] = {"vdiv", "vmod"};
+
+   DIP("%s.%s %s, %s\n", nm[isMod], mkInsSize(szId), nameVReg(vd),
+       nameVReg(vj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvdiv_xvmod ( DisResult* dres, UInt insn,
+                              const VexArchInfo* archinfo,
+                              const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isMod = SLICE(insn, 17, 17);
+   UInt isU   = SLICE(insn, 18, 18);
+
+   IRTemp j     = newTemp(Ity_V256);
+   IRTemp k     = newTemp(Ity_V256);
+   IRTemp jHi   = IRTemp_INVALID;
+   IRTemp jLo   = IRTemp_INVALID;
+   IRTemp kHi   = IRTemp_INVALID;
+   IRTemp kLo   = IRTemp_INVALID;
+   IRTemp resHi = IRTemp_INVALID;
+   IRTemp resLo = IRTemp_INVALID;
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xk));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(k, &kHi, &kLo);
+
+   switch (insSz) {
+      case 0b00: {
+         resHi = macro_v128divmod_b(jHi, kHi, isMod, isU);
+         resLo = macro_v128divmod_b(jLo, kLo, isMod, isU);
+         break;
+      }
+      case 0b01: {
+         resHi = macro_v128divmod_h(jHi, kHi, isMod, isU);
+         resLo = macro_v128divmod_h(jLo, kLo, isMod, isU);
+         break;
+      }
+      case 0b10: {
+         resHi = macro_v128divmod_w(jHi, kHi, isMod, isU);
+         resLo = macro_v128divmod_w(jLo, kLo, isMod, isU);
+         break;
+      }
+      case 0b11: {
+         resHi = macro_v128divmod_d(jHi, kHi, isMod, isU);
+         resLo = macro_v128divmod_d(jLo, kLo, isMod, isU);
+         break;
+      }
+      default: vassert(0); break;
+   }
+
+   UInt szId = isU ? (insSz + 4) : insSz;
+
+   static const HChar* nm[2] = {"xvdiv", "xvmod"};
+
+   DIP("%s.%s %s, %s\n", nm[isMod], mkInsSize(szId), nameXReg(xd),
+       nameXReg(xj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_vexth ( DisResult* dres, UInt insn,
                         const VexArchInfo* archinfo,
                         const VexAbiInfo*  abiinfo )
@@ -13587,6 +13819,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0011 ( DisResult* dres, UInt insn,
    Bool ok;
 
    switch (SLICE(insn, 21, 17)) {
+      case 0b10000:
+      case 0b10001:
+      case 0b10010:
+      case 0b10011:
+         ok = gen_vdiv_vmod(dres, insn, archinfo, abiinfo);
+         break;
       case 0b10100:
       case 0b10101:
       case 0b10110:
@@ -14021,6 +14259,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0011 ( DisResult* dres, UInt insn,
    Bool ok;
 
    switch (SLICE(insn, 21, 17)) {
+      case 0b10000:
+      case 0b10001:
+      case 0b10010:
+      case 0b10011:
+         ok = gen_xvdiv_xvmod(dres, insn, archinfo, abiinfo);
+         break;
       case 0b10100:
       case 0b10101:
       case 0b10110:
