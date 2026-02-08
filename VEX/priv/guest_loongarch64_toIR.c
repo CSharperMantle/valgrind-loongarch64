@@ -508,6 +508,254 @@ static IRExpr* mkV256from32s ( IRTemp t7, IRTemp t6,
    );
 }
 
+static IROp mkV128ADD ( UInt size )
+{
+   const IROp ops[5]
+      = { Iop_Add8x16, Iop_Add16x8, Iop_Add32x4, Iop_Add64x2, Iop_Add128x1 };
+   vassert(size < 5);
+   return ops[size];
+}
+
+static IROp mkV128SUB ( UInt size )
+{
+   const IROp ops[5]
+      = { Iop_Sub8x16, Iop_Sub16x8, Iop_Sub32x4, Iop_Sub64x2, Iop_Sub128x1 };
+   vassert(size < 5);
+   return ops[size];
+}
+
+static IROp mkV128MUL ( UInt size ) {
+   const IROp ops[4] = {Iop_Mul8x16, Iop_Mul16x8, Iop_Mul32x4, Iop_INVALID};
+   vassert(size < 3);
+   return ops[size];
+}
+
+static IROp mkV128MUHS ( UInt size ) {
+   const IROp ops[4] = {Iop_MulHi8Sx16, Iop_MulHi16Sx8, Iop_MulHi32Sx4,
+                        Iop_INVALID};
+   vassert(size < 3);
+   return ops[size];
+}
+
+static IROp mkV128MUHU ( UInt size ) {
+   const IROp ops[4] = {Iop_MulHi8Ux16, Iop_MulHi16Ux8, Iop_MulHi32Ux4,
+                        Iop_INVALID};
+   vassert(size < 3);
+   return ops[size];
+}
+
+static IROp mkV256ADD ( UInt size )
+{
+   const IROp ops[5]
+      = { Iop_Add8x32, Iop_Add16x16, Iop_Add32x8, Iop_Add64x4, Iop_Add128x2 };
+   vassert(size < 5);
+   return ops[size];
+}
+
+static IROp mkV256SUB ( UInt size )
+{
+   const IROp ops[5]
+      = { Iop_Sub8x32, Iop_Sub16x16, Iop_Sub32x8, Iop_Sub64x4, Iop_Sub128x2 };
+   vassert(size < 5);
+   return ops[size];
+}
+
+static IROp mkV128MAXU ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_Max8Ux16, Iop_Max16Ux8, Iop_Max32Ux4, Iop_Max64Ux2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128MAXS ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_Max8Sx16, Iop_Max16Sx8, Iop_Max32Sx4, Iop_Max64Sx2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128MINU ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_Min8Ux16, Iop_Min16Ux8, Iop_Min32Ux4, Iop_Min64Ux2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128MINS ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_Min8Sx16, Iop_Min16Sx8, Iop_Min32Sx4, Iop_Min64Sx2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV256MAXU ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_Max8Ux32, Iop_Max16Ux16, Iop_Max32Ux8, Iop_Max64Ux4 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV256MAXS ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_Max8Sx32, Iop_Max16Sx16, Iop_Max32Sx8, Iop_Max64Sx4 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV256MINU ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_Min8Ux32, Iop_Min16Ux16, Iop_Min32Ux8, Iop_Min64Ux4 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV256MINS ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_Min8Sx32, Iop_Min16Sx16, Iop_Min32Sx8, Iop_Min64Sx4 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128CMPGTS ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_CmpGT8Sx16, Iop_CmpGT16Sx8, Iop_CmpGT32Sx4, Iop_CmpGT64Sx2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128SHLN ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_ShlN8x16, Iop_ShlN16x8, Iop_ShlN32x4, Iop_ShlN64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128SHRN ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_ShrN8x16, Iop_ShrN16x8, Iop_ShrN32x4, Iop_ShrN64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128SARN ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_SarN8x16, Iop_SarN16x8, Iop_SarN32x4, Iop_SarN64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128SHL(UInt size)
+{
+   const IROp ops[4] = {Iop_Shl8x16, Iop_Shl16x8, Iop_Shl32x4, Iop_Shl64x2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128SHR(UInt size)
+{
+   const IROp ops[4] = {Iop_Shr8x16, Iop_Shr16x8, Iop_Shr32x4, Iop_Shr64x2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128SAR(UInt size)
+{
+   const IROp ops[4] = {Iop_Sar8x16, Iop_Sar16x8, Iop_Sar32x4, Iop_Sar64x2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+/*
+ * Valgrind's Iop_PackEvenLanesNxM is actually `vpickod.*` in LoongArch.
+ * It maps to MIPS64 MSA's `pckod.*`:
+ * <https://doc.bccnsoft.com/docs/rust-1.36.0-docs-html/core/arch/mips64/fn.__msa_pckod_b.html>
+ */
+static IROp mkV128PACKOD ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_PackOddLanes8x16, Iop_PackOddLanes16x8,
+          Iop_PackOddLanes32x4, Iop_InterleaveHI64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+/*
+ * Valgrind's Iop_PackEvenLanesNxM is actually `vpickev.*` in LoongArch.
+ * It maps to MIPS64 MSA's `pckev.*`:
+ * <https://doc.bccnsoft.com/docs/rust-1.36.0-docs-html/core/arch/mips64/fn.__msa_pckev_b.html>
+ */
+static IROp mkV128PACKEV ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_PackEvenLanes8x16, Iop_PackEvenLanes16x8,
+          Iop_PackEvenLanes32x4, Iop_InterleaveLO64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128INTERLEAVELO ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_InterleaveLO8x16, Iop_InterleaveLO16x8,
+          Iop_InterleaveLO32x4, Iop_InterleaveLO64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128INTERLEAVEHI ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_InterleaveHI8x16, Iop_InterleaveHI16x8,
+          Iop_InterleaveHI32x4, Iop_InterleaveHI64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128GETELEM ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_GetElem8x16, Iop_GetElem16x8,
+          Iop_GetElem32x4, Iop_GetElem64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128CMPEQ ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_CmpEQ8x16, Iop_CmpEQ16x8, Iop_CmpEQ32x4, Iop_CmpEQ64x2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV256CMPEQ ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_CmpEQ8x32, Iop_CmpEQ16x16, Iop_CmpEQ32x8, Iop_CmpEQ64x4 };
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128CMPGTU ( UInt size )
+{
+   const IROp ops[4]
+      = { Iop_CmpGT8Ux16, Iop_CmpGT16Ux8, Iop_CmpGT32Ux4, Iop_CmpGT64Ux2 };
+   vassert(size < 4);
+   return ops[size];
+}
+
 /*------------------------------------------------------------*/
 /*--- Helpers for HWCAP simulation                         ---*/
 /*------------------------------------------------------------*/
@@ -7440,130 +7688,6 @@ static Bool gen_bgeu ( DisResult* dres, UInt insn,
 /*--- Helpers for vector integer arithmetic insns          ---*/
 /*------------------------------------------------------------*/
 
-static IROp mkV128ADD ( UInt size )
-{
-   const IROp ops[5]
-      = { Iop_Add8x16, Iop_Add16x8, Iop_Add32x4, Iop_Add64x2, Iop_Add128x1 };
-   vassert(size < 5);
-   return ops[size];
-}
-
-static IROp mkV128SUB ( UInt size )
-{
-   const IROp ops[5]
-      = { Iop_Sub8x16, Iop_Sub16x8, Iop_Sub32x4, Iop_Sub64x2, Iop_Sub128x1 };
-   vassert(size < 5);
-   return ops[size];
-}
-
-static IROp mkV128MUL ( UInt size ) {
-   const IROp ops[4] = {Iop_Mul8x16, Iop_Mul16x8, Iop_Mul32x4, Iop_INVALID};
-   vassert(size < 3);
-   return ops[size];
-}
-
-static IROp mkV128MUHS ( UInt size ) {
-   const IROp ops[4] = {Iop_MulHi8Sx16, Iop_MulHi16Sx8, Iop_MulHi32Sx4,
-                        Iop_INVALID};
-   vassert(size < 3);
-   return ops[size];
-}
-
-static IROp mkV128MUHU ( UInt size ) {
-   const IROp ops[4] = {Iop_MulHi8Ux16, Iop_MulHi16Ux8, Iop_MulHi32Ux4,
-                        Iop_INVALID};
-   vassert(size < 3);
-   return ops[size];
-}
-
-static IROp mkV256ADD ( UInt size )
-{
-   const IROp ops[5]
-      = { Iop_Add8x32, Iop_Add16x16, Iop_Add32x8, Iop_Add64x4, Iop_Add128x2 };
-   vassert(size < 5);
-   return ops[size];
-}
-
-static IROp mkV256SUB ( UInt size )
-{
-   const IROp ops[5]
-      = { Iop_Sub8x32, Iop_Sub16x16, Iop_Sub32x8, Iop_Sub64x4, Iop_Sub128x2 };
-   vassert(size < 5);
-   return ops[size];
-}
-
-static IROp mkV128MAXU ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_Max8Ux16, Iop_Max16Ux8, Iop_Max32Ux4, Iop_Max64Ux2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128MAXS ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_Max8Sx16, Iop_Max16Sx8, Iop_Max32Sx4, Iop_Max64Sx2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128MINU ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_Min8Ux16, Iop_Min16Ux8, Iop_Min32Ux4, Iop_Min64Ux2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128MINS ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_Min8Sx16, Iop_Min16Sx8, Iop_Min32Sx4, Iop_Min64Sx2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV256MAXU ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_Max8Ux32, Iop_Max16Ux16, Iop_Max32Ux8, Iop_Max64Ux4 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV256MAXS ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_Max8Sx32, Iop_Max16Sx16, Iop_Max32Sx8, Iop_Max64Sx4 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV256MINU ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_Min8Ux32, Iop_Min16Ux16, Iop_Min32Ux8, Iop_Min64Ux4 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV256MINS ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_Min8Sx32, Iop_Min16Sx16, Iop_Min32Sx8, Iop_Min64Sx4 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128CMPGTS ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_CmpGT8Sx16, Iop_CmpGT16Sx8, Iop_CmpGT32Sx4, Iop_CmpGT64Sx2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
 static Bool gen_vadd_vsub ( DisResult* dres, UInt insn,
                             const VexArchInfo* archinfo,
                             const VexAbiInfo* abiinfo )
@@ -8314,51 +8438,6 @@ static Bool gen_vldi_xvldi ( DisResult* dres, UInt insn,
 /*------------------------------------------------------------*/
 /*--- Helpers for vector bit operation insns               ---*/
 /*------------------------------------------------------------*/
-
-static IROp mkV128SHLN ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_ShlN8x16, Iop_ShlN16x8, Iop_ShlN32x4, Iop_ShlN64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128SHRN ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_ShrN8x16, Iop_ShrN16x8, Iop_ShrN32x4, Iop_ShrN64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128SARN ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_SarN8x16, Iop_SarN16x8, Iop_SarN32x4, Iop_SarN64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128SHL(UInt size)
-{
-   const IROp ops[4] = {Iop_Shl8x16, Iop_Shl16x8, Iop_Shl32x4, Iop_Shl64x2};
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128SHR(UInt size)
-{
-   const IROp ops[4] = {Iop_Shr8x16, Iop_Shr16x8, Iop_Shr32x4, Iop_Shr64x2};
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128SAR(UInt size)
-{
-   const IROp ops[4] = {Iop_Sar8x16, Iop_Sar16x8, Iop_Sar32x4, Iop_Sar64x2};
-   vassert(size < 4);
-   return ops[size];
-}
 
 static Bool gen_logical_v ( DisResult* dres, UInt insn,
                             const VexArchInfo* archinfo,
@@ -9496,30 +9575,6 @@ static Bool gen_vfrintrne_d ( DisResult* dres, UInt insn,
 /*--- Helpers for vector comparison and selection insns    ---*/
 /*------------------------------------------------------------*/
 
-static IROp mkV128CMPEQ ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_CmpEQ8x16, Iop_CmpEQ16x8, Iop_CmpEQ32x4, Iop_CmpEQ64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV256CMPEQ ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_CmpEQ8x32, Iop_CmpEQ16x16, Iop_CmpEQ32x8, Iop_CmpEQ64x4 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128CMPGTU ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_CmpGT8Ux16, Iop_CmpGT16Ux8, Iop_CmpGT32Ux4, Iop_CmpGT64Ux2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
 static Bool gen_vcmp_integer ( DisResult* dres, UInt insn,
                                const VexArchInfo* archinfo,
                                const VexAbiInfo* abiinfo )
@@ -9973,61 +10028,6 @@ static Bool gen_xvset ( DisResult* dres, UInt insn,
 /*------------------------------------------------------------*/
 /*--- Helpers for vector moving and shuffling insns        ---*/
 /*------------------------------------------------------------*/
-
-/*
- * Valgrind's Iop_PackEvenLanesNxM is actually `vpickod.*` in LoongArch.
- * It maps to MIPS64 MSA's `pckod.*`:
- * <https://doc.bccnsoft.com/docs/rust-1.36.0-docs-html/core/arch/mips64/fn.__msa_pckod_b.html>
- */
-static IROp mkV128PACKOD ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_PackOddLanes8x16, Iop_PackOddLanes16x8,
-          Iop_PackOddLanes32x4, Iop_InterleaveHI64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-/*
- * Valgrind's Iop_PackEvenLanesNxM is actually `vpickev.*` in LoongArch.
- * It maps to MIPS64 MSA's `pckev.*`:
- * <https://doc.bccnsoft.com/docs/rust-1.36.0-docs-html/core/arch/mips64/fn.__msa_pckev_b.html>
- */
-static IROp mkV128PACKEV ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_PackEvenLanes8x16, Iop_PackEvenLanes16x8,
-          Iop_PackEvenLanes32x4, Iop_InterleaveLO64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128INTERLEAVELO ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_InterleaveLO8x16, Iop_InterleaveLO16x8,
-          Iop_InterleaveLO32x4, Iop_InterleaveLO64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128INTERLEAVEHI ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_InterleaveHI8x16, Iop_InterleaveHI16x8,
-          Iop_InterleaveHI32x4, Iop_InterleaveHI64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
-
-static IROp mkV128GETELEM ( UInt size )
-{
-   const IROp ops[4]
-      = { Iop_GetElem8x16, Iop_GetElem16x8,
-          Iop_GetElem32x4, Iop_GetElem64x2 };
-   vassert(size < 4);
-   return ops[size];
-}
 
 static Bool gen_vinsgr2vr ( DisResult* dres, UInt insn,
                             const VexArchInfo* archinfo,
