@@ -453,6 +453,24 @@ static IRExpr* mkV128from8s ( IRTemp t15, IRTemp t14, IRTemp t13, IRTemp t12,
                   binop(Iop_8HLto16, mkexpr(t1), mkexpr(t0)))));
 }
 
+/* Construct a V128-bit value from 8 16-bit ints. */
+static IRExpr* mkV128from16s ( IRTemp t7, IRTemp t6, IRTemp t5, IRTemp t4,
+                               IRTemp t3, IRTemp t2, IRTemp t1, IRTemp t0 )
+{
+   return binop(Iop_64HLtoV128,
+                binop(Iop_32HLto64, binop(Iop_16HLto32, mkexpr(t7), mkexpr(t6)),
+                      binop(Iop_16HLto32, mkexpr(t5), mkexpr(t4))),
+                binop(Iop_32HLto64, binop(Iop_16HLto32, mkexpr(t3), mkexpr(t2)),
+                      binop(Iop_16HLto32, mkexpr(t1), mkexpr(t0))));
+}
+
+/* Construct a V128-bit value from 4 32-bit ints. */
+static IRExpr* mkV128from32s ( IRTemp t3, IRTemp t2, IRTemp t1, IRTemp t0 )
+{
+   return binop(Iop_64HLtoV128, binop(Iop_32HLto64, mkexpr(t3), mkexpr(t2)),
+                binop(Iop_32HLto64, mkexpr(t1), mkexpr(t0)));
+}
+
 /* Construct a V128-bit value from 2 64-bit ints. */
 static IRExpr* mkV128from64s ( IRTemp t1, IRTemp t0 )
 {
@@ -10417,6 +10435,197 @@ static Bool gen_xvshuf_b ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_v128shuf_h ( IRTemp sHi, IRTemp sLo, IRTemp sId )
+{
+   IRTemp id[8], res[8];
+   IRTemp out = newTemp(Ity_V128);
+
+   for (UInt i = 0; i < 8; i++) {
+      id[i]  = newTemp(Ity_I16);
+      res[i] = newTemp(Ity_I16);
+
+      assign(id[i], binop(Iop_GetElem16x8, mkexpr(sId), mkU8(i)));
+      assign(res[i],
+             IRExpr_ITE(
+                binop(Iop_CmpEQ64,
+                      extendU(Ity_I16,
+                              binop(Iop_And16, mkexpr(id[i]), mkU16(0xC0))),
+                      mkU64(0x0)),
+                IRExpr_ITE(
+                   binop(Iop_CmpLT64U,
+                         extendU(Ity_I16,
+                                 binop(Iop_And16, mkexpr(id[i]), mkU16(0xf))),
+                         mkU64(0x8)),
+                   binop(Iop_GetElem16x8, mkexpr(sLo),
+                         unop(Iop_16to8, mkexpr(id[i]))),
+                   binop(Iop_GetElem16x8, mkexpr(sHi),
+                         unop(Iop_64to8,
+                              binop(Iop_Sub64, extendU(Ity_I16, mkexpr(id[i])),
+                                    mkU64(0x8))))),
+                mkU16(0x0)));
+   }
+
+   assign(out, mkV128from16s(res[7], res[6], res[5], res[4], res[3], res[2],
+                             res[1], res[0]));
+   return out;
+}
+
+static IRTemp macro_v128shuf_w ( IRTemp sHi, IRTemp sLo, IRTemp sId )
+{
+   IRTemp id[4], res[4];
+   IRTemp out = newTemp(Ity_V128);
+
+   for (UInt i = 0; i < 4; i++) {
+      id[i]  = newTemp(Ity_I32);
+      res[i] = newTemp(Ity_I32);
+
+      assign(id[i], binop(Iop_GetElem32x4, mkexpr(sId), mkU8(i)));
+      assign(res[i],
+             IRExpr_ITE(
+                binop(Iop_CmpEQ64,
+                      extendU(Ity_I32,
+                              binop(Iop_And32, mkexpr(id[i]), mkU32(0xC0))),
+                      mkU64(0x0)),
+                IRExpr_ITE(
+                   binop(Iop_CmpLT64U,
+                         extendU(Ity_I32,
+                                 binop(Iop_And32, mkexpr(id[i]), mkU32(0x7))),
+                         mkU64(0x4)),
+                   binop(Iop_GetElem32x4, mkexpr(sLo),
+                         unop(Iop_32to8, mkexpr(id[i]))),
+                   binop(Iop_GetElem32x4, mkexpr(sHi),
+                         unop(Iop_64to8,
+                              binop(Iop_Sub64, extendU(Ity_I32, mkexpr(id[i])),
+                                    mkU64(0x4))))),
+                mkU32(0x0)));
+   }
+
+   assign(out, mkV128from32s(res[3], res[2], res[1], res[0]));
+
+   return out;
+}
+
+static IRTemp macro_v128shuf_d ( IRTemp sHi, IRTemp sLo, IRTemp sId )
+{
+   IRTemp id[2], res[2];
+   IRTemp out = newTemp(Ity_V128);
+
+   for (UInt i = 0; i < 2; i++) {
+      id[i]  = newTemp(Ity_I64);
+      res[i] = newTemp(Ity_I64);
+
+      assign(id[i], binop(Iop_GetElem64x2, mkexpr(sId), mkU8(i)));
+
+      assign(res[i],
+             IRExpr_ITE(
+                binop(Iop_CmpEQ64, binop(Iop_And64, mkexpr(id[i]), mkU64(0xC0)),
+                      mkU64(0x0)),
+                IRExpr_ITE(binop(Iop_CmpLT64U,
+                                 binop(Iop_And64, mkexpr(id[i]), mkU64(0x3)),
+                                 mkU64(0x2)),
+                           binop(Iop_GetElem64x2, mkexpr(sLo),
+                                 unop(Iop_64to8, mkexpr(id[i]))),
+                           binop(Iop_GetElem64x2, mkexpr(sHi),
+                                 unop(Iop_64to8, binop(Iop_Sub64, mkexpr(id[i]),
+                                                       mkU64(0x2))))),
+                mkU64(0x0)));
+   }
+
+   assign(out, mkV128from64s(res[1], res[0]));
+
+   return out;
+}
+
+static Bool gen_vshuf_hwd ( DisResult* dres, UInt insn,
+                            const VexArchInfo* archinfo,
+                            const VexAbiInfo*  abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt vk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+
+   IRTemp hi = newTemp(Ity_V128);
+   IRTemp lo = newTemp(Ity_V128);
+   IRTemp id = newTemp(Ity_V128);
+   IRTemp res = newTemp(Ity_V128);
+   assign(hi, getVReg(vj));
+   assign(lo, getVReg(vk));
+   assign(id, getVReg(vd));
+
+   switch (insSz) {
+      case 0b01: res = macro_v128shuf_h(hi, lo, id); break;
+      case 0b10: res = macro_v128shuf_w(hi, lo, id); break;
+      case 0b11: res = macro_v128shuf_d(hi, lo, id); break;
+      default: vassert(0); break;
+   }
+
+   DIP("vshuf.%s %s, %s, %s\n", mkInsSize(insSz), nameVReg(vd), nameVReg(vj),
+       nameVReg(vk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvshuf_hwd ( DisResult* dres, UInt insn,
+                             const VexArchInfo* archinfo,
+                             const VexAbiInfo*  abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+
+   IRTemp hi    = newTemp(Ity_V256);
+   IRTemp lo    = newTemp(Ity_V256);
+   IRTemp id    = newTemp(Ity_V256);
+   IRTemp hiHi  = IRTemp_INVALID;
+   IRTemp hiLo  = IRTemp_INVALID;
+   IRTemp loHi  = IRTemp_INVALID;
+   IRTemp loLo  = IRTemp_INVALID;
+   IRTemp idHi  = IRTemp_INVALID;
+   IRTemp idLo  = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(hi, getXReg(xj));
+   assign(lo, getXReg(xk));
+   assign(id, getXReg(xd));
+   breakupV256toV128s(hi, &hiHi, &hiLo);
+   breakupV256toV128s(lo, &loHi, &loLo);
+   breakupV256toV128s(id, &idHi, &idLo);
+
+   switch (insSz) {
+      case 0b01: {
+         resHi = macro_v128shuf_h(hiHi, loHi, idHi);
+         resLo = macro_v128shuf_h(hiLo, loLo, idLo);
+         break;
+      }
+      case 0b10: {
+         resHi = macro_v128shuf_w(hiHi, loHi, idHi);
+         resLo = macro_v128shuf_w(hiLo, loLo, idLo);
+         break;
+      }
+      case 0b11: {
+         resHi = macro_v128shuf_d(hiHi, loHi, idHi);
+         resLo = macro_v128shuf_d(hiLo, loLo, idLo);
+         break;
+      }
+      default: vassert(0); break;
+   }
+
+   DIP("xvshuf.%s %s, %s, %s\n", mkInsSize(insSz), nameXReg(xd), nameXReg(xj),
+       nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_xvpermi ( DisResult* dres, UInt insn,
                           const VexArchInfo* archinfo,
                           const VexAbiInfo*  abiinfo )
@@ -12370,6 +12579,24 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0100 ( DisResult* dres, UInt insn,
    return ok;
 }
 
+static Bool disInstr_LOONGARCH64_WRK_01_1100_0101 ( DisResult* dres, UInt insn,
+                                                    const VexArchInfo* archinfo,
+                                                    const VexAbiInfo*  abiinfo )
+{
+   Bool ok;
+
+   switch (SLICE(insn, 21, 17)) {
+      case 0b11101:
+         ok = gen_vshuf_hwd(dres, insn, archinfo, abiinfo);
+         break;
+      default:
+         ok = False;
+         break;
+   }
+
+   return ok;
+}
+
 static Bool disInstr_LOONGARCH64_WRK_01_1100_1010_01110_000 ( DisResult* dres, UInt insn,
                                                               const VexArchInfo* archinfo,
                                                               const VexAbiInfo*  abiinfo )
@@ -12608,6 +12835,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100 ( DisResult* dres, UInt insn,
       case 0b0100:
          ok = disInstr_LOONGARCH64_WRK_01_1100_0100(dres, insn, archinfo, abiinfo);
          break;
+      case 0b0101:
+         ok = disInstr_LOONGARCH64_WRK_01_1100_0101(dres, insn, archinfo, abiinfo);
+         break;
       case 0b1010:
          ok = disInstr_LOONGARCH64_WRK_01_1100_1010(dres, insn, archinfo, abiinfo);
          break;
@@ -12710,7 +12940,24 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0100 ( DisResult* dres, UInt insn,
       case 0b10110:
          ok = gen_xvadd_xvsub_q(dres, insn, archinfo, abiinfo);
          break;
-         
+      default:
+         ok = False;
+         break;
+   }
+
+   return ok;
+}
+
+static Bool disInstr_LOONGARCH64_WRK_01_1101_0101 ( DisResult* dres, UInt insn,
+                                                    const VexArchInfo* archinfo,
+                                                    const VexAbiInfo*  abiinfo )
+{
+   Bool ok;
+
+   switch (SLICE(insn, 21, 17)) {
+      case 0b11101:
+         ok = gen_xvshuf_hwd(dres, insn, archinfo, abiinfo);
+         break;
       default:
          ok = False;
          break;
@@ -12889,6 +13136,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101 ( DisResult* dres, UInt insn,
          break;
       case 0b0100:
          ok = disInstr_LOONGARCH64_WRK_01_1101_0100(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b0101:
+         ok = disInstr_LOONGARCH64_WRK_01_1101_0101(dres, insn, archinfo, abiinfo);
          break;
       case 0b1010:
          ok = disInstr_LOONGARCH64_WRK_01_1101_1010(dres, insn, archinfo, abiinfo);
