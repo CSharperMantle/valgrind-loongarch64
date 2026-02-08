@@ -5,10 +5,17 @@ BasedOnStyle: LLVM
 AlignConsecutiveAssignments: true
 AlignConsecutiveDeclarations: true
 AlignConsecutiveMacros: true
+AllowShortCaseLabelsOnASingleLine: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+  AlignCaseColons: false
 AllowAllParametersOfDeclarationOnNextLine: true
 BinPackParameters: false
 BreakBeforeBraces: Linux
 ContinuationIndentWidth: 3
+IndentCaseLabels: true
 IndentWidth: 3
 PointerAlignment: Left
 # Mark the VG_(), ML_() and tool macros as type declarations which they are
