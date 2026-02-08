@@ -11116,6 +11116,71 @@ static Bool gen_vstelm ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvstelm ( DisResult* dres, UInt insn,
+                          const VexArchInfo* archinfo,
+                          const VexAbiInfo*  abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt rj     = SLICE(insn, 9, 5);
+   UInt si8    = SLICE(insn, 17, 10);
+   UInt insImm = SLICE(insn, 23, 18);
+
+   IRTemp res = newTemp(Ity_V128);
+
+   UInt idx, insSz;
+   if ((insImm & 0b100000) == 0b100000) {        // 1?????; b
+      idx   = insImm & 0x011111;
+      insSz = 0;
+   } else if ((insImm & 0b110000) == 0b010000) { // 01????; h
+      idx   = insImm & 0x001111;
+      insSz = 1;
+   } else if ((insImm & 0b111000) == 0b001000) { // 001???; w
+      idx   = insImm & 0x000111;
+      insSz = 2;
+   } else if ((insImm & 0b111100) == 0b000100) { // 0001??; d
+      idx   = insImm & 0x000011;
+      insSz = 3;
+   } else {
+      return False;
+   }
+
+   static const UInt half[4] = {16, 8, 4, 2};
+
+   if (idx < half[insSz]) {
+      assign(res, unop(Iop_V256toV128_0, getXReg(xd)));
+   } else {
+      assign(res, unop(Iop_V256toV128_1, getXReg(xd)));
+      idx = idx - half[insSz];
+   }
+
+   IRExpr* addr = NULL;
+   switch (insSz) {
+      case 0b00:
+         addr = binop(Iop_Add64, getIReg64(rj), mkU64(extend64(si8, 8)));
+         break;
+      case 0b01:
+         addr = binop(Iop_Add64, getIReg64(rj), mkU64(extend64(si8 << 1, 9)));
+         break;
+      case 0b10:
+         addr = binop(Iop_Add64, getIReg64(rj), mkU64(extend64(si8 << 2, 10)));
+         break;
+      case 0b11:
+         addr = binop(Iop_Add64, getIReg64(rj), mkU64(extend64(si8 << 3, 11)));
+         break;
+      default:
+         vassert(0);
+         break;
+   }
+
+   DIP("xvstelm.%s %s, %s, %d, %u\n", mkInsSize(insSz), nameXReg(xd),
+       nameIReg(rj), (Int)extend32(si8, 8), idx);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   store(addr, binop(mkV128GetElem(insSz), mkexpr(res), mkU8(idx)));
+
+   return True;
+}
 
 /*------------------------------------------------------------*/
 /*--- Disassemble a single LOONGARCH64 instruction         ---*/
@@ -12001,6 +12066,9 @@ static Bool disInstr_LOONGARCH64_WRK_00_1100 ( DisResult* dres, UInt insn,
          break;
       case 0b01:
          ok = gen_vstelm(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b11:
+         ok = gen_xvstelm(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
