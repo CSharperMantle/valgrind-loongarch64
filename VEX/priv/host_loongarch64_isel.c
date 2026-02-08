@@ -3382,6 +3382,15 @@ static void iselStmtTmp ( ISelEnv* env, IRStmt* stmt )
          addInstr(env, LOONGARCH64Instr_Move(dst, src));
          break;
       }
+      case Ity_I128: {
+         HReg dstHi, dstLo;
+         lookupIRTempPair(&dstHi, &dstLo, env, tmp);
+         HReg srcHi, srcLo;
+         iselInt128Expr(&srcHi, &srcLo, env, stmt->Ist.WrTmp.data);
+         addInstr(env, LOONGARCH64Instr_Move(dstHi, srcHi));
+         addInstr(env, LOONGARCH64Instr_Move(dstLo, srcLo));
+         break;
+      }
       case Ity_I1: {
          HReg dst = lookupIRTemp(env, tmp);
          HReg src = iselCondCode_R(env, stmt->Ist.WrTmp.data);
