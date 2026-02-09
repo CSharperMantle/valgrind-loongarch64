@@ -2388,6 +2388,15 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
                   set_rounding_mode_default(env);
                   return dst;
             }
+            case Iop_Perm8x16x2: {
+               HReg dst  = newVRegV(env);
+               HReg src1 = iselV128Expr(env, triop->arg1);
+               HReg src2 = iselV128Expr(env, triop->arg2);
+               HReg src3 = iselV128Expr(env, triop->arg3);
+               addInstr(env, LOONGARCH64Instr_VecTrinary(LAvectri_VSHUF_B, src3,
+                                                         src2, src1, dst));
+               return dst;
+            }
             default: goto irreducible;
          }
       }
