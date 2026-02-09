@@ -11511,43 +11511,6 @@ static Bool gen_xvbitsel_v ( DisResult* dres, UInt insn,
    return True;
 }
 
-static IRTemp macro_v128shuf_b ( IRTemp sHi, IRTemp sLo, IRTemp sId )
-{
-   IRTemp id[16], res[16];
-   IRTemp out = newTemp(Ity_V128);
-
-   for (UInt i = 0; i < 16; i++) {
-      id[i]  = newTemp(Ity_I8);
-      res[i] = newTemp(Ity_I8);
-
-      assign(id[i], binop(Iop_GetElem8x16, mkexpr(sId), mkU8(i)));
-
-      assign(
-         res[i],
-         IRExpr_ITE(
-            binop(Iop_CmpEQ64,
-                  extendU(Ity_I8, binop(Iop_And8, mkexpr(id[i]), mkU8(0xC0))),
-                  mkU64(0x0)),
-            IRExpr_ITE(
-               binop(
-                  Iop_CmpLT64U,
-                  extendU(Ity_I8, binop(Iop_And8, mkexpr(id[i]), mkU8(0x1F))),
-                  mkU64(0x10)),
-               binop(Iop_GetElem8x16, mkexpr(sLo), mkexpr(id[i])),
-               binop(Iop_GetElem8x16, mkexpr(sHi),
-                     unop(Iop_64to8,
-                          binop(Iop_Sub64, extendU(Ity_I8, mkexpr(id[i])),
-                                mkU64(0x10))))),
-            mkU8(0x0)));
-   }
-
-   assign(out, mkV128from8s(res[15], res[14], res[13], res[12], res[11],
-                            res[10], res[9], res[8], res[7], res[6], res[5],
-                            res[4], res[3], res[2], res[1], res[0]));
-
-   return out;
-}
-
 static Bool gen_vshuf_b ( DisResult* dres, UInt insn,
                           const VexArchInfo* archinfo,
                           const VexAbiInfo*  abiinfo )
@@ -11583,29 +11546,33 @@ static Bool gen_xvshuf_b ( DisResult* dres, UInt insn,
    UInt xj = SLICE(insn, 9, 5);
    UInt xd = SLICE(insn, 4, 0);
 
-   IRTemp hi   = newTemp(Ity_V128);
-   IRTemp lo   = newTemp(Ity_V128);
-   IRTemp id   = newTemp(Ity_V128);
-   IRTemp hiHi = IRTemp_INVALID;
-   IRTemp hiLo = IRTemp_INVALID;
-   IRTemp loHi = IRTemp_INVALID;
-   IRTemp loLo = IRTemp_INVALID;
-   IRTemp idHi = IRTemp_INVALID;
-   IRTemp idLo = IRTemp_INVALID;
-   assign(hi, getXReg(xj));
-   assign(lo, getXReg(xk));
-   assign(id, getXReg(xa));
-   breakupV256toV128s(hi, &hiHi, &hiLo);
-   breakupV256toV128s(lo, &loHi, &loLo);
-   breakupV256toV128s(id, &idHi, &idLo);
+   IRTemp j     = newTemp(Ity_V128);
+   IRTemp k     = newTemp(Ity_V128);
+   IRTemp a     = newTemp(Ity_V128);
+   IRTemp jHi   = IRTemp_INVALID;
+   IRTemp jLo   = IRTemp_INVALID;
+   IRTemp kHi   = IRTemp_INVALID;
+   IRTemp kLo   = IRTemp_INVALID;
+   IRTemp aHi   = IRTemp_INVALID;
+   IRTemp aLo   = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xk));
+   assign(a, getXReg(xa));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(k, &kHi, &kLo);
+   breakupV256toV128s(a, &aHi, &aLo);
+
+   assign(resHi, triop(Iop_Perm8x16x2, mkexpr(jHi), mkexpr(kHi), mkexpr(aHi)));
+   assign(resLo, triop(Iop_Perm8x16x2, mkexpr(jLo), mkexpr(kLo), mkexpr(aLo)));
 
    DIP("xvshuf.b %s, %s, %s, %s\n", nameXReg(xd), nameXReg(xj), nameXReg(xk),
        nameXReg(xa));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
-   putXReg(xd, mkV256from128s(macro_v128shuf_b(hiHi, loHi, idHi),
-                              macro_v128shuf_b(hiLo, loLo, idLo)));
+   putXReg(xd, mkV256from128s(resHi, resLo));
 
    return True;
 }
