@@ -1149,6 +1149,19 @@ static inline const HChar* showLOONGARCH64VecBinOp ( LOONGARCH64VecBinOp op )
    }
 }
 
+static inline const HChar* showLOONGARCH64VecTriOp ( LOONGARCH64VecTriOp op )
+{
+   switch (op) {
+      case LAvectri_VSHUF_B:
+         return "vshuf.b";
+      case LAvectri_XVSHUF_B:
+         return "xvshuf.b";
+      default:
+         vpanic("showLOONGARCH64VecTriOp");
+         break;
+   }
+}
+
 static inline const HChar* showLOONGARCH64VecLoadOp ( LOONGARCH64VecLoadOp op )
 {
    switch (op) {
@@ -1354,6 +1367,20 @@ LOONGARCH64Instr* LOONGARCH64Instr_VecBinary ( LOONGARCH64VecBinOp op,
    i->LAin.VecBinary.src2 = src2;
    i->LAin.VecBinary.src1 = src1;
    i->LAin.VecBinary.dst  = dst;
+   return i;
+}
+
+LOONGARCH64Instr* LOONGARCH64Instr_VecTrinary ( LOONGARCH64VecTriOp op,
+                                                HReg src3, HReg src2,
+                                                HReg src1, HReg dst )
+{
+   LOONGARCH64Instr* i    = LibVEX_Alloc_inline(sizeof(LOONGARCH64Instr));
+   i->tag                 = LAin_VecTri;
+   i->LAin.VecTrinary.op   = op;
+   i->LAin.VecTrinary.src3 = src3;
+   i->LAin.VecTrinary.src2 = src2;
+   i->LAin.VecTrinary.src1 = src1;
+   i->LAin.VecTrinary.dst  = dst;
    return i;
 }
 
@@ -1634,6 +1661,19 @@ static inline void ppVecBinary ( LOONGARCH64VecBinOp op, LOONGARCH64RI* src2,
    ppLOONGARCH64RI(src2);
 }
 
+static inline void ppVecTrinary ( LOONGARCH64VecTriOp op, HReg src3,
+                                  HReg src2, HReg src1, HReg dst )
+{
+   vex_printf("%s ", showLOONGARCH64VecTriOp(op));
+   ppHRegLOONGARCH64(dst);
+   vex_printf(", ");
+   ppHRegLOONGARCH64(src1);
+   vex_printf(", ");
+   ppHRegLOONGARCH64(src2);
+   vex_printf(", ");
+   ppHRegLOONGARCH64(src3);
+}
+
 static inline void ppVecLoad ( LOONGARCH64VecLoadOp op, LOONGARCH64AMode* src,
                                HReg dst )
 {
@@ -1867,6 +1907,11 @@ void ppLOONGARCH64Instr ( const LOONGARCH64Instr* i, Bool mode64 )
          ppVecBinary(i->LAin.VecBinary.op, i->LAin.VecBinary.src2,
                      i->LAin.VecBinary.src1, i->LAin.VecBinary.dst);
          break;
+      case LAin_VecTri:
+         ppVecTrinary(i->LAin.VecTrinary.op, i->LAin.VecTrinary.src3,
+                      i->LAin.VecTrinary.src2, i->LAin.VecTrinary.src1,
+                      i->LAin.VecTrinary.dst);
+         break;
       case LAin_VecLoad:
          ppVecLoad(i->LAin.VecLoad.op, i->LAin.VecLoad.src,
                    i->LAin.VecLoad.dst);
@@ -1995,6 +2040,12 @@ void getRegUsage_LOONGARCH64Instr ( HRegUsage* u, const LOONGARCH64Instr* i,
          addRegUsage_LOONGARCH64RI(u, i->LAin.VecBinary.src2);
          addHRegUse(u, HRmRead, i->LAin.VecBinary.src1);
          addHRegUse(u, HRmWrite, i->LAin.VecBinary.dst);
+         break;
+      case LAin_VecTri:
+         addHRegUse(u, HRmRead, i->LAin.VecTrinary.src3);
+         addHRegUse(u, HRmRead, i->LAin.VecTrinary.src2);
+         addHRegUse(u, HRmRead, i->LAin.VecTrinary.src1);
+         addHRegUse(u, HRmWrite, i->LAin.VecTrinary.dst);
          break;
       case LAin_VecLoad:
          addRegUsage_LOONGARCH64AMode(u, i->LAin.VecLoad.src);
@@ -2175,6 +2226,12 @@ void mapRegs_LOONGARCH64Instr ( HRegRemap* m, LOONGARCH64Instr* i,
          mapRegs_LOONGARCH64RI(m, i->LAin.VecBinary.src2);
          mapReg(m, &i->LAin.VecBinary.src1);
          mapReg(m, &i->LAin.VecBinary.dst);
+         break;
+      case LAin_VecTri:
+         mapReg(m, &i->LAin.VecTrinary.src3);
+         mapReg(m, &i->LAin.VecTrinary.src2);
+         mapReg(m, &i->LAin.VecTrinary.src1);
+         mapReg(m, &i->LAin.VecTrinary.dst);
          break;
       case LAin_VecLoad:
          mapRegs_LOONGARCH64AMode(m, i->LAin.VecLoad.src);
@@ -2418,6 +2475,15 @@ static inline UInt emit_op_rk_rj_rd ( UInt op, UInt rk, UInt rj, UInt rd )
    vassert(rj < (1 << 5));
    vassert(rd < (1 << 5));
    return op | (rk << 10) | (rj << 5) | rd;
+}
+
+static inline UInt emit_op_ra_rk_rj_rd ( UInt op, UInt ra, UInt rk, UInt rj, UInt rd )
+{
+   vassert(ra < (1 << 5));
+   vassert(rk < (1 << 5));
+   vassert(rj < (1 << 5));
+   vassert(rd < (1 << 5));
+   return op | (ra << 15) | (rk << 10) | (rj << 5) | rd;
 }
 
 static inline UInt emit_op_fj_fd ( UInt op, UInt fj, UInt fd )
@@ -3238,6 +3304,20 @@ static inline UInt* mkVecBinary ( UInt* p, LOONGARCH64VecBinOp op,
    }
 }
 
+static inline UInt* mkVecTrinary ( UInt* p, LOONGARCH64VecTriOp op,
+                                   HReg src3, HReg src2, HReg src1, HReg dst )
+{
+   switch (op) {
+      case LAvectri_VSHUF_B:
+      case LAvectri_XVSHUF_B:
+         *p++ = emit_op_ra_rk_rj_rd(op, vregEnc(src3), vregEnc(src2),
+                                    vregEnc(src1), vregEnc(dst));
+         return p;
+      default:
+         return NULL;
+   }
+}
+
 static inline UInt* mkVecLoad ( UInt* p, LOONGARCH64VecLoadOp op,
                                 LOONGARCH64AMode* src, HReg dst )
 {
@@ -3778,6 +3858,11 @@ Int emit_LOONGARCH64Instr ( /*MB_MOD*/Bool* is_profInc,
       case LAin_VecBin:
          p = mkVecBinary(p, i->LAin.VecBinary.op, i->LAin.VecBinary.src2,
                          i->LAin.VecBinary.src1, i->LAin.VecBinary.dst);
+         break;
+      case LAin_VecTri:
+         p = mkVecTrinary(p, i->LAin.VecTrinary.op, i->LAin.VecTrinary.src3,
+                          i->LAin.VecTrinary.src2, i->LAin.VecTrinary.src1,
+                          i->LAin.VecTrinary.dst);
          break;
       case LAin_VecLoad:
          p = mkVecLoad(p, i->LAin.VecLoad.op, i->LAin.VecLoad.src,
