@@ -553,6 +553,12 @@ typedef enum {
    LAvecbin_VORI_B        = 0x73d40000
 } LOONGARCH64VecBinOp;
 
+/* Tags for vector trinary operations */
+typedef enum {
+   LAvectri_VSHUF_B  = 0x0d500000,
+   LAvectri_XVSHUF_B = 0x0d600000,
+} LOONGARCH64VecTriOp;
+
 /* Tags for vector load operations */
 typedef enum {
    LAvecload_VLD  = 0x2c000000,
@@ -612,6 +618,7 @@ typedef enum {
    /* Vector insns */
    LAin_VecUn,       /* vector unary */
    LAin_VecBin,      /* vector binary */
+   LAin_VecTri,      /* vector trinary */
    LAin_VecLoad,     /* vector load */
    LAin_VecStore,    /* vector store */
 
@@ -721,6 +728,13 @@ typedef struct {
          HReg                 dst;
       } VecBinary;
       struct {
+         LOONGARCH64VecTriOp  op;
+         HReg                 src3;
+         HReg                 src2;
+         HReg                 src1;
+         HReg                 dst;
+      } VecTrinary;
+      struct {
          LOONGARCH64VecLoadOp op;
          LOONGARCH64AMode*    src;
          HReg                 dst;
@@ -826,6 +840,9 @@ extern LOONGARCH64Instr* LOONGARCH64Instr_VecUnary  ( LOONGARCH64VecUnOp op,
                                                       HReg src, HReg dst );
 extern LOONGARCH64Instr* LOONGARCH64Instr_VecBinary ( LOONGARCH64VecBinOp op,
                                                       LOONGARCH64RI* src2,
+                                                      HReg src1, HReg dst );
+extern LOONGARCH64Instr* LOONGARCH64Instr_VecTrinary( LOONGARCH64VecTriOp op,
+                                                      HReg src3, HReg src2,
                                                       HReg src1, HReg dst );
 extern LOONGARCH64Instr* LOONGARCH64Instr_VecLoad   ( LOONGARCH64VecLoadOp op,
                                                       LOONGARCH64AMode* src,
