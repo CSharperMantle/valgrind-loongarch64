@@ -12300,17 +12300,17 @@ static Bool gen_xvldrepl ( DisResult* dres, UInt insn,
    IRTemp addr = newTemp(Ity_I64);
 
    UInt sImm, insSz;
-   if ((insImm & 0x11000000000000) == 0x10000000000000) {        // 10????????????; b
-      sImm  = insImm & 0x00111111111111;
+   if ((insImm & 0x3000) == 0x2000) {        // 10????????????; b
+      sImm  = insImm & 0x0fff;
       insSz = 0;
-   } else if ((insImm & 0x11100000000000) == 0x01000000000000) { // 010???????????; h
-      sImm  = insImm & 0x00011111111111;
+   } else if ((insImm & 0x3800) == 0x1000) { // 010???????????; h
+      sImm  = insImm & 0x07ff;
       insSz = 1;
-   } else if ((insImm & 0x11110000000000) == 0x00100000000000) { // 0010??????????; w
-      sImm  = insImm & 0x00001111111111;
+   } else if ((insImm & 0x3c00) == 0x0800) { // 0010??????????; w
+      sImm  = insImm & 0x03ff;
       insSz = 2;
-   } else if ((insImm & 0x11111000000000) == 0x00010000000000) { // 00010?????????; d
-      sImm  = insImm & 0x00000111111111;
+   } else if ((insImm & 0x3e00) == 0x0400) { // 00010?????????; d
+      sImm  = insImm & 0x01ff;
       insSz = 3;
    } else {
       vassert(0);
@@ -12544,16 +12544,16 @@ static Bool gen_xvstelm ( DisResult* dres, UInt insn,
 
    UInt idx, insSz;
    if ((insImm & 0b100000) == 0b100000) {        // 1?????; b
-      idx   = insImm & 0x011111;
+      idx   = insImm & 0b011111;
       insSz = 0;
    } else if ((insImm & 0b110000) == 0b010000) { // 01????; h
-      idx   = insImm & 0x001111;
+      idx   = insImm & 0b001111;
       insSz = 1;
    } else if ((insImm & 0b111000) == 0b001000) { // 001???; w
-      idx   = insImm & 0x000111;
+      idx   = insImm & 0b000111;
       insSz = 2;
    } else if ((insImm & 0b111100) == 0b000100) { // 0001??; d
-      idx   = insImm & 0x000011;
+      idx   = insImm & 0b000011;
       insSz = 3;
    } else {
       return False;
