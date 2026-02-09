@@ -11557,19 +11557,19 @@ static Bool gen_vshuf_b ( DisResult* dres, UInt insn,
    UInt vj = SLICE(insn, 9, 5);
    UInt vd = SLICE(insn, 4, 0);
 
-   IRTemp hi = newTemp(Ity_V128);
-   IRTemp lo = newTemp(Ity_V128);
-   IRTemp id = newTemp(Ity_V128);
-   assign(hi, getVReg(vj));
-   assign(lo, getVReg(vk));
-   assign(id, getVReg(va));
+   IRTemp j = newTemp(Ity_V128);
+   IRTemp k = newTemp(Ity_V128);
+   IRTemp a = newTemp(Ity_V128);
+   assign(j, getVReg(vj));
+   assign(k, getVReg(vk));
+   assign(a, getVReg(va));
 
    DIP("vshuf.b %s, %s, %s, %s\n", nameVReg(vd), nameVReg(vj), nameVReg(vk),
        nameVReg(va));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
-   putVReg(vd, mkexpr(macro_v128shuf_b(hi, lo, id)));
+   putVReg(vd, triop(Iop_Perm8x16x2, mkexpr(j), mkexpr(k), mkexpr(a)));
 
    return True;
 }
