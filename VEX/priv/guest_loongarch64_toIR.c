@@ -10983,37 +10983,25 @@ static Bool gen_vreplve ( DisResult* dres, UInt insn,
    UInt insSz = SLICE(insn, 16, 15);
 
    IRExpr* elem;
-   IRTemp mod  = newTemp(Ity_I8);
-   IRTemp res  = newTemp(Ity_V128);
-   UInt div[4] = { 0x10, 0x8, 0x4, 0x2 };
+   IRTemp  idx = newTemp(Ity_I8);
+   IRTemp  res = newTemp(Ity_V128);
 
-   assign(mod, unop(Iop_64to8,
-                    unop(Iop_128HIto64,
-                         binop(Iop_DivModU64to64,
-                               getIReg64(rk),
-                               mkU64(div[insSz])))));
+   static const UInt divisor[4] = {16, 8, 4, 2};
+   assign(idx, unop(Iop_64to8,
+                    unop(Iop_128HIto64, binop(Iop_DivModU64to64, getIReg64(rk),
+                                              mkU64(divisor[insSz])))));
 
-   elem = binop(mkV128GETELEM(insSz), getVReg(vj), mkexpr(mod));
+   elem = binop(mkV128GETELEM(insSz), getVReg(vj), mkexpr(idx));
    switch (insSz) {
-      case 0b00:
-         assign(res, unop(Iop_Dup8x16, elem));
-         break;
-      case 0b01:
-         assign(res, unop(Iop_Dup16x8, elem));
-         break;
-      case 0b10:
-         assign(res, unop(Iop_Dup32x4, elem));
-         break;
-      case 0b11:
-         assign(res, binop(Iop_64HLtoV128, elem, elem));
-         break;
-      default:
-         vassert(0);
-         break;
+      case 0b00: assign(res, unop(Iop_Dup8x16, elem)); break;
+      case 0b01: assign(res, unop(Iop_Dup16x8, elem)); break;
+      case 0b10: assign(res, unop(Iop_Dup32x4, elem)); break;
+      case 0b11: assign(res, binop(Iop_64HLtoV128, elem, elem)); break;
+      default:   vassert(0); break;
    }
 
-   DIP("vreplve.%s %s, %s, %s", mkInsSize(insSz),
-                                nameVReg(vd), nameVReg(vj), nameIReg(rk));
+   DIP("vreplve.%s %s, %s, %s", mkInsSize(insSz), nameVReg(vd), nameVReg(vj),
+       nameIReg(rk));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
@@ -11031,38 +11019,38 @@ static Bool gen_xvreplve ( DisResult* dres, UInt insn,
    UInt rk    = SLICE(insn, 14, 10);
    UInt insSz = SLICE(insn, 16, 15);
 
-   IRTemp mod   = newTemp(Ity_I8);
+   IRTemp idx   = newTemp(Ity_I8);
    IRTemp j     = newTemp(Ity_V256);
    IRTemp jHi   = IRTemp_INVALID;
    IRTemp jLo   = IRTemp_INVALID;
    IRTemp resHi = newTemp(Ity_V128);
-   IRTemp resLp = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
    assign(j, getXReg(xj));
    breakupV256toV128s(j, &jHi, &jLo);
 
-   static const UInt div[4] = {0x10, 0x8, 0x4, 0x2};
-   assign(mod, unop(Iop_64to8,
+   static const UInt divisor[4] = {16, 8, 4, 2};
+   assign(idx, unop(Iop_64to8,
                     unop(Iop_128HIto64, binop(Iop_DivModU64to64, getIReg64(rk),
-                                              mkU64(div[insSz])))));
+                                              mkU64(divisor[insSz])))));
 
-   IRExpr* irLo = binop(mkV128GETELEM(insSz), mkexpr(jLo), mkexpr(mod));
-   IRExpr* irHi = binop(mkV128GETELEM(insSz), mkexpr(jHi), mkexpr(mod));
+   IRExpr* irLo = binop(mkV128GETELEM(insSz), mkexpr(jLo), mkexpr(idx));
+   IRExpr* irHi = binop(mkV128GETELEM(insSz), mkexpr(jHi), mkexpr(idx));
    switch (insSz) {
       case 0b00:
          assign(resHi, unop(Iop_Dup8x16, irHi));
-         assign(resLp, unop(Iop_Dup8x16, irLo));
+         assign(resLo, unop(Iop_Dup8x16, irLo));
          break;
       case 0b01:
          assign(resHi, unop(Iop_Dup16x8, irHi));
-         assign(resLp, unop(Iop_Dup16x8, irLo));
+         assign(resLo, unop(Iop_Dup16x8, irLo));
          break;
       case 0b10:
          assign(resHi, unop(Iop_Dup32x4, irHi));
-         assign(resLp, unop(Iop_Dup32x4, irLo));
+         assign(resLo, unop(Iop_Dup32x4, irLo));
          break;
       case 0b11:
          assign(resHi, binop(Iop_64HLtoV128, irHi, irHi));
-         assign(resLp, binop(Iop_64HLtoV128, irLo, irLo));
+         assign(resLo, binop(Iop_64HLtoV128, irLo, irLo));
          break;
       default: vassert(0); break;
    }
@@ -11072,7 +11060,7 @@ static Bool gen_xvreplve ( DisResult* dres, UInt insn,
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
-   putXReg(xd, mkV256from128s(resHi, resLp));
+   putXReg(xd, mkV256from128s(resHi, resLo));
 
    return True;
 }
