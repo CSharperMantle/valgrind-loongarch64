@@ -8079,6 +8079,51 @@ static Bool gen_xvpcnt ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_vneg ( DisResult* dres, UInt insn,
+                       const VexArchInfo* archinfo,
+                       const VexAbiInfo* abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt insSz = SLICE(insn, 11, 10);
+
+   DIP("vneg.%s %s, %s\n", mkInsSize(insSz), nameVReg(vd), nameVReg(vj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, binop(mkV128SUB(insSz), mkV128(0x0000), getVReg(vj)));
+
+   return True;
+}
+
+static Bool gen_xvneg ( DisResult* dres, UInt insn,
+                        const VexArchInfo* archinfo,
+                        const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt insSz = SLICE(insn, 11, 10);
+
+   IRTemp j     = newTemp(Ity_V256);
+   IRTemp jHi   = IRTemp_INVALID;
+   IRTemp jLo   = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(j, getXReg(xj));
+   breakupV256toV128s(j, &jHi, &jLo);
+
+   assign(resHi, binop(mkV128SUB(insSz), mkV128(0x0000), mkexpr(jHi)));
+   assign(resLo, binop(mkV128SUB(insSz), mkV128(0x0000), mkexpr(jLo)));
+
+   DIP("xvneg.%s %s, %s\n", mkInsSize(insSz), nameXReg(xd), nameXReg(xj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool macro_v128addw_v128subw_x_x_ops ( UInt op, UInt insSz,
                                               UInt* outId, IROp* outMathOp,
                                               IROp* outPackOp, IROp* outWidenOp,
@@ -14250,6 +14295,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1010_01110_000 ( DisResult* dres, U
       case 0b10:
          ok = gen_vpcnt(dres, insn, archinfo, abiinfo);
          break;
+      case 0b11:
+         ok = gen_vneg(dres, insn, archinfo, abiinfo);
+         break;
       default:
          ok = False;
          break;
@@ -14721,6 +14769,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1010_01110 ( DisResult* dres, UInt 
          break;
       case 0b00010:
          ok = gen_xvpcnt(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b00011:
+         ok = gen_xvneg(dres, insn, archinfo, abiinfo);
          break;
       case 0b00100:
       case 0b00101:
