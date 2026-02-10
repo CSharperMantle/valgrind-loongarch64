@@ -7735,7 +7735,7 @@ static Bool gen_xvadd_xvsub_bhwd ( DisResult* dres, UInt insn,
    UInt insSz = SLICE(insn, 16, 15);
    UInt isAdd = SLICE(insn, 17, 17);
 
-   static const HChar* nm[2] = { "xvsub", "xvadd" };
+   const HChar* nm[2] = { "xvsub", "xvadd" };
    IROp mathOp = isAdd ? mkV256ADD(insSz): mkV256SUB(insSz);
 
    DIP("%s.%s %s, %s, %s\n", nm[isAdd], mkInsSize(insSz),
@@ -7757,7 +7757,7 @@ static Bool gen_xvadd_xvsub_q ( DisResult* dres, UInt insn,
    UInt xk    = SLICE(insn, 14, 10);
    UInt isSub = SLICE(insn, 15, 15);
 
-   static const HChar* nm[2] = { "xvadd", "xvsub" };
+   const HChar* nm[2] = { "xvadd", "xvsub" };
    IROp mathOp = isSub ? mkV256SUB(4): mkV256ADD(4);
 
    DIP("%s.q %s, %s, %s\n", nm[isSub],
@@ -7834,7 +7834,7 @@ static Bool gen_xvaddi_xvsubi_u ( DisResult* dres, UInt insn,
       default: vassert(0); break;
    }
 
-   static const HChar* nm[2] = {"xvsubi", "xvaddi"};
+   const HChar* nm[2] = {"xvsubi", "xvaddi"};
 
    DIP("%s.%s %s, %s, %u\n", nm[isAdd], mkInsSize(insSz + 4), nameXReg(xd),
        nameXReg(xj), ui5);
@@ -8404,8 +8404,8 @@ static Bool gen_vaddw_vsubw_x_x_x ( DisResult* dres, UInt insn,
    assign(argR, unop(mkV128EXTHTS(insSz),
                      binop(packOp, getVReg(vk), mkV128(0x0000))));
 
-   static const HChar* nm[2] = {"vaddwev", "vaddwod"};
-   static const HChar* ns[4] = {"h.bu.b", "w.hu.h", "d.wu.w", "q.du.d"};
+   const HChar* nm[2] = {"vaddwev", "vaddwod"};
+   const HChar* ns[4] = {"h.bu.b", "w.hu.h", "d.wu.w", "q.du.d"};
 
    DIP("%s.%s %s, %s, %s\n", nm[isOd], ns[insSz], nameVReg(vd), nameVReg(vj),
        nameVReg(vk));
@@ -8460,8 +8460,8 @@ static Bool gen_xvaddw_xvsubw_x_x_x ( DisResult* dres, UInt insn,
 
    assign(res, binop(mkV256ADD(insSz + 1), mkexpr(argL), mkexpr(argR)));
 
-   static const HChar* nm[2] = {"xvaddwev", "xvaddwod"};
-   static const HChar* ns[4] = {"h.bu.b", "w.hu.h", "d.wu.w", "q.du.d"};
+   const HChar* nm[2] = {"xvaddwev", "xvaddwod"};
+   const HChar* ns[4] = {"h.bu.b", "w.hu.h", "d.wu.w", "q.du.d"};
 
    DIP("%s.%s %s, %s, %s\n", nm[isOd], ns[insSz], nameXReg(xd), nameXReg(xj),
        nameXReg(xk));
@@ -8568,7 +8568,7 @@ static Bool gen_vmaxi_vmini ( DisResult* dres, UInt insn,
 
    UInt szId = isU ? (insSz + 4) : insSz;
 
-   static const HChar* nm[2] = {"vmaxi", "vmini"};
+   const HChar* nm[2] = {"vmaxi", "vmini"};
 
    DIP("%s.%s %s, %s, %d\n", nm[isMin], mkInsSize(szId), nameVReg(vd),
        nameVReg(vj), (Int)extend32(si5, 5));
@@ -8623,7 +8623,7 @@ static Bool gen_xvmaxi_xvmini ( DisResult* dres, UInt insn,
 
    UInt szId = isU ? (insSz + 4) : insSz;
 
-   static const HChar* nm[2] = {"xvmaxi", "xvmini"};
+   const HChar* nm[2] = {"xvmaxi", "xvmini"};
 
    DIP("%s.%s %s, %s, %d\n", nm[isMin], mkInsSize(szId), nameXReg(xd),
        nameXReg(xj), (Int)extend32(si5, 5));
@@ -8694,7 +8694,7 @@ static Bool gen_vmul_vmuh ( DisResult* dres, UInt insn,
       default: vassert(0); break;
    }
 
-   static const HChar* nm[4] = {"vmuh", "", "vmul", "vmuh"};
+   const HChar* nm[4] = {"vmuh", "", "vmul", "vmuh"};
 
    DIP("%s.%s %s, %s, %s\n", nm[insTy], mkInsSize(szId), nameVReg(vd),
        nameVReg(vj), nameVReg(vk));
@@ -8772,7 +8772,7 @@ static Bool gen_xvmul_xvmuh ( DisResult* dres, UInt insn,
       default: vassert(0); break;
    }
 
-   static const HChar* nm[4] = {"xvmuh", "", "xvmul", "xvmuh"};
+   const HChar* nm[4] = {"xvmuh", "", "xvmul", "xvmuh"};
 
    DIP("%s.%s %s, %s, %s\n", nm[insTy], mkInsSize(szId), nameXReg(xd),
        nameXReg(xj), nameXReg(xk));
@@ -8848,7 +8848,7 @@ static Bool gen_vmadd_vmsub ( DisResult* dres, UInt insn,
       assign(res, binop(mkV128MUL(insSz), mkexpr(j), mkexpr(k)));
    }
 
-   static const HChar* nm[2] = {"vmadd", "vmsub"};
+   const HChar* nm[2] = {"vmadd", "vmsub"};
 
    DIP("%s.%s %s, %s, %s\n", nm[isSub], mkInsSize(insSz), nameVReg(vd),
        nameVReg(vj), nameVReg(vk));
@@ -8897,7 +8897,7 @@ static Bool gen_xvmadd_xvmsub ( DisResult* dres, UInt insn,
    }
    assign(res, mkV256from128s(rHi, rLo));
 
-   static const HChar* nm[2] = {"xvmadd", "xvmsub"};
+   const HChar* nm[2] = {"xvmadd", "xvmsub"};
 
    DIP("%s.%s %s, %s, %s\n", nm[isSub], mkInsSize(insSz), nameXReg(xd),
        nameXReg(xj), nameXReg(xk));
@@ -9043,7 +9043,7 @@ static Bool gen_vdiv_vmod ( DisResult* dres, UInt insn,
 
    UInt szId = isU ? (insSz + 4) : insSz;
 
-   static const HChar* nm[2] = {"vdiv", "vmod"};
+   const HChar* nm[2] = {"vdiv", "vmod"};
 
    DIP("%s.%s %s, %s\n", nm[isMod], mkInsSize(szId), nameVReg(vd),
        nameVReg(vj));
@@ -9105,7 +9105,7 @@ static Bool gen_xvdiv_xvmod ( DisResult* dres, UInt insn,
 
    UInt szId = isU ? (insSz + 4) : insSz;
 
-   static const HChar* nm[2] = {"xvdiv", "xvmod"};
+   const HChar* nm[2] = {"xvdiv", "xvmod"};
 
    DIP("%s.%s %s, %s\n", nm[isMod], mkInsSize(szId), nameXReg(xd),
        nameXReg(xj));
@@ -9554,7 +9554,7 @@ static Bool gen_xvlogical_u8 ( DisResult* dres, UInt insn,
          break;
    }
 
-   static const HChar* nm[4] = { "xvandi.b", "xvori.b", "xvxori.b", "xvnori.b" };
+   const HChar* nm[4] = { "xvandi.b", "xvori.b", "xvxori.b", "xvnori.b" };
 
    DIP("%s %s, %s, %u\n", nm[insTy], nameXReg(xd), nameXReg(xj), ui8);
 
@@ -9710,7 +9710,7 @@ static Bool gen_vbit ( DisResult* dres, UInt insn,
       default: vassert(0); break;
    }
 
-   static const HChar* nm[4] = {"vbitrev", "", "vbitclr", "vbitset"};
+   const HChar* nm[4] = {"vbitrev", "", "vbitclr", "vbitset"};
 
    DIP("%s.%s %s, %s, %s\n", nm[insTy], mkInsSize(insSz), nameVReg(vd),
        nameVReg(vj), nameVReg(vk));
@@ -9789,7 +9789,7 @@ static Bool gen_xvbit ( DisResult* dres, UInt insn,
          break;
    }
 
-   static const HChar* nm[4] = {"xvbitrev", "", "xvbitclr", "xvbitset"};
+   const HChar* nm[4] = {"xvbitrev", "", "xvbitclr", "xvbitset"};
 
    DIP("%s.%s %s, %s, %s\n", nm[insTy], mkInsSize(insSz), nameXReg(xd),
        nameXReg(xj), nameXReg(xk));
@@ -9952,7 +9952,7 @@ static Bool gen_xvbiti ( DisResult* dres, UInt insn,
          break;
    }
 
-   static const HChar* nm[3] = {"xvbitrevi", "xvbitclri", "xvbitseti"};
+   const HChar* nm[3] = {"xvbitrevi", "xvbitclri", "xvbitseti"};
 
    DIP("%s.%s %s, %u\n", nm[insTy], mkInsSize(insSz), nameXReg(xd), uImm);
 
@@ -10756,7 +10756,7 @@ static Bool gen_xvcmpi_integer ( DisResult* dres, UInt insn,
          break;
    }
 
-   static const HChar* nm[10] = {"xvseqi", "xvslei", "xvslei", "xvslti", "xvslti"};
+   const HChar* nm[10] = {"xvseqi", "xvslei", "xvslei", "xvslti", "xvslti"};
 
    DIP("%s.%s %s, %s, %d\n", nm[insTy], mkInsSize(szId), nameXReg(xd),
        nameXReg(xj), (Int)extend32(si5, 5));
@@ -11324,7 +11324,7 @@ static Bool gen_vbsll_vbsrl ( DisResult* dres, UInt insn,
       default:   return False;
    }
 
-   static const HChar* nm[2] = {"vbsll.v", "vbsrl.v"};
+   const HChar* nm[2] = {"vbsll.v", "vbsrl.v"};
 
    DIP("%s %s, %s, %u", nm[insTy], nameVReg(vd), nameVReg(vj), ui5);
 
@@ -11376,7 +11376,7 @@ static Bool gen_xvbsll_xvbsrl ( DisResult* dres, UInt insn,
       return False;
    }
 
-   static const HChar* nm[2] = {"xvbsll.v", "xvbsrl.v"};
+   const HChar* nm[2] = {"xvbsll.v", "xvbsrl.v"};
 
    DIP("%s %s, %s, %u", nm[insTy], nameXReg(xd), nameXReg(xj), ui5);
 
@@ -11463,7 +11463,7 @@ static Bool gen_vshift ( DisResult* dres, UInt insn,
       default: vassert(0); break;
    }
 
-   static const HChar* nm[4] = {"vsll", "vsrl", "vsra"};
+   const HChar* nm[4] = {"vsll", "vsrl", "vsra"};
 
    DIP("%s.%s %s, %s, %s\n", nm[insTy], mkInsSize(insSz), nameVReg(vd),
        nameVReg(vj), nameVReg(vk));
@@ -11514,7 +11514,7 @@ static Bool gen_xvshift ( DisResult* dres, UInt insn,
       default: vassert(0); break;
    }
 
-   static const HChar* nm[4] = {"xvsll", "xvsrl", "xvsra"};
+   const HChar* nm[4] = {"xvsll", "xvsrl", "xvsra"};
 
    DIP("%s.%s %s, %s, %s\n", nm[insTy], mkInsSize(insSz), nameXReg(xd),
        nameXReg(xj), nameXReg(xk));
