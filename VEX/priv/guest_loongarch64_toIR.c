@@ -10994,41 +10994,41 @@ static Bool gen_vpickve2gr ( DisResult* dres, UInt insn,
    UInt insImm = SLICE(insn, 15, 10);
    UInt isS    = SLICE(insn, 18, 18);
 
-   UInt uImm, insSz;
-   IRExpr* immExpr;
    IRType extTy = Ity_INVALID;
-   IRTemp res = newTemp(Ity_I64);
+   IRTemp res   = newTemp(Ity_I64);
 
+   UInt uImm, insSz;
    if ((insImm & 0x30) == 0x20) {        // 10mmmm; b
-      uImm = insImm & 0xf;
+      uImm  = insImm & 0xf;
       insSz = 0;
       extTy = Ity_I8;
    } else if ((insImm & 0x38) == 0x30) { // 110mmm; h
-      uImm = insImm & 0x7;
+      uImm  = insImm & 0x7;
       insSz = 1;
       extTy = Ity_I16;
    } else if ((insImm & 0x3c) == 0x38) { // 1110mm; w
-      uImm = insImm & 0x3;
+      uImm  = insImm & 0x3;
       insSz = 2;
       extTy = Ity_I32;
    } else if ((insImm & 0x3e) == 0x3c) { // 11110m; d
-      uImm = insImm & 0x1;
+      uImm  = insImm & 0x1;
       insSz = 3;
    } else {
       vassert(0);
+      return False;
    }
 
-   immExpr = binop(mkV128GETELEM(insSz), getVReg(vj), mkU8(uImm));
-   if (insSz != 3)
-      assign(res, isS ? extendS(extTy, immExpr) :
-                        extendU(extTy, immExpr));
-   else
-      assign(res, binop(Iop_Or64, mkU64(0), immExpr));
+   IRExpr* immExpr = binop(mkV128GETELEM(insSz), getVReg(vj), mkU8(uImm));
+   if (insSz != 3) {
+      assign(res, isS ? extendS(extTy, immExpr) : extendU(extTy, immExpr));
+   } else {
+      assign(res, immExpr);
+   }
 
-   UInt nmId = isS ? insSz : (insSz + 4);
+   UInt szId = isS ? insSz : (insSz + 4);
 
-   DIP("vpickve2gr.%s %s, %s", mkInsSize(nmId),
-                               nameIReg(rd), nameVReg(vj));
+   DIP("vpickve2gr.%s %s, %s, %u", mkInsSize(szId), nameIReg(rd), nameVReg(vj),
+       uImm);
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
@@ -11051,7 +11051,7 @@ static Bool gen_xvpickve2gr ( DisResult* dres, UInt insn,
    assign(src, getXReg(xj));
 
    UInt uImm, insSz;
-   if ((insImm & 0x38) == 0x30) {        // 110mmm; w
+   if ((insImm & 0x38) == 0x30) {       // 110mmm; w
       IRTemp s[8] = {IRTemp_INVALID, IRTemp_INVALID, IRTemp_INVALID,
                      IRTemp_INVALID, IRTemp_INVALID, IRTemp_INVALID,
                      IRTemp_INVALID, IRTemp_INVALID};
@@ -11067,7 +11067,7 @@ static Bool gen_xvpickve2gr ( DisResult* dres, UInt insn,
       breakupV256to64s(src, &s[3], &s[2], &s[1], &s[0]);
       uImm  = insImm & 0b11;
       insSz = 3;
-      assign(res, binop(Iop_Or64, mkU64(0), mkexpr(s[uImm])));
+      assign(res, mkexpr(s[uImm]));
    } else {
       vassert(0);
       return False;
@@ -11075,7 +11075,8 @@ static Bool gen_xvpickve2gr ( DisResult* dres, UInt insn,
 
    UInt nmId = isS ? insSz : (insSz + 4);
 
-   DIP("xvpickve2gr.%s %s, %s", mkInsSize(nmId), nameIReg(xd), nameXReg(xj));
+   DIP("xvpickve2gr.%s %s, %s, %u", mkInsSize(nmId), nameIReg(xd), nameXReg(xj),
+       uImm);
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
