@@ -2703,7 +2703,7 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
                }
                addInstr(env, LOONGARCH64Instr_VecUnary(LAvecun_VREPLGR2VR_D, hregZERO(), dst));
                addInstr(env, LOONGARCH64Instr_VecBinary(op, LOONGARCH64RI_R(dst), src, dst));
-               addInstr(env, LOONGARCH64Instr_VecBinary(LAvecbin_VNOR_V, LOONGARCH64RI_R(src), src, dst));
+               addInstr(env, LOONGARCH64Instr_VecBinary(LAvecbin_VNOR_V, LOONGARCH64RI_R(dst), dst, dst));
                return dst;
             }
             case Iop_CmpNEZ128x1: {
