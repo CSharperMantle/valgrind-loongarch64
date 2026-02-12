@@ -14346,7 +14346,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0001 ( DisResult* dres, UInt insn,
       case 0b01011:
       case 0b01100:
       case 0b01101:
-         ok = gen_xvhaddw_xvhsubw(dres, insn, archinfo, abiinfo);
+         ok = gen_vhaddw_vhsubw(dres, insn, archinfo, abiinfo);
          break;
       case 0b11000:
       case 0b11001:
