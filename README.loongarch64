@@ -3,6 +3,22 @@ Status
 
 A port to LoongArch64 Linux platform.
 
+Repository: <https://github.com/CSharperMantle/valgrind-loongarch64>
+Bug tracker: <https://github.com/CSharperMantle/valgrind-loongarch64/issues>
+VCS AUR: <https://github.com/CSharperMantle/aur-valgrind-loong64-git/>
+
+This fork is maintained by Rong Bao as a hobbyist project. It is not affiliated with Loongson Technology Corp. Ltd, or the official Valgrind project. There are no plans to upstream this port at present.
+
+The original work is done by Feiyang Chen (FreeFlyingSheep) at <https://github.com/FreeFlyingSheep/valgrind-loongarch64>. Feiyang's efforts include the IR generation (lifting) for the Basic Integer and Basic Floating-Point instructions, instruction selection (lowering) for several common VEX IRs, preliminary testing facilities, and some initial infrastructure for LoongArch SIMD Extension (LSX) and LoongArch Advanced SIMD Extension (LASX) instructions. However, their implementation contains logic bugs and typos.
+
+This fork strives to fix those issues and provide a more complete set of L[A]SX instruction support. Currently, this port can correctly run all `openssl speed` tests with `-mlsx`. However, there are still limitations, see below.
+
+Much of the implementation details are collected and tested by the LoongArch fans community. Please see the "Reading Material" section below for resources used.
+
+
+Hacker's Notes
+~~~~~~~~~~~~~~
+
 Some new IROps:
 
 * Iop_ScaleBF64
@@ -47,11 +63,11 @@ A new IRJumpKind:
 Limitations
 ~~~~~~~~~~~
 
-* A small number of non-privileged integer instructions are NOT yet supported.
-* Only the fallback LLSC implementation is supported.
+* A small number of non-privileged integer instructions are not yet supported.
+* Only the fallback LL/SC implementation is supported.
 * Only a selection of LSX and LASX instructions are supported.
-* Binary translation instructions are NOT supported.
-* Tests need to be added for vector instructions.
+* Binary translation instructions are not supported.
+* Tests are not yet added for vector instructions.
 
 Unimplemented LSX and LASX instructions (in loongson-community/loongarch-opcodes notation):
 
@@ -778,3 +794,6 @@ Reading Material
   https://loongson.github.io/LoongArch-Documentation/LoongArch-toolchain-conventions-EN.html
 * LoongArch Opcodes (unofficially compiled list):
   https://github.com/loongson-community/loongarch-opcodes
+* Unofficial LoongArch Intrinsics Guide
+  https://jia.je/unofficial-loongarch-intrinsics-guide/
+  https://doi.org/10.5281/zenodo.14169508
