@@ -770,6 +770,28 @@ static IROp mkV128CMPGTU ( UInt size )
    return ops[size];
 }
 
+/*
+ * Valgrind's Iop_AvgNUxM is actually `vavgr.?u` in LoongArch.
+ * See VEX/priv/host_loongarch64_isel.c.
+ */
+static IROp mkV128AVGU ( UInt size )
+{
+   const IROp ops[4] = {Iop_Avg8Ux16, Iop_Avg16Ux8, Iop_Avg32Ux4, Iop_Avg64Ux2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+/*
+ * Valgrind's Iop_AvgSUxM is actually `vavgr.?` in LoongArch.
+ * See VEX/priv/host_loongarch64_isel.c.
+ */
+static IROp mkV128AVGS ( UInt size )
+{
+   const IROp ops[4] = {Iop_Avg8Sx16, Iop_Avg16Sx8, Iop_Avg32Sx4, Iop_Avg64Sx2};
+   vassert(size < 4);
+   return ops[size];
+}
+
 /*------------------------------------------------------------*/
 /*--- Helpers for HWCAP simulation                         ---*/
 /*------------------------------------------------------------*/
@@ -8473,6 +8495,99 @@ static Bool gen_xvaddw_xvsubw_x_x_x ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_v128avg ( IRExpr* j, IRExpr* k, UInt insSz, UInt isU,
+                              UInt isR )
+{
+   IRTemp res   = newTemp(Ity_V128);
+   IROp   avgOp = isU ? mkV128AVGU(insSz) : mkV128AVGS(insSz);
+   IROp   shrOp = isU ? mkV128SHRN(insSz) : mkV128SARN(insSz);
+
+   if (isR) {
+      assign(res, binop(avgOp, j, k));
+   } else {
+      const UInt shlNum[4] = {7, 15, 31, 63};
+      assign(res, binop(mkV128ADD(insSz),
+                        binop(mkV128ADD(insSz), binop(shrOp, j, mkU8(1)),
+                              binop(shrOp, k, mkU8(1))),
+                        binop(mkV128SHRN(insSz),
+                              binop(mkV128SHLN(insSz), binop(Iop_AndV128, j, k),
+                                    mkU8(shlNum[insSz])),
+                              mkU8(shlNum[insSz]))));
+   }
+
+   return res;
+}
+
+static Bool gen_vavg_vavgr ( DisResult* dres, UInt insn,
+                             const VexArchInfo* archinfo,
+                             const VexAbiInfo* abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt vk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isU   = SLICE(insn, 17, 17);
+   UInt isR   = SLICE(insn, 19, 19);
+
+   IRTemp j    = newTemp(Ity_V128);
+   IRTemp k    = newTemp(Ity_V128);
+   UInt   szId = isU ? (insSz + 4) : insSz;
+
+   assign(j, getVReg(vj));
+   assign(k, getVReg(vk));
+
+   IRTemp res = macro_v128avg(mkexpr(j), mkexpr(k), insSz, isU, isR);
+
+   const HChar* nm[2] = {"vavg", "vavgr"};
+
+   DIP("%s.%s %s, %s, %s\n", nm[isR], mkInsSize(szId), nameVReg(vd),
+       nameVReg(vj), nameVReg(vk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvavg_xvavgr ( DisResult* dres, UInt insn,
+                               const VexArchInfo* archinfo,
+                               const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isU   = SLICE(insn, 17, 17);
+   UInt isR   = SLICE(insn, 19, 19);
+
+   IRTemp j   = newTemp(Ity_V256);
+   IRTemp k   = newTemp(Ity_V256);
+   IRTemp jHi = IRTemp_INVALID;
+   IRTemp jLo = IRTemp_INVALID;
+   IRTemp kHi = IRTemp_INVALID;
+   IRTemp kLo = IRTemp_INVALID;
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xk));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(k, &kHi, &kLo);
+
+   IRTemp resHi = macro_v128avg(mkexpr(jHi), mkexpr(kHi), insSz, isU, isR);
+   IRTemp resLo = macro_v128avg(mkexpr(jLo), mkexpr(kLo), insSz, isU, isR);
+
+   const HChar* nm[2] = {"xvavg", "xvavgr"};
+
+   UInt szId = isU ? (insSz + 4) : insSz;
+   DIP("%s.%s %s, %s, %s\n", nm[isR], mkInsSize(szId), nameXReg(xd),
+       nameXReg(xj), nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_vmax_vmin ( DisResult* dres, UInt insn,
                             const VexArchInfo* archinfo,
                             const VexAbiInfo* abiinfo )
@@ -14348,6 +14463,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0001 ( DisResult* dres, UInt insn,
       case 0b01101:
          ok = gen_vhaddw_vhsubw(dres, insn, archinfo, abiinfo);
          break;
+      case 0b10010:
+      case 0b10011:
+      case 0b10100:
+      case 0b10101:
+         ok = gen_vavg_vavgr(dres, insn, archinfo, abiinfo);
+         break;
       case 0b11000:
       case 0b11001:
       case 0b11010:
@@ -14829,6 +14950,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0001 ( DisResult* dres, UInt insn,
       case 0b01100:
       case 0b01101:
          ok = gen_xvhaddw_xvhsubw(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b10010:
+      case 0b10011:
+      case 0b10100:
+      case 0b10101:
+         ok = gen_xvavg_xvavgr(dres, insn, archinfo, abiinfo);
          break;
       case 0b11000:
       case 0b11001:
