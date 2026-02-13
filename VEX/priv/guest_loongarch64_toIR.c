@@ -9217,6 +9217,150 @@ static Bool gen_xvdiv_xvmod ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_v128sat_u ( IRTemp src, UInt insSz, UInt uImm )
+{
+   const UInt saramt[4] = {7, 15, 31, 63};
+   if (uImm == saramt[insSz]) {
+      return src;
+   }
+
+   IRTemp mask = newTemp(Ity_V128);
+   IRTemp res  = newTemp(Ity_V128);
+
+   assign(mask, binop(mkV128CMPEQ(insSz),
+                      binop(mkV128SHRN(insSz), mkexpr(src), mkU8(uImm + 1)),
+                      mkV128(0x0000)));
+   assign(res, binop(Iop_OrV128, binop(Iop_AndV128, mkexpr(mask), mkexpr(src)),
+                     binop(mkV128SHRN(insSz), unop(Iop_NotV128, mkexpr(mask)),
+                           mkU8(saramt[insSz] - uImm))));
+
+   return res;
+}
+
+static IRTemp macro_v128sat_s ( IRTemp src, UInt insSz, UInt uImm )
+{
+   IRTemp val = newTemp(Ity_V128);
+
+   const UInt shramt[4] = {8, 16, 32, 64};
+   const UInt saramt[4] = {7, 15, 31, 63};
+
+   assign(val, binop(mkV128SARN(insSz), mkexpr(src), mkU8(saramt[insSz])));
+
+   if (uImm == 0) {
+      return val;
+   }
+
+   IRTemp tmp = newTemp(Ity_V128);
+   IRTemp res = newTemp(Ity_V128);
+
+   assign(tmp, binop(mkV128SARN(insSz), mkexpr(src), mkU8(uImm)));
+   assign(
+      res,
+      binop(Iop_OrV128,
+            binop(Iop_OrV128,
+                  binop(Iop_AndV128,
+                        binop(mkV128CMPEQ(insSz), mkexpr(val), mkexpr(tmp)),
+                        mkexpr(src)),
+                  binop(mkV128SHLN(insSz),
+                        binop(mkV128CMPGTS(insSz), mkexpr(val), mkexpr(tmp)),
+                        mkU8(uImm))),
+            binop(mkV128SHRN(insSz),
+                  binop(mkV128CMPGTS(insSz), mkexpr(tmp), mkexpr(val)),
+                  mkU8(shramt[insSz] - uImm))));
+   return res;
+}
+
+static Bool gen_vsat ( DisResult* dres, UInt insn,
+                       const VexArchInfo* archinfo,
+                       const VexAbiInfo* abiinfo )
+{
+   UInt vd     = SLICE(insn, 4, 0);
+   UInt vj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 17, 10);
+   UInt isS    = SLICE(insn, 18, 18);
+
+   UInt insSz, uImm;
+   if ((insImm & 0b11111000) == 0b00001000) {        // 00001???; b
+      uImm  = insImm & 0b00000111;
+      insSz = 0;
+   } else if ((insImm & 0b11110000) == 0b00010000) { // 0001????; h
+      uImm  = insImm & 0b00001111;
+      insSz = 1;
+   } else if ((insImm & 0b11100000) == 0b00100000) { // 001?????; w
+      uImm  = insImm & 0b00011111;
+      insSz = 2;
+   } else if ((insImm & 0b11000000) == 0b01000000) { // 01??????; d
+      uImm  = insImm & 0b00111111;
+      insSz = 3;
+   } else {
+      return False;
+   }
+
+   IRTemp j = newTemp(Ity_V128);
+   assign(j, getVReg(vj));
+
+   IRTemp res = isS ? macro_v128sat_s(j, insSz, uImm)
+                    : macro_v128sat_u(j, insSz, uImm);
+
+   UInt szId = isS ? insSz : (insSz + 4);
+
+   DIP("vsat.%s %s, %u\n", mkInsSize(szId), nameVReg(vd), uImm);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvsat ( DisResult* dres, UInt insn,
+                        const VexArchInfo* archinfo,
+                        const VexAbiInfo* abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt xj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 17, 10);
+   UInt isS    = SLICE(insn, 18, 18);
+
+   UInt insSz, uImm;
+   if ((insImm & 0b11111000) == 0b00001000) {        // 00001???; b
+      uImm  = insImm & 0b00000111;
+      insSz = 0;
+   } else if ((insImm & 0b11110000) == 0b00010000) { // 0001????; h
+      uImm  = insImm & 0b00001111;
+      insSz = 1;
+   } else if ((insImm & 0b11100000) == 0b00100000) { // 001?????; w
+      uImm  = insImm & 0b00011111;
+      insSz = 2;
+   } else if ((insImm & 0b11000000) == 0b01000000) { // 01??????; d
+      uImm  = insImm & 0b00111111;
+      insSz = 3;
+   } else {
+      return False;
+   }
+
+   IRTemp j   = newTemp(Ity_V256);
+   IRTemp jHi = IRTemp_INVALID;
+   IRTemp jLo = IRTemp_INVALID;
+   assign(j, getXReg(xj));
+   breakupV256toV128s(j, &jHi, &jLo);
+
+   IRTemp resHi = isS ? macro_v128sat_s(jHi, insSz, uImm)
+                      : macro_v128sat_u(jHi, insSz, uImm);
+   IRTemp resLo = isS ? macro_v128sat_s(jLo, insSz, uImm)
+                      : macro_v128sat_u(jLo, insSz, uImm);
+
+   UInt szId = isS ? insSz : (insSz + 4);
+
+   DIP("xvsat.%s %s, %u\n", mkInsSize(szId), nameXReg(xd), uImm);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_vexth ( DisResult* dres, UInt insn,
                         const VexArchInfo* archinfo,
                         const VexAbiInfo*  abiinfo )
@@ -14781,6 +14925,10 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_1100 ( DisResult* dres, UInt insn,
       case 0b0110:
          ok = gen_vbiti(dres, insn, archinfo, abiinfo);
          break;
+      case 0b1001:
+      case 0b1010:
+         ok = gen_vsat(dres, insn, archinfo, abiinfo);
+         break;
       case 0b1011:
       case 0b1100:
       case 0b1101:
@@ -15212,6 +15360,10 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1100 ( DisResult* dres, UInt insn,
       case 0b0101:
       case 0b0110:
          ok = gen_xvbiti(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b1001:
+      case 0b1010:
+         ok = gen_xvsat(dres, insn, archinfo, abiinfo);
          break;
       case 0b1011:
       case 0b1100:
