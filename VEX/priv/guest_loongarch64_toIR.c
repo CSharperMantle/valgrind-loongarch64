@@ -792,6 +792,38 @@ static IROp mkV128AVGS ( UInt size )
    return ops[size];
 }
 
+static IROp mkV128QADDS ( UInt size )
+{
+   const IROp ops[4] = {Iop_QAdd8Sx16, Iop_QAdd16Sx8, Iop_QAdd32Sx4,
+                        Iop_QAdd64Sx2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128QSUBS ( UInt size )
+{
+   const IROp ops[4] = {Iop_QSub8Sx16, Iop_QSub16Sx8, Iop_QSub32Sx4,
+                        Iop_QSub64Sx2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128QADDU ( UInt size )
+{
+   const IROp ops[4] = {Iop_QAdd8Ux16, Iop_QAdd16Ux8, Iop_QAdd32Ux4,
+                        Iop_QAdd64Ux2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128QSUBU ( UInt size )
+{
+   const IROp ops[4] = {Iop_QSub8Ux16, Iop_QSub16Ux8, Iop_QSub32Ux4,
+                        Iop_QSub64Ux2};
+   vassert(size < 4);
+   return ops[size];
+}
+
 /*------------------------------------------------------------*/
 /*--- Helpers for HWCAP simulation                         ---*/
 /*------------------------------------------------------------*/
@@ -8245,6 +8277,112 @@ static Bool gen_xvneg ( DisResult* dres, UInt insn,
    return True;
 }
 
+
+
+static Bool gen_vsadd_vssub ( DisResult* dres, UInt insn,
+                              const VexArchInfo* archinfo,
+                              const VexAbiInfo*  abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt vk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isAdd = SLICE(insn, 17, 17);
+
+   UInt szId;
+   IROp mathOp = Iop_INVALID;
+   switch (SLICE(insn, 19, 17)) {
+      case 0b011:
+         mathOp = mkV128QADDS(insSz);
+         szId   = insSz;
+         break;
+      case 0b100:
+         mathOp = mkV128QSUBS(insSz);
+         szId   = insSz;
+         break;
+      case 0b101:
+         mathOp = mkV128QADDU(insSz);
+         szId   = insSz + 4;
+         break;
+      case 0b110:
+         mathOp = mkV128QSUBU(insSz);
+         szId   = insSz + 4;
+         break;
+      default: return False;
+   }
+
+   const HChar* name[2] = {"vssub", "vsadd"};
+
+   DIP("%s.%s %s, %s, %s\n", name[isAdd], mkInsSize(szId), nameVReg(vd),
+       nameVReg(vj), nameVReg(vk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, binop(mathOp, getVReg(vj), getVReg(vk)));
+
+   return True;
+}
+
+static Bool gen_xvsadd_xvssub ( DisResult* dres, UInt insn,
+                                const VexArchInfo* archinfo,
+                                const VexAbiInfo*  abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isAdd = SLICE(insn, 17, 17);
+
+   IRTemp j     = newTemp(Ity_V256);
+   IRTemp k     = newTemp(Ity_V256);
+   IRTemp jHi   = IRTemp_INVALID;
+   IRTemp jLo   = IRTemp_INVALID;
+   IRTemp kHi   = IRTemp_INVALID;
+   IRTemp kLo   = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xk));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(k, &kHi, &kLo);
+
+   UInt szId;
+   IROp mathOp = Iop_INVALID;
+   switch (SLICE(insn, 19, 17)) {
+      case 0b011:
+         mathOp = mkV128QADDS(insSz);
+         szId   = insSz;
+         break;
+      case 0b100:
+         mathOp = mkV128QSUBS(insSz);
+         szId   = insSz;
+         break;
+      case 0b101:
+         mathOp = mkV128QADDU(insSz);
+         szId   = insSz + 4;
+         break;
+      case 0b110:
+         mathOp = mkV128QSUBU(insSz);
+         szId   = insSz + 4;
+         break;
+      default: return False;
+   }
+
+   assign(resHi, binop(mathOp, mkexpr(jHi), mkexpr(kHi)));
+   assign(resLo, binop(mathOp, mkexpr(jLo), mkexpr(kLo)));
+
+   const HChar* name[2] = {"xvssub", "xvsadd"};
+
+   DIP("%s.%s %s, %s, %s\n", name[isAdd], mkInsSize(szId), nameXReg(xd),
+       nameXReg(xj), nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool macro_v128addw_v128subw_x_x_ops ( UInt op, UInt insSz,
                                               UInt* outId, IROp* outMathOp,
                                               IROp* outPackOp, IROp* outWidenOp,
@@ -14601,6 +14739,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0001 ( DisResult* dres, UInt insn,
       case 0b00000:
          ok = gen_vaddw_vsubw_x_x_x(dres, insn, archinfo, abiinfo);
          break;
+      case 0b00011:
+      case 0b00100:
+      case 0b00101:
+      case 0b00110:
+         ok = gen_vsadd_vssub(dres, insn, archinfo, abiinfo);
+         break;
       case 0b01010:
       case 0b01011:
       case 0b01100:
@@ -15092,6 +15236,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0001 ( DisResult* dres, UInt insn,
    switch (SLICE(insn, 21, 17)) {
       case 0b00000:
          ok = gen_xvaddw_xvsubw_x_x_x(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b00011:
+      case 0b00100:
+      case 0b00101:
+      case 0b00110:
+         ok = gen_xvsadd_xvssub(dres, insn, archinfo, abiinfo);
          break;
       case 0b01010:
       case 0b01011:
