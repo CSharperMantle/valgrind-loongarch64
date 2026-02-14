@@ -1624,8 +1624,11 @@ typedef
       Iop_MulHi8Ux16, Iop_MulHi16Ux8, Iop_MulHi32Ux4,
       Iop_MulHi8Sx16, Iop_MulHi16Sx8, Iop_MulHi32Sx4,
       /* (widening signed/unsigned of even lanes, with lowest lane=zero) */
-      Iop_MullEven8Ux16, Iop_MullEven16Ux8, Iop_MullEven32Ux4,
-      Iop_MullEven8Sx16, Iop_MullEven16Sx8, Iop_MullEven32Sx4,
+      Iop_MullEven8Ux16, Iop_MullEven16Ux8, Iop_MullEven32Ux4, Iop_MullEven64Ux2,
+      Iop_MullEven8Sx16, Iop_MullEven16Sx8, Iop_MullEven32Sx4, Iop_MullEven64Sx2,
+      /* (widening signed/unsigned of odd lanes, with lowest lane=zero) */
+      Iop_MullOdd8Ux16, Iop_MullOdd16Ux8, Iop_MullOdd32Ux4, Iop_MullOdd64Ux2,
+      Iop_MullOdd8Sx16, Iop_MullOdd16Sx8, Iop_MullOdd32Sx4, Iop_MullOdd64Sx2,
 
       /* Widening multiplies, all of the form (I64, I64) -> V128 */
       Iop_Mull8Ux8, Iop_Mull8Sx8,

@@ -4461,20 +4461,20 @@ IRAtom* expr2vbits_Binop ( MCEnv* mce,
                    mkPCast32x4(mce, vatom2)
                 );
 
-     /* These two take the lower half of each 16-bit lane, sign/zero
-        extend it to 32, and multiply together, producing a 32x4
-        result (and implicitly ignoring half the operand bits).  So
-        treat it as a bunch of independent 16x8 operations, but then
-        do 32-bit shifts left-right to copy the lower half results
-        (which are all 0s or all 1s due to PCasting in binary16Ix8)
-        into the upper half of each result lane. */
+      /* These two take the lower half of each 16-bit lane, sign/zero
+         extend it to 32, and multiply together, producing a 32x4
+         result (and implicitly ignoring half the operand bits).  So
+         treat it as a bunch of independent 16x8 operations, but then
+         do 32-bit shifts left-right to copy the lower half results
+         (which are all 0s or all 1s due to PCasting in binary16Ix8)
+         into the upper half of each result lane. */
       case Iop_MullEven16Ux8:
       case Iop_MullEven16Sx8: {
          IRAtom* at;
          at = binary16Ix8(mce,vatom1,vatom2);
          at = assignNew('V', mce, Ity_V128, binop(Iop_ShlN32x4, at, mkU8(16)));
          at = assignNew('V', mce, Ity_V128, binop(Iop_SarN32x4, at, mkU8(16)));
-	 return at;
+         return at;
       }
 
       /* Same deal as Iop_MullEven16{S,U}x8 */
@@ -4484,7 +4484,7 @@ IRAtom* expr2vbits_Binop ( MCEnv* mce,
          at = binary8Ix16(mce,vatom1,vatom2);
          at = assignNew('V', mce, Ity_V128, binop(Iop_ShlN16x8, at, mkU8(8)));
          at = assignNew('V', mce, Ity_V128, binop(Iop_SarN16x8, at, mkU8(8)));
-	 return at;
+         return at;
       }
 
       /* Same deal as Iop_MullEven16{S,U}x8 */
@@ -4494,6 +4494,62 @@ IRAtom* expr2vbits_Binop ( MCEnv* mce,
          at = binary32Ix4(mce,vatom1,vatom2);
          at = assignNew('V', mce, Ity_V128, binop(Iop_ShlN64x2, at, mkU8(32)));
          at = assignNew('V', mce, Ity_V128, binop(Iop_SarN64x2, at, mkU8(32)));
+         return at;
+      }
+
+      /* Same deal as Iop_MullEven16{S,U}x8 */
+      case Iop_MullEven64Ux2:
+      case Iop_MullEven64Sx2: {
+         IRAtom* at;
+         at = binary64Ix2(mce,vatom1,vatom2);
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShlV128, at, mkU8(64)));
+         at = assignNew('V', mce, Ity_V128, binop(Iop_SarV128, at, mkU8(64)));
+         return at;
+      }
+
+      /* These two take the higher half of each 16-bit lane, sign/zero
+         extend it to 32, and multiply together, producing a 32x4
+         result (and implicitly ignoring half the operand bits).  So
+         treat it as a bunch of independent 16x8 operations, but then
+         do 32-bit shifts right-left to copy the higher half results
+         (which are all 0s or all 1s due to PCasting in binary16Ix8)
+         into the upper half of each result lane. */
+      case Iop_MullOdd16Ux8:
+      case Iop_MullOdd16Sx8: {
+         IRAtom* at;
+         at = binary16Ix8(mce,vatom1,vatom2);
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShrN32x4, at, mkU8(16)));
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShlN32x4, at, mkU8(16)));
+         return at;
+      }
+
+      /* Same deal as Iop_MullOdd16{S,U}x8 */
+      case Iop_MullOdd8Ux16:
+      case Iop_MullOdd8Sx16: {
+         IRAtom* at;
+         at = binary8Ix16(mce,vatom1,vatom2);
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShrN16x8, at, mkU8(8)));
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShlN16x8, at, mkU8(8)));
+         return at;
+      }
+
+      /* Same deal as Iop_MullOdd16{S,U}x8 */
+      case Iop_MullOdd32Ux4:
+      case Iop_MullOdd32Sx4: {
+         IRAtom* at;
+         at = binary32Ix4(mce,vatom1,vatom2);
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShrN64x2, at, mkU8(32)));
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShlN64x2, at, mkU8(32)));
+         return at;
+      }
+
+      /* Same deal as Iop_MullOdd16{S,U}x8 */
+      case Iop_MullOdd64Ux2:
+      case Iop_MullOdd64Sx2: {
+         IRAtom* at;
+         at = binary64Ix2(mce,vatom1,vatom2);
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShrV128, at, mkU8(64)));
+         at = assignNew('V', mce, Ity_V128, binop(Iop_ShlV128, at, mkU8(64)));
          return at;
       }
 
