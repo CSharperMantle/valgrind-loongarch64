@@ -11348,7 +11348,6 @@ static Bool gen_xvset ( DisResult* dres, UInt insn,
 
          IRTemp eqHi = newTemp(Ity_V128);
          IRTemp eqLo = newTemp(Ity_V128);
-         breakupV256toV128s(src, &srcHi, &srcLo);
          assign(eqHi, binop(mkV128CMPEQ(insSz), mkexpr(srcHi), mkexpr(z128)));
          assign(eqLo, binop(mkV128CMPEQ(insSz), mkexpr(srcLo), mkexpr(z128)));
          assign(res, binop(Iop_V128HLtoV256,
