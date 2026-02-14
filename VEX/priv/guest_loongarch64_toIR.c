@@ -770,6 +770,38 @@ static IROp mkV128CMPGTU ( UInt size )
    return ops[size];
 }
 
+static IROp mkV128MULWEVU ( UInt size )
+{
+   const IROp ops[4] = {Iop_MullEven8Ux16, Iop_MullEven16Ux8, Iop_MullEven32Ux4,
+                        Iop_MullEven64Ux2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128MULWEVS ( UInt size )
+{
+   const IROp ops[4] = {Iop_MullEven8Sx16, Iop_MullEven16Sx8, Iop_MullEven32Sx4,
+                        Iop_MullEven64Sx2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128MULWODU ( UInt size )
+{
+   const IROp ops[4] = {Iop_MullOdd8Ux16, Iop_MullOdd16Ux8, Iop_MullOdd32Ux4,
+                        Iop_MullOdd64Ux2};
+   vassert(size < 4);
+   return ops[size];
+}
+
+static IROp mkV128MULWODS ( UInt size )
+{
+   const IROp ops[4] = {Iop_MullOdd8Sx16, Iop_MullOdd16Sx8, Iop_MullOdd32Sx4,
+                        Iop_MullOdd64Sx2};
+   vassert(size < 4);
+   return ops[size];
+}
+
 /*
  * Valgrind's Iop_AvgNUxM is actually `vavgr.?u` in LoongArch.
  * See VEX/priv/host_loongarch64_isel.c.
@@ -9117,44 +9149,11 @@ static Bool gen_xvmul_xvmuh ( DisResult* dres, UInt insn,
 static IRTemp macro_v128mulw_x_x ( IRExpr* j, IRExpr* k, UInt insSz,
                                    UInt isOd, UInt isU )
 {
-   IRTemp wj  = newTemp(Ity_V128);
-   IRTemp wk  = newTemp(Ity_V128);
    IRTemp res = newTemp(Ity_V128);
 
-   IROp widenOp = isU ? mkV128EXTHTU(insSz) : mkV128EXTHTS(insSz);
-   IROp packOp  = isOd ? mkV128PACKOD(insSz) : mkV128PACKEV(insSz);
-   IROp mulOp;
-   switch (insSz) {
-      case 0b00: /* .h.b[u] */
-      case 0b01: /* .w.h[u] */ mulOp = mkV128MUL(insSz + 1); break;
-      case 0b10: /* .d.w[u] */
-      case 0b11: /* .q.d[u] */ mulOp = isU ? Iop_MullU64 : Iop_MullS64; break;
-      default:   vassert(0); break;
-   }
-
-   switch (insSz) {
-      case 0b00: /* .h.b[u] */
-      case 0b01: /* .w.h[u] */ {
-         assign(wj, unop(widenOp, binop(packOp, j, mkV128(0x0000))));
-         assign(wk, unop(widenOp, binop(packOp, k, mkV128(0x0000))));
-         assign(res, binop(mulOp, mkexpr(wj), mkexpr(wk)));
-         break;
-      }
-      case 0b10: /* .d.w[u] */ {
-         assign(wj, unop(widenOp, binop(packOp, j, mkV128(0x0000))));
-         assign(wk, unop(widenOp, binop(packOp, k, mkV128(0x0000))));
-         assign(res, macro_v128mul(mkexpr(wj), mkexpr(wk), mulOp, Iop_128to64));
-         break;
-      }
-      case 0b11: /* .q.d[u] */ {
-         assign(wj, binop(packOp, j, mkV128(0x0000)));
-         assign(wk, binop(packOp, k, mkV128(0x0000)));
-         assign(res, binop(mulOp, unop(Iop_V128HIto64, mkexpr(wj)),
-                           unop(Iop_V128HIto64, mkexpr(wk))));
-         break;
-      }
-      default: vassert(0); break;
-   }
+   IROp op = isU ? (isOd ? mkV128MULWODU(insSz) : mkV128MULWEVU(insSz))
+                 : (isOd ? mkV128MULWODS(insSz) : mkV128MULWEVS(insSz));
+   assign(res, binop(op, j, k));
 
    return res;
 }
