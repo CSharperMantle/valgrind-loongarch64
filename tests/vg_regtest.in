@@ -822,8 +822,10 @@ sub warn_about_EXTRA_REGTEST_OPTS()
 
 # nuke VALGRIND_OPTS
 $ENV{"VALGRIND_OPTS"} = "";
-# nuke DEBUGINFOD_URLS
-$ENV{"DEBUGINFOD_URLS"} = "";
+# FIXME: Known to break on Arch Linux for Loong64, where the only way
+# to get working debug symbols is via debuginfod.
+## nuke DEBUGINFOD_URLS
+#$ENV{"DEBUGINFOD_URLS"} = "";
 
 if ($ENV{"EXTRA_REGTEST_OPTS"}) {
     print "\n";
