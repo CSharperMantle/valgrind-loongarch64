@@ -6,6 +6,7 @@
 /conftest*
 /.cache
 /configure~
+vgcore.*
 
 # /
 /.in_place
