@@ -2425,6 +2425,10 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
             case Iop_Mul8x16: case Iop_Mul16x8: case Iop_Mul32x4:
             case Iop_MulHi8Ux16: case Iop_MulHi16Ux8: case Iop_MulHi32Ux4:
             case Iop_MulHi8Sx16: case Iop_MulHi16Sx8: case Iop_MulHi32Sx4:
+            case Iop_MullEven8Ux16: case Iop_MullEven16Ux8: case Iop_MullEven32Ux4: case Iop_MullEven64Ux2:
+            case Iop_MullEven8Sx16: case Iop_MullEven16Sx8: case Iop_MullEven32Sx4: case Iop_MullEven64Sx2:
+            case Iop_MullOdd8Ux16: case Iop_MullOdd16Ux8: case Iop_MullOdd32Ux4: case Iop_MullOdd64Ux2:
+            case Iop_MullOdd8Sx16: case Iop_MullOdd16Sx8: case Iop_MullOdd32Sx4: case Iop_MullOdd64Sx2:
             case Iop_Shl8x16: case Iop_Shl16x8: case Iop_Shl32x4: case Iop_Shl64x2:
             case Iop_Shr8x16: case Iop_Shr16x8: case Iop_Shr32x4: case Iop_Shr64x2:
             case Iop_Sar8x16: case Iop_Sar16x8: case Iop_Sar32x4: case Iop_Sar64x2:
@@ -2515,6 +2519,22 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
                   case Iop_MulHi8Sx16: op = LAvecbin_VMUH_B; break;
                   case Iop_MulHi16Sx8: op = LAvecbin_VMUH_H; break;
                   case Iop_MulHi32Sx4: op = LAvecbin_VMUH_W; break;
+                  case Iop_MullEven8Ux16: op = LAvecbin_VMULWEV_H_BU; break;
+                  case Iop_MullEven16Ux8: op = LAvecbin_VMULWEV_W_HU; break;
+                  case Iop_MullEven32Ux4: op = LAvecbin_VMULWEV_D_WU; break;
+                  case Iop_MullEven64Ux2: op = LAvecbin_VMULWEV_Q_DU; break;
+                  case Iop_MullEven8Sx16: op = LAvecbin_VMULWEV_H_B; break;
+                  case Iop_MullEven16Sx8: op = LAvecbin_VMULWEV_W_H; break;
+                  case Iop_MullEven32Sx4: op = LAvecbin_VMULWEV_D_W; break;
+                  case Iop_MullEven64Sx2: op = LAvecbin_VMULWEV_Q_D; break;
+                  case Iop_MullOdd8Ux16: op = LAvecbin_VMULWOD_H_BU; break;
+                  case Iop_MullOdd16Ux8: op = LAvecbin_VMULWOD_W_HU; break;
+                  case Iop_MullOdd32Ux4: op = LAvecbin_VMULWOD_D_WU; break;
+                  case Iop_MullOdd64Ux2: op = LAvecbin_VMULWOD_Q_DU; break;
+                  case Iop_MullOdd8Sx16: op = LAvecbin_VMULWOD_H_B; break;
+                  case Iop_MullOdd16Sx8: op = LAvecbin_VMULWOD_W_H; break;
+                  case Iop_MullOdd32Sx4: op = LAvecbin_VMULWOD_D_W; break;
+                  case Iop_MullOdd64Sx2: op = LAvecbin_VMULWOD_Q_D; break;
                   case Iop_Shl8x16: op = LAvecbin_VSLL_B; break;
                   case Iop_Shl16x8: op = LAvecbin_VSLL_H; break;
                   case Iop_Shl32x4: op = LAvecbin_VSLL_W; break;
