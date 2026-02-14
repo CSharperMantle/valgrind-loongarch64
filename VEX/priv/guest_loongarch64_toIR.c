@@ -824,6 +824,13 @@ static IROp mkV128QSUBU ( UInt size )
    return ops[size];
 }
 
+static IROp mkV128ABS ( UInt size )
+{
+   const IROp ops[4] = {Iop_Abs8x16, Iop_Abs16x8, Iop_Abs32x4, Iop_Abs64x2};
+   vassert(size < 4);
+   return ops[size];
+}
+
 /*------------------------------------------------------------*/
 /*--- Helpers for HWCAP simulation                         ---*/
 /*------------------------------------------------------------*/
@@ -8726,6 +8733,71 @@ static Bool gen_xvavg_xvavgr ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_v128addabs ( IRExpr* j, IRExpr* k, UInt insSz )
+{
+   IRTemp absJ = newTemp(Ity_V128);
+   IRTemp absK = newTemp(Ity_V128);
+   IRTemp res  = newTemp(Ity_V128);
+   assign(absJ, unop(mkV128ABS(insSz), j));
+   assign(absK, unop(mkV128ABS(insSz), k));
+   assign(res, binop(mkV128ADD(insSz), mkexpr(absJ), mkexpr(absK)));
+   return res;
+}
+
+static Bool gen_vadda ( DisResult* dres, UInt insn,
+                        const VexArchInfo* archinfo,
+                        const VexAbiInfo* abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt vk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+
+   DIP("vadda.%s %s, %s, %s\n", mkInsSize(insSz), nameVReg(vd), nameVReg(vj),
+       nameVReg(vk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkexpr(macro_v128addabs(getVReg(vj), getVReg(vk), insSz)));
+
+   return True;
+}
+
+static Bool gen_xvadda ( DisResult* dres, UInt insn,
+                         const VexArchInfo* archinfo,
+                         const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+
+   IRTemp j     = newTemp(Ity_V256);
+   IRTemp k     = newTemp(Ity_V256);
+   IRTemp jHi   = IRTemp_INVALID;
+   IRTemp jLo   = IRTemp_INVALID;
+   IRTemp kHi   = IRTemp_INVALID;
+   IRTemp kLo   = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xk));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(k, &kHi, &kLo);
+
+   assign(resHi, mkexpr(macro_v128addabs(mkexpr(jHi), mkexpr(kHi), insSz)));
+   assign(resLo, mkexpr(macro_v128addabs(mkexpr(jLo), mkexpr(kLo), insSz)));
+
+   DIP("xvadda.%s %s, %s, %s\n", mkInsSize(insSz), nameXReg(xd), nameXReg(xj),
+       nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_vmax_vmin ( DisResult* dres, UInt insn,
                             const VexArchInfo* archinfo,
                             const VexAbiInfo* abiinfo )
@@ -14751,6 +14823,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0001 ( DisResult* dres, UInt insn,
       case 0b01101:
          ok = gen_vhaddw_vhsubw(dres, insn, archinfo, abiinfo);
          break;
+      case 0b01110:
+         ok = gen_vadda(dres, insn, archinfo, abiinfo);
+         break;
       case 0b10010:
       case 0b10011:
       case 0b10100:
@@ -15248,6 +15323,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0001 ( DisResult* dres, UInt insn,
       case 0b01100:
       case 0b01101:
          ok = gen_xvhaddw_xvhsubw(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b01110:
+         ok = gen_xvadda(dres, insn, archinfo, abiinfo);
          break;
       case 0b10010:
       case 0b10011:
