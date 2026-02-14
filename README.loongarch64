@@ -50,6 +50,16 @@ Some new IROps:
 * Iop_WidenHIto64Ux2
 * Iop_WidenHIto128Ux1
 * Iop_Cls64x2
+* Iop_MullEven64Ux2
+* Iop_MullEven64Sx2
+* Iop_MullOdd8Ux16
+* Iop_MullOdd16Ux8
+* Iop_MullOdd32Ux4
+* Iop_MullOdd64Ux2
+* Iop_MullOdd8Sx16
+* Iop_MullOdd16Sx8
+* Iop_MullOdd32Sx4
+* Iop_MullOdd64Sx2
 
 A new IRMBusEvent:
 
