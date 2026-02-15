@@ -2644,33 +2644,21 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
             }
             case Iop_Abs8x16: case Iop_Abs16x8:
             case Iop_Abs32x4: case Iop_Abs64x2: {
-               LOONGARCH64VecBinOp subOp, addOp;
+               LOONGARCH64VecBinOp addOp;
                switch (e->Iex.Unop.op) {
-                  case Iop_Abs8x16:
-                     subOp = LAvecbin_VSUB_B;
-                     addOp = LAvecbin_VADDA_B;
-                     break;
-                  case Iop_Abs16x8:
-                     subOp = LAvecbin_VSUB_H;
-                     addOp = LAvecbin_VADDA_H;
-                     break;
-                  case Iop_Abs32x4:
-                     subOp = LAvecbin_VSUB_W;
-                     addOp = LAvecbin_VADDA_W;
-                     break;
-                  case Iop_Abs64x2:
-                     subOp = LAvecbin_VSUB_D;
-                     addOp = LAvecbin_VADDA_D;
-                     break;
-                  default:
-                     vassert(0);
-                     break;
+                  case Iop_Abs8x16: addOp = LAvecbin_VADDA_B; break;
+                  case Iop_Abs16x8: addOp = LAvecbin_VADDA_H; break;
+                  case Iop_Abs32x4: addOp = LAvecbin_VADDA_W; break;
+                  case Iop_Abs64x2: addOp = LAvecbin_VADDA_D; break;
+                  default:          vassert(0); break;
                };
                HReg dst = newVRegV(env);
                HReg src = iselV128Expr(env, e->Iex.Unop.arg);
-               HReg sub = newVRegV(env);
-               addInstr(env, LOONGARCH64Instr_VecBinary(subOp, LOONGARCH64RI_R(src), src, sub));
-               addInstr(env, LOONGARCH64Instr_VecBinary(addOp, LOONGARCH64RI_R(src), sub, dst));
+               addInstr(env, LOONGARCH64Instr_VecUnary(LAvecun_VREPLGR2VR_D,
+                                                       hregZERO(), dst));
+               /* dst = abs(0) + abs(src) => abs(src) */
+               addInstr(env, LOONGARCH64Instr_VecBinary(
+                                addOp, LOONGARCH64RI_R(src), dst, dst));
                return dst;
             }
             case Iop_Cnt8x16: {
