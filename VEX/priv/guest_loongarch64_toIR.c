@@ -7799,9 +7799,9 @@ static Bool gen_bgeu ( DisResult* dres, UInt insn,
 /*--- Helpers for vector integer arithmetic insns          ---*/
 /*------------------------------------------------------------*/
 
-static Bool gen_vadd_vsub ( DisResult* dres, UInt insn,
-                            const VexArchInfo* archinfo,
-                            const VexAbiInfo* abiinfo )
+static Bool gen_vadd_vsub_bhwd ( DisResult* dres, UInt insn,
+                                 const VexArchInfo* archinfo,
+                                 const VexAbiInfo* abiinfo )
 {
    UInt vd    = SLICE(insn, 4, 0);
    UInt vj    = SLICE(insn, 9, 5);
@@ -7814,6 +7814,29 @@ static Bool gen_vadd_vsub ( DisResult* dres, UInt insn,
 
    DIP("%s.%s %s, %s, %s\n", nm[isAdd], mkInsSize(insSz),
                              nameVReg(vd), nameVReg(vj), nameVReg(vk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, binop(mathOp, getVReg(vj), getVReg(vk)));
+
+   return True;
+}
+
+static Bool gen_vadd_vsub_q ( DisResult* dres, UInt insn,
+                              const VexArchInfo* archinfo,
+                              const VexAbiInfo* abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt vk    = SLICE(insn, 14, 10);
+   UInt isSub = SLICE(insn, 15, 15);
+
+   IROp mathOp = isSub ? mkV128SUB(4) : mkV128ADD(4);
+
+   const HChar* nm[2] = {"vadd", "vsub"};
+
+   DIP("%s.q %s, %s, %s\n", nm[isSub], nameVReg(vd), nameVReg(vj),
+       nameVReg(vk));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
@@ -15728,7 +15751,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0000 ( DisResult* dres, UInt insn,
          break;
       case 0b00101:
       case 0b00110:
-         ok = gen_vadd_vsub(dres, insn, archinfo, abiinfo);
+         ok = gen_vadd_vsub_bhwd(dres, insn, archinfo, abiinfo);
          break;
       case 0b01111:
       case 0b10000:
@@ -15899,6 +15922,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0100 ( DisResult* dres, UInt insn,
       case 0b10011:
       case 0b10100:
          ok = gen_logical_v(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b10110:
+         ok = gen_vadd_vsub_q(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
