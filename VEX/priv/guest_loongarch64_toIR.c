@@ -11994,52 +11994,100 @@ static Bool gen_vinsgr2vr ( DisResult* dres, UInt insn,
    UInt rj     = SLICE(insn, 9, 5);
    UInt insImm = SLICE(insn, 15, 10);
 
-   UInt uImm, insSz;
    IRTemp res = newTemp(Ity_V128);
 
+   UInt uImm, insSz;
    if ((insImm & 0x30) == 0x20) {        // 10mmmm; b
       insSz = 0;
-      uImm = insImm & 0xf;
-      assign(res, triop(Iop_SetElem8x16,
-                        getVReg(vd),
-                        mkU8(uImm),
-                        getIReg8(rj)));
+      uImm  = insImm & 0xf;
+      assign(res,
+             triop(Iop_SetElem8x16, getVReg(vd), mkU8(uImm), getIReg8(rj)));
    } else if ((insImm & 0x38) == 0x30) { // 110mmm; h
       insSz = 1;
-      uImm = insImm & 0x7;
-      assign(res, triop(Iop_SetElem16x8,
-                        getVReg(vd),
-                        mkU8(uImm),
-                        getIReg16(rj)));
+      uImm  = insImm & 0x7;
+      assign(res,
+             triop(Iop_SetElem16x8, getVReg(vd), mkU8(uImm), getIReg16(rj)));
    } else if ((insImm & 0x3c) == 0x38) { // 1110mm; w
       insSz = 2;
-      uImm = insImm & 0x3;
-      assign(res, triop(Iop_SetElem32x4,
-                        getVReg(vd),
-                        mkU8(uImm),
-                        getIReg32(rj)));
+      uImm  = insImm & 0x3;
+      assign(res,
+             triop(Iop_SetElem32x4, getVReg(vd), mkU8(uImm), getIReg32(rj)));
    } else if ((insImm & 0x3e) == 0x3c) { // 11110m; d
       insSz = 3;
-      uImm = insImm & 0x1;
-      if (uImm == 0) {
-         assign(res, binop(Iop_64HLtoV128,
-                           unop(Iop_V128HIto64, getVReg(vd)),
+      uImm  = insImm & 0x1;
+      if (uImm == 0b0) {
+         assign(res, binop(Iop_64HLtoV128, unop(Iop_V128HIto64, getVReg(vd)),
                            getIReg64(rj)));
       } else {
-         assign(res, binop(Iop_64HLtoV128,
-                           getIReg64(rj),
+         assign(res, binop(Iop_64HLtoV128, getIReg64(rj),
                            unop(Iop_V128to64, getVReg(vd))));
       }
    } else {
-      vassert(0);
+      return False;
    }
 
-   DIP("vinsgr2vr.%s %s, %s, %u\n", mkInsSize(insSz),
-                                    nameVReg(vd), nameIReg(rj), uImm);
+   DIP("vinsgr2vr.%s %s, %s, %u\n", mkInsSize(insSz), nameVReg(vd),
+       nameIReg(rj), uImm);
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
    putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+
+static Bool gen_xvinsgr2vr ( DisResult* dres, UInt insn,
+                             const VexArchInfo* archinfo,
+                             const VexAbiInfo* abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt rj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 15, 10);
+
+   IRTemp d     = newTemp(Ity_V256);
+   IRTemp dHi   = IRTemp_INVALID;
+   IRTemp dLo   = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(d, getXReg(xd));
+   breakupV256toV128s(d, &dHi, &dLo);
+
+   UInt uImm, insSz;
+   if ((insImm & 0b111000) == 0b110000) {        // 110???; w
+      insSz = 2;
+      uImm  = insImm & 0b000111;
+      if (uImm > 0b011) {
+         assign(resHi, triop(Iop_SetElem32x4, mkexpr(dHi), mkU8(uImm & 0b11),
+                             getIReg32(rj)));
+         assign(resLo, mkexpr(dLo));
+      } else {
+         assign(resHi, mkexpr(dHi));
+         assign(resLo, triop(Iop_SetElem32x4, mkexpr(dLo), mkU8(uImm & 0b11),
+                             getIReg32(rj)));
+      }
+   } else if ((insImm & 0b111100) == 0b111000) { // 1110??; d
+      insSz = 3;
+      uImm  = insImm & 0b000011;
+      if (uImm > 0b01) {
+         assign(resHi, triop(Iop_SetElem64x2, mkexpr(dHi), mkU8(uImm & 0b1),
+                             getIReg64(rj)));
+         assign(resLo, mkexpr(dLo));
+      } else {
+         assign(resHi, mkexpr(dHi));
+         assign(resLo, triop(Iop_SetElem64x2, mkexpr(dLo), mkU8(uImm & 0b1),
+                             getIReg64(rj)));
+      }
+   } else {
+      return False;
+   }
+
+   DIP("xvinsgr2vr.%s %s, %s, %u\n", mkInsSize(insSz), nameVReg(xd),
+       nameIReg(rj), uImm);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putVReg(xd, mkV256from128s(resHi, resLo));
 
    return True;
 }
@@ -16458,9 +16506,12 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1011 ( DisResult* dres, UInt insn,
 {
    Bool ok;
 
-   switch (SLICE(insn, 21, 18)) {
-      case 0b1011:
-      case 0b1100:
+   switch (SLICE(insn, 21, 16)) {
+      case 0b101011:
+         ok = gen_xvinsgr2vr(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b101111:
+      case 0b110011:
          ok = gen_xvpickve2gr(dres, insn, archinfo, abiinfo);
          break;
       default:
