@@ -12360,6 +12360,71 @@ static Bool gen_xvreplve ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvrepl128vei ( DisResult* dres, UInt insn,
+                               const VexArchInfo* archinfo,
+                               const VexAbiInfo*  abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt xj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 15, 10);
+
+   UInt uImm, insSz;
+   if ((insImm & 0b110000) == 0b100000) {        // 10????; b
+      uImm  = insImm & 0b001111;
+      insSz = 0;
+   } else if ((insImm & 0b111000) == 0b110000) { // 110???; h
+      uImm  = insImm & 0b000111;
+      insSz = 1;
+   } else if ((insImm & 0b111100) == 0b111000) { // 1110??; w
+      uImm  = insImm & 0b000011;
+      insSz = 2;
+   } else if ((insImm & 0b111110) == 0b111100) { // 11110?; d
+      uImm  = insImm & 0b000001;
+      insSz = 3;
+   } else {
+      return False;
+   }
+
+   IRTemp j     = newTemp(Ity_V256);
+   IRTemp jHi   = IRTemp_INVALID;
+   IRTemp jLo   = IRTemp_INVALID;
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+   assign(j, getXReg(xj));
+   breakupV256toV128s(j, &jHi, &jLo);
+
+   IRExpr* irLo = binop(mkV128GETELEM(insSz), mkexpr(jLo), mkU8(uImm));
+   IRExpr* irHi = binop(mkV128GETELEM(insSz), mkexpr(jHi), mkU8(uImm));
+   switch (insSz) {
+      case 0:
+         assign(resHi, unop(Iop_Dup8x16, irHi));
+         assign(resLo, unop(Iop_Dup8x16, irLo));
+         break;
+      case 1:
+         assign(resHi, unop(Iop_Dup16x8, irHi));
+         assign(resLo, unop(Iop_Dup16x8, irLo));
+         break;
+      case 2:
+         assign(resHi, unop(Iop_Dup32x4, irHi));
+         assign(resLo, unop(Iop_Dup32x4, irLo));
+         break;
+      case 3:
+         assign(resHi, binop(Iop_64HLtoV128, irHi, irHi));
+         assign(resLo, binop(Iop_64HLtoV128, irLo, irLo));
+         break;
+      default: vassert(0); break;
+   }
+
+   DIP("xvrepl128vei.%s %s, %s, %u", mkInsSize(insSz), nameXReg(xd),
+       nameXReg(xj), uImm);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_xvpickve ( DisResult* dres, UInt insn,
                            const VexArchInfo* archinfo,
                            const VexAbiInfo*  abiinfo )
@@ -16518,6 +16583,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1011 ( DisResult* dres, UInt insn,
       case 0b101111:
       case 0b110011:
          ok = gen_xvpickve2gr(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b110111:
+         ok = gen_xvrepl128vei(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
