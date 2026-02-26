@@ -12131,12 +12131,12 @@ static Bool gen_xvinsgr2vr ( DisResult* dres, UInt insn,
 
    IRTemp res = macro_xvins2vr(dHi, dLo, val, insSz, uImm);
 
-   DIP("xvinsgr2vr.%s %s, %s, %u\n", mkInsSize(insSz), nameVReg(xd),
+   DIP("xvinsgr2vr.%s %s, %s, %u\n", mkInsSize(insSz), nameXReg(xd),
        nameIReg(rj), uImm);
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
-   putVReg(xd, mkexpr(res));
+   putXReg(xd, mkexpr(res));
 
    return True;
 }
