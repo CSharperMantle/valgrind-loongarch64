@@ -12594,6 +12594,7 @@ static Bool gen_xvreplve0 ( DisResult* dres, UInt insn,
             case 3:  repExpr = binop(Iop_64HLtoV128, a, a); break;
             default: vassert(0); break;
          }
+         break;
       }
       case 4:  repExpr = mkexpr(jLo); break;
       default: vassert(0); break;
