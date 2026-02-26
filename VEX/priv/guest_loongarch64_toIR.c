@@ -12492,6 +12492,60 @@ static Bool gen_xvpickve ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvreplve0 ( DisResult* dres, UInt insn,
+                            const VexArchInfo* archinfo,
+                            const VexAbiInfo*  abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt xj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 15, 10);
+
+   UInt insSz;
+   switch (insImm) {
+      case 0b000000: insSz = 0; break; // 000000; b
+      case 0b100000: insSz = 1; break; // 100000; h
+      case 0b110000: insSz = 2; break; // 110000; w
+      case 0b111000: insSz = 3; break; // 111000; d
+      case 0b111100: insSz = 4; break; // 111100; q
+      default:       return False;
+   }
+
+   IRTemp jLo = newTemp(Ity_V128);
+   IRTemp rep = newTemp(Ity_V128);
+   assign(jLo, unop(Iop_V256toV128_0, getXReg(xj)));
+
+   IRExpr* repExpr = NULL;
+   switch (insSz) {
+      case 0:
+      case 1:
+      case 2:
+      case 3: {
+         IRExpr* const a = binop(mkV128GETELEM(insSz), mkexpr(jLo), mkU8(0));
+         switch (insSz) {
+            case 0:  repExpr = unop(Iop_Dup8x16, a); break;
+            case 1:  repExpr = unop(Iop_Dup16x8, a); break;
+            case 2:  repExpr = unop(Iop_Dup32x4, a); break;
+            case 3:  repExpr = binop(Iop_64HLtoV128, a, a); break;
+            default: vassert(0); break;
+         }
+         break;
+      }
+      case 4:  repExpr = mkexpr(jLo); break;
+      default: vassert(0); break;
+   }
+
+   assign(rep, repExpr);
+
+   DIP("xvreplve0.%s %s, %s", insSz == 4 ? "q" : mkInsSize(insSz), nameXReg(xd),
+       nameXReg(xj));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(rep, rep));
+
+   return True;
+}
+
 static Bool gen_vbsll_vbsrl ( DisResult* dres, UInt insn,
                               const VexArchInfo* archinfo,
                               const VexAbiInfo*  abiinfo )
@@ -16630,6 +16684,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1100 ( DisResult* dres, UInt insn,
    switch (SLICE(insn, 21, 18)) {
       case 0b0000:
          ok = gen_xvpickve(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b0001:
+         ok = gen_xvreplve0(dres, insn, archinfo, abiinfo);
          break;
       case 0b0100:
       case 0b0101:
