@@ -12059,6 +12059,47 @@ static Bool gen_vinsgr2vr ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_xvins2vr ( IRTemp srcHi, IRTemp srcLo, IRExpr* val, UInt insSz, UInt index )
+{
+   vassert(insSz == 2 || insSz == 3);
+
+   IRTemp res   = newTemp(Ity_V256);
+   IRTemp resHi = newTemp(Ity_V128);
+   IRTemp resLo = newTemp(Ity_V128);
+
+   switch (insSz) {
+      case 2: { // w
+         vassert(index < 8);
+         if (index > 3) {
+            assign(resHi,
+                   triop(Iop_SetElem32x4, mkexpr(srcHi), mkU8(index - 4), val));
+            assign(resLo, mkexpr(srcLo));
+         } else {
+            assign(resHi, mkexpr(srcHi));
+            assign(resLo,
+                   triop(Iop_SetElem32x4, mkexpr(srcLo), mkU8(index), val));
+         }
+         break;
+      }
+      case 3: { // d
+         vassert(index < 4);
+         if (index > 1) {
+            assign(resHi,
+                   triop(Iop_SetElem64x2, mkexpr(srcHi), mkU8(index - 2), val));
+            assign(resLo, mkexpr(srcLo));
+         } else {
+            assign(resHi, mkexpr(srcHi));
+            assign(resLo,
+                   triop(Iop_SetElem64x2, mkexpr(srcLo), mkU8(index), val));
+         }
+         break;
+      }
+   }
+
+   assign(res, mkV256from128s(resHi, resLo));
+
+   return res;
+}
 
 static Bool gen_xvinsgr2vr ( DisResult* dres, UInt insn,
                              const VexArchInfo* archinfo,
@@ -12068,49 +12109,34 @@ static Bool gen_xvinsgr2vr ( DisResult* dres, UInt insn,
    UInt rj     = SLICE(insn, 9, 5);
    UInt insImm = SLICE(insn, 15, 10);
 
-   IRTemp d     = newTemp(Ity_V256);
-   IRTemp dHi   = IRTemp_INVALID;
-   IRTemp dLo   = IRTemp_INVALID;
-   IRTemp resHi = newTemp(Ity_V128);
-   IRTemp resLo = newTemp(Ity_V128);
+   IRTemp d   = newTemp(Ity_V256);
+   IRTemp dHi = IRTemp_INVALID;
+   IRTemp dLo = IRTemp_INVALID;
    assign(d, getXReg(xd));
    breakupV256toV128s(d, &dHi, &dLo);
 
-   UInt uImm, insSz;
+   UInt    uImm, insSz;
+   IRExpr* val = NULL;
    if ((insImm & 0b111000) == 0b110000) {        // 110???; w
       insSz = 2;
       uImm  = insImm & 0b000111;
-      if (uImm > 0b011) {
-         assign(resHi, triop(Iop_SetElem32x4, mkexpr(dHi), mkU8(uImm & 0b11),
-                             getIReg32(rj)));
-         assign(resLo, mkexpr(dLo));
-      } else {
-         assign(resHi, mkexpr(dHi));
-         assign(resLo, triop(Iop_SetElem32x4, mkexpr(dLo), mkU8(uImm & 0b11),
-                             getIReg32(rj)));
-      }
+      val   = getIReg32(rj);
    } else if ((insImm & 0b111100) == 0b111000) { // 1110??; d
       insSz = 3;
       uImm  = insImm & 0b000011;
-      if (uImm > 0b01) {
-         assign(resHi, triop(Iop_SetElem64x2, mkexpr(dHi), mkU8(uImm & 0b1),
-                             getIReg64(rj)));
-         assign(resLo, mkexpr(dLo));
-      } else {
-         assign(resHi, mkexpr(dHi));
-         assign(resLo, triop(Iop_SetElem64x2, mkexpr(dLo), mkU8(uImm & 0b1),
-                             getIReg64(rj)));
-      }
+      val   = getIReg64(rj);
    } else {
       return False;
    }
+
+   IRTemp res = macro_xvins2vr(dHi, dLo, val, insSz, uImm);
 
    DIP("xvinsgr2vr.%s %s, %s, %u\n", mkInsSize(insSz), nameVReg(xd),
        nameIReg(rj), uImm);
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
-   putVReg(xd, mkV256from128s(resHi, resLo));
+   putVReg(xd, mkexpr(res));
 
    return True;
 }
@@ -12442,6 +12468,48 @@ static Bool gen_xvrepl128vei ( DisResult* dres, UInt insn,
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
    putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
+static Bool gen_xvinsve0 ( DisResult* dres, UInt insn,
+                           const VexArchInfo* archinfo,
+                           const VexAbiInfo* abiinfo )
+{
+   UInt xd     = SLICE(insn, 4, 0);
+   UInt xj     = SLICE(insn, 9, 5);
+   UInt insImm = SLICE(insn, 15, 10);
+
+   IRTemp d   = newTemp(Ity_V256);
+   IRTemp dHi = IRTemp_INVALID;
+   IRTemp dLo = IRTemp_INVALID;
+   IRTemp jLo = newTemp(Ity_V128);
+   assign(d, getXReg(xd));
+   breakupV256toV128s(d, &dHi, &dLo);
+   assign(jLo, unop(Iop_V256toV128_0, getXReg(xj)));
+
+   UInt    index, insSz;
+   IRExpr* val = NULL;
+   if ((insImm & 0b111000) == 0b110000) {        // 110???; w
+      insSz = 2;
+      index  = insImm & 0b000111;
+      val   = binop(mkV128GETELEM(insSz), mkexpr(jLo), mkU8(0));
+   } else if ((insImm & 0b111100) == 0b111000) { // 1110??; d
+      insSz = 3;
+      index  = insImm & 0b000011;
+      val   = binop(mkV128GETELEM(insSz), mkexpr(jLo), mkU8(0));
+   } else {
+      return False;
+   }
+
+   IRTemp res = macro_xvins2vr(dHi, dLo, val, insSz, index);
+
+   DIP("xvinsve0.%s %s, %s, %u\n", mkInsSize(insSz), nameXReg(xd), nameXReg(xj),
+       index);
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkexpr(res));
 
    return True;
 }
@@ -16660,6 +16728,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_1011 ( DisResult* dres, UInt insn,
          break;
       case 0b110111:
          ok = gen_xvrepl128vei(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b111111:
+         ok = gen_xvinsve0(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
