@@ -13259,7 +13259,7 @@ static IRTemp macro_v128srxn ( IRTemp sJ, IRTemp sK, IROp shOp, UInt insSz )
    return res;
 }
 
-static Bool gen_vsran_vsrln ( DisResult* dres, UInt insn,
+static Bool gen_vsrln_vsran ( DisResult* dres, UInt insn,
                               const VexArchInfo* archinfo,
                               const VexAbiInfo* abiinfo )
 {
@@ -13296,7 +13296,7 @@ static Bool gen_vsran_vsrln ( DisResult* dres, UInt insn,
    return True;
 }
 
-static Bool gen_xvsran_xvsrln ( DisResult* dres, UInt insn,
+static Bool gen_xvsrln_xvsran ( DisResult* dres, UInt insn,
                                 const VexArchInfo* archinfo,
                                 const VexAbiInfo* abiinfo )
 {
@@ -16371,7 +16371,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0011 ( DisResult* dres, UInt insn,
          break;
       case 0b11010:
       case 0b11011:
-         ok = gen_vsran_vsrln(dres, insn, archinfo, abiinfo);
+         ok = gen_vsrln_vsran(dres, insn, archinfo, abiinfo);
          break;
       case 0b11100:
       case 0b11101:
@@ -16920,7 +16920,7 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0011 ( DisResult* dres, UInt insn,
          break;
       case 0b11010:
       case 0b11011:
-         ok = gen_xvsran_xvsrln(dres, insn, archinfo, abiinfo);
+         ok = gen_xvsrln_xvsran(dres, insn, archinfo, abiinfo);
          break;
       case 0b11100:
       case 0b11101:
