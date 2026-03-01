@@ -13248,6 +13248,98 @@ static Bool gen_xvrotri ( DisResult* dres, UInt insn,
    return True;
 }
 
+static IRTemp macro_v128srxn ( IRTemp sJ, IRTemp sK, IROp shOp, UInt insSz )
+{
+   IRTemp arg = newTemp(Ity_V128);
+   IRTemp res = newTemp(Ity_V128);
+
+   assign(arg, binop(shOp, mkexpr(sJ), mkexpr(sK)));
+   assign(res, binop(mkV128PACKEV(insSz - 1), mkV128(0x0000), mkexpr(arg)));
+
+   return res;
+}
+
+static Bool gen_vsran_vsrln ( DisResult* dres, UInt insn,
+                              const VexArchInfo* archinfo,
+                              const VexAbiInfo* abiinfo )
+{
+   UInt vd    = SLICE(insn, 4, 0);
+   UInt vj    = SLICE(insn, 9, 5);
+   UInt vk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isSar = SLICE(insn, 17, 17);
+
+   if (insSz == 0b00) {
+      // No such variant.
+      return False;
+   }
+
+   IRTemp j = newTemp(Ity_V128);
+   IRTemp k = newTemp(Ity_V128);
+   assign(j, getVReg(vj));
+   assign(k, getVReg(vk));
+
+   IROp shOp = isSar ? mkV128SAR(insSz) : mkV128SHR(insSz);
+
+   IRTemp res = macro_v128srxn(j, k, shOp, insSz);
+
+   const HChar* nm    = isSar ? "vsran" : "vsrln";
+   const HChar* sz[4] = {NULL, "b.h", "h.w", "w.d"};
+
+   DIP("%s.%s %s, %s, %s\n", nm, sz[insSz], nameVReg(vd), nameVReg(vj),
+       nameVReg(vk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
+
+   putVReg(vd, mkexpr(res));
+
+   return True;
+}
+
+static Bool gen_xvsran_xvsrln ( DisResult* dres, UInt insn,
+                                const VexArchInfo* archinfo,
+                                const VexAbiInfo* abiinfo )
+{
+   UInt xd    = SLICE(insn, 4, 0);
+   UInt xj    = SLICE(insn, 9, 5);
+   UInt xk    = SLICE(insn, 14, 10);
+   UInt insSz = SLICE(insn, 16, 15);
+   UInt isSar = SLICE(insn, 17, 17);
+
+   if (insSz == 0b00) {
+      // No such variant.
+      return False;
+   }
+
+   IRTemp j   = newTemp(Ity_V256);
+   IRTemp k   = newTemp(Ity_V256);
+   IRTemp jHi = IRTemp_INVALID;
+   IRTemp jLo = IRTemp_INVALID;
+   IRTemp kHi = IRTemp_INVALID;
+   IRTemp kLo = IRTemp_INVALID;
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xk));
+   breakupV256toV128s(j, &jHi, &jLo);
+   breakupV256toV128s(k, &kHi, &kLo);
+
+   IROp shOp = isSar ? mkV128SAR(insSz) : mkV128SHR(insSz);
+
+   IRTemp resHi = macro_v128srxn(jHi, kHi, shOp, insSz);
+   IRTemp resLo = macro_v128srxn(jLo, kLo, shOp, insSz);
+
+   const HChar* nm    = isSar ? "xvsran" : "xvsrln";
+   const HChar* sz[4] = {NULL, "b.h", "h.w", "w.d"};
+
+   DIP("%s.%s %s, %s, %s\n", nm, sz[insSz], nameXReg(xd), nameXReg(xj),
+       nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from128s(resHi, resLo));
+
+   return True;
+}
+
 static Bool gen_vevod ( DisResult* dres, UInt insn,
                        const VexArchInfo* archinfo,
                        const VexAbiInfo* abiinfo )
@@ -16185,6 +16277,10 @@ static Bool disInstr_LOONGARCH64_WRK_01_1100_0011 ( DisResult* dres, UInt insn,
       case 0b11001:
          ok = gen_vsrlr_vsrar(dres, insn, archinfo, abiinfo);
          break;
+      case 0b11010:
+      case 0b11011:
+         ok = gen_vsran_vsrln(dres, insn, archinfo, abiinfo);
+         break;
       default:
          ok = False;
          break;
@@ -16725,6 +16821,10 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0011 ( DisResult* dres, UInt insn,
       case 0b11000:
       case 0b11001:
          ok = gen_xvsrlr_xvsrar(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b11010:
+      case 0b11011:
+         ok = gen_xvsran_xvsrln(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
