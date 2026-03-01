@@ -208,6 +208,22 @@ static const HChar* mkInsSize ( UInt size )
    return insSize[size];
 }
 
+/* Get the suffix of symmetric (signedness-keeping) extension instructions. */
+static const HChar *mkInsSymExtSize ( UInt size ) {
+   static const HChar* insSize[8] = {"h.b",   "w.h",   "d.w",   "q.d",
+                                     "hu.bu", "wu.hu", "du.wu", "qu.du"};
+   vassert(size < 8);
+   return insSize[size];
+}
+
+/* Get the suffix of asymmetric (store-signed) extension instructions. */
+static const HChar *mkInsAsymExtSize ( UInt size ) {
+   static const HChar* insSize[8] = {"h.b",  "w.h",  "d.w",  "q.d",
+                                     "h.bu", "w.hu", "d.wu", "q.du"};
+   vassert(size < 8);
+   return insSize[size];
+}
+
 
 /*------------------------------------------------------------*/
 /*--- Helper bits and pieces for creating IR fragments.    ---*/
@@ -8222,13 +8238,9 @@ static Bool gen_vhaddw_vhsubw ( DisResult* dres, UInt insn,
    assign(tmpEv, unop(widenOp,
                       binop(mkV128PACKEV(insSz), getVReg(vk), mkV128(0x0000))));
 
-   const HChar* nm[2]       = {"vhaddw", "vhsubw"};
-   const HChar* insSizeFrom = mkInsSize(szId);
-   const HChar* insSizeTo =
-      (szId == 3 /* d */) ? "q"
-                          : ((szId == 7 /* du */) ? "qu" : mkInsSize(szId + 1));
+   const HChar* nm[2] = {"vhaddw", "vhsubw"};
 
-   DIP("%s.%s.%s %s, %s, %s\n", nm[isSub], insSizeTo, insSizeFrom, nameVReg(vd),
+   DIP("%s.%s %s, %s, %s\n", nm[isSub], mkInsSymExtSize(szId), nameVReg(vd),
        nameVReg(vj), nameVReg(vk));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
@@ -8282,13 +8294,9 @@ static Bool gen_xvhaddw_xvhsubw ( DisResult* dres, UInt insn,
    assign(resLo, binop(mathOp, mkexpr(tmpOdLo), mkexpr(tmpEvLo)));
    assign(resHi, binop(mathOp, mkexpr(tmpOdHi), mkexpr(tmpEvHi)));
 
-   const HChar* nm[2]       = {"xvhaddw", "xvhsubw"};
-   const HChar* insSizeFrom = mkInsSize(szId);
-   const HChar* insSizeTo =
-      (szId == 3 /* d */) ? "q"
-                          : ((szId == 7 /* du */) ? "qu" : mkInsSize(szId + 1));
+   const HChar* nm[2] = {"xvhaddw", "xvhsubw"};
 
-   DIP("%s.%s.%s %s, %s, %s\n", nm[isSub], insSizeTo, insSizeFrom, nameXReg(xd),
+   DIP("%s.%s %s, %s, %s\n", nm[isSub], mkInsSymExtSize(szId), nameXReg(xd),
        nameXReg(xj), nameXReg(xk));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
@@ -9262,11 +9270,7 @@ static Bool gen_vmulwevod_x_x ( DisResult* dres, UInt insn,
 
    const HChar* nm[2] = {"vmulwev", "vmulwod"};
 
-   const HChar* insSizeFrom = mkInsSize(szId);
-   const HChar* insSizeTo =
-      (szId == 3 /* d */ || szId == 7 /* du */) ? "q" : mkInsSize(szId + 1);
-
-   DIP("%s.%s.%s %s, %s, %s\n", nm[isOd], insSizeTo, insSizeFrom, nameVReg(vd),
+   DIP("%s.%s %s, %s, %s\n", nm[isOd], mkInsAsymExtSize(szId), nameVReg(vd),
        nameVReg(vj), nameVReg(vk));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
@@ -9305,11 +9309,7 @@ static Bool gen_xvmulwevod_x_x ( DisResult* dres, UInt insn,
 
    const HChar* nm[2] = {"xvmulwev", "xvmulwod"};
 
-   const HChar* insSizeFrom = mkInsSize(szId);
-   const HChar* insSizeTo =
-      (szId == 3 /* d */ || szId == 7 /* du */) ? "q" : mkInsSize(szId + 1);
-
-   DIP("%s.%s.%s %s, %s, %s\n", nm[isOd], insSizeTo, insSizeFrom, nameXReg(xd),
+   DIP("%s.%s %s, %s, %s\n", nm[isOd], mkInsAsymExtSize(szId), nameXReg(xd),
        nameXReg(xj), nameXReg(xk));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
@@ -9586,13 +9586,9 @@ static Bool gen_vmaddwevod_x_x ( DisResult* dres, UInt insn,
 
    UInt szId = isU ? (insSz + 4) : insSz;
 
-   const HChar* insSizeFrom = mkInsSize(szId);
-   const HChar* insSizeTo =
-      (szId == 3 /* d */ || szId == 7 /* du */) ? "q" : mkInsSize(szId + 1);
-
    const HChar* nm[2] = {"vmaddwev", "vmaddwod"};
 
-   DIP("%s.%s.%s %s, %s, %s\n", nm[isOd], insSizeTo, insSizeFrom, nameVReg(vd),
+   DIP("%s.%s %s, %s, %s\n", nm[isOd], mkInsAsymExtSize(szId), nameVReg(vd),
        nameVReg(vj), nameVReg(vk));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
@@ -9640,13 +9636,9 @@ static Bool gen_xvmaddwevod_x_x ( DisResult* dres, UInt insn,
 
    UInt szId = isU ? (insSz + 4) : insSz;
 
-   const HChar* insSizeFrom = mkInsSize(szId);
-   const HChar* insSizeTo =
-      (szId == 3 /* d */ || szId == 7 /* du */) ? "q" : mkInsSize(szId + 1);
-
    const HChar* nm[2] = {"xvmaddwev", "xvmaddwod"};
 
-   DIP("%s.%s.%s %s, %s, %s\n", nm[isOd], insSizeTo, insSizeFrom, nameXReg(xd),
+   DIP("%s.%s %s, %s, %s\n", nm[isOd], mkInsAsymExtSize(szId), nameXReg(xd),
        nameXReg(xj), nameXReg(xk));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
@@ -10080,12 +10072,7 @@ static Bool gen_vexth ( DisResult* dres, UInt insn,
    IROp op = isU ? mkV128EXTHTU(insSz) : mkV128EXTHTS(insSz);
    UInt id = isU ? (insSz + 4) : insSz;
 
-   const HChar* insSizeFrom = mkInsSize(id);
-   const HChar* insSizeTo =
-      (id == 3 /* d */) ? "q" : ((id == 7 /* du */) ? "qu" : mkInsSize(id + 1));
-
-   DIP("vexth.%s.%s %s, %s\n", insSizeTo, insSizeFrom, nameVReg(vd),
-       nameVReg(vj));
+   DIP("vexth.%s %s, %s\n", mkInsSymExtSize(id), nameVReg(vd), nameVReg(vj));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
@@ -10116,12 +10103,7 @@ static Bool gen_xvexth ( DisResult* dres, UInt insn,
    assign(resHi, unop(op, mkexpr(srcHi)));
    assign(resLo, unop(op, mkexpr(srcLo)));
 
-   const HChar* insSizeFrom = mkInsSize(id);
-   const HChar* insSizeTo =
-      (id == 3 /* d */) ? "q" : ((id == 7 /* du */) ? "qu" : mkInsSize(id + 1));
-
-   DIP("xvexth.%s.%s %s, %s\n", insSizeTo, insSizeFrom, nameXReg(xd),
-       nameXReg(xj));
+   DIP("xvexth.%s %s, %s\n", mkInsSymExtSize(id), nameXReg(xd), nameXReg(xj));
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
