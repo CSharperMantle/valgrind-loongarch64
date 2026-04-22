@@ -269,12 +269,66 @@ static void test_widen(test_state* tst)
    DO_TRI256_ACC("xvmaddwod.q.du.d", model_maddw(exp.d.u8, acc.d.u8, a.d.u8, b.d.u8, 64, 128, 2, 1, 0, 1), __lasx_xvmaddwod_q_du_d(acc.v, a.v, b.v));
 }
 
+static void test_divmod(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 b = {.d.u8 = {
+      3, 5, 7, 9, 11, 13, 15, 17,
+      19, 21, 23, 25, 27, 29, 31, 33,
+      35, 37, 39, 41, 43, 45, 47, 49,
+      51, 53, 55, 57, 59, 61, 63, 65}};
+   vec256 z = {.d.u8 = {
+      0, 5, 0, 9, 0, 13, 0, 17,
+      0, 21, 0, 25, 0, 29, 0, 33,
+      0, 37, 0, 41, 0, 45, 0, 49,
+      0, 53, 0, 57, 0, 61, 0, 65}};
+   vec256 neg_a = {.d.i64 = {-1000, 999, -7777777, 123456789}};
+   vec256 neg_b = {.d.i64 = {7, -9, -13, 17}};
+   vec256 got, exp;
+
+   DO_BIN256("xvdiv.b", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 0), __lasx_xvdiv_b(a.v, b.v));
+   DO_BIN256("xvdiv.h", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 0), __lasx_xvdiv_h(a.v, b.v));
+   DO_BIN256("xvdiv.w", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 0), __lasx_xvdiv_w(a.v, b.v));
+   DO_BIN256("xvdiv.d", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 0), __lasx_xvdiv_d(a.v, b.v));
+   DO_BIN256("xvdiv.bu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0, 0), __lasx_xvdiv_bu(a.v, b.v));
+   DO_BIN256("xvdiv.hu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0, 0), __lasx_xvdiv_hu(a.v, b.v));
+   DO_BIN256("xvdiv.wu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0, 0), __lasx_xvdiv_wu(a.v, b.v));
+   DO_BIN256("xvdiv.du", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0, 0), __lasx_xvdiv_du(a.v, b.v));
+   DO_BIN256("xvmod.b", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 1), __lasx_xvmod_b(a.v, b.v));
+   DO_BIN256("xvmod.h", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 1), __lasx_xvmod_h(a.v, b.v));
+   DO_BIN256("xvmod.w", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 1), __lasx_xvmod_w(a.v, b.v));
+   DO_BIN256("xvmod.d", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 1), __lasx_xvmod_d(a.v, b.v));
+   DO_BIN256("xvmod.bu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0, 1), __lasx_xvmod_bu(a.v, b.v));
+   DO_BIN256("xvmod.hu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0, 1), __lasx_xvmod_hu(a.v, b.v));
+   DO_BIN256("xvmod.wu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0, 1), __lasx_xvmod_wu(a.v, b.v));
+   DO_BIN256("xvmod.du", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0, 1), __lasx_xvmod_du(a.v, b.v));
+
+   a = (vec256){.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   b = z;
+   DO_BIN256("xvdiv.h.zero", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 0), __lasx_xvdiv_h(a.v, b.v));
+   DO_BIN256("xvmod.bu.zero", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0, 1), __lasx_xvmod_bu(a.v, b.v));
+
+   a = neg_a;
+   b = neg_b;
+   DO_BIN256("xvdiv.d.neg", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 0), __lasx_xvdiv_d(a.v, b.v));
+   DO_BIN256("xvmod.d.neg", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 1), __lasx_xvmod_d(a.v, b.v));
+}
+
 int main(void)
 {
    test_state tst = {0, 0};
 
    test_basic(&tst);
    test_widen(&tst);
+   test_divmod(&tst);
 
    return tst.fails != 0;
 }
