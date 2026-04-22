@@ -7978,8 +7978,8 @@ static Bool gen_xvaddi_xvsubi_u ( DisResult* dres, UInt insn,
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
 
    putXReg(xd,
-           binop(Iop_V128HLtoV256, binop(mathOp, mkexpr(imm), mkexpr(srcHi)),
-                 binop(mathOp, mkexpr(imm), mkexpr(srcLo))));
+           binop(Iop_V128HLtoV256, binop(mathOp, mkexpr(srcHi), mkexpr(imm)),
+                 binop(mathOp, mkexpr(srcLo), mkexpr(imm))));
 
    return True;
 }
