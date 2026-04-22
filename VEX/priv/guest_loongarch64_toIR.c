@@ -9579,6 +9579,8 @@ static Bool gen_vmaddwevod_x_x ( DisResult* dres, UInt insn,
 
    IRTemp j = newTemp(Ity_V128);
    IRTemp k = newTemp(Ity_V128);
+   assign(j, getVReg(vj));
+   assign(k, getVReg(vk));
 
    IRTemp mul = macro_v128mulw_x_x(mkexpr(j), mkexpr(k), insSz, isOd, isU);
    IRTemp res = newTemp(Ity_V128);
