@@ -245,8 +245,27 @@ static void model_sat_addsub(uint8_t* dst, const uint8_t* a, const uint8_t* b,
          uint64_t rv;
          if (is_sub)
             rv = av < bv ? 0 : (av - bv);
+         else if (bits == 64)
+            rv = UINT64_MAX - av < bv ? UINT64_MAX : (av + bv);
          else
             rv = sat_unsigned(av + bv, bits);
+         write_lane_u64(dst, bits, i, rv);
+      }
+   }
+}
+
+static void model_sat_imm(uint8_t* dst, const uint8_t* a, unsigned bits,
+                          unsigned lanes, unsigned imm, int is_signed)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      if (is_signed) {
+         int64_t av = sx64(read_lane_u64(a, bits, i), bits);
+         int64_t rv = imm >= bits - 1 ? av : sat_signed(av, imm);
+         write_lane_u64(dst, bits, i, ux_from_sx(rv, bits));
+      } else {
+         uint64_t av = read_lane_u64(a, bits, i);
+         uint64_t rv = imm + 1 >= bits ? av : sat_unsigned(av, imm + 1);
          write_lane_u64(dst, bits, i, rv);
       }
    }

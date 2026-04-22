@@ -155,6 +155,59 @@ static void test_basic(test_state* tst)
    DO_BIN128("vsigncov.d", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 64, 2), __lsx_vsigncov_d(a.v, b.v));
 }
 
+static void test_sat(test_state* tst)
+{
+   vec128 a, b, got, exp;
+
+   a = (vec128){.d.i8 = {-120, -20, -5, -4, -3, -1, 0, 1, 2, 3, 4, 5, 20, 100, 110, 120}};
+   b = (vec128){.d.i8 = {-120, -120, -120, -2, -1, 1, 1, 2, 120, 120, 120, 4, 20, 40, 60, 80}};
+   DO_BIN128("vsadd.b", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 0), __lsx_vsadd_b(a.v, b.v));
+   DO_BIN128("vssub.b", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vssub_b(a.v, b.v));
+   DO_IMM128("vsat.b", 2, model_sat_imm(exp.d.u8, a.d.u8, 8, 16, 2, 1), __lsx_vsat_b(a.v, 2));
+
+   a = (vec128){.d.u8 = {0, 1, 2, 3, 4, 5, 6, 7, 15, 31, 63, 95, 127, 191, 223, 255}};
+   b = (vec128){.d.u8 = {0, 1, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8}};
+   DO_BIN128("vsadd.bu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 0), __lsx_vsadd_bu(a.v, b.v));
+   DO_BIN128("vssub.bu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 1), __lsx_vssub_bu(a.v, b.v));
+   DO_IMM128("vsat.bu", 2, model_sat_imm(exp.d.u8, a.d.u8, 8, 16, 2, 0), __lsx_vsat_bu(a.v, 2));
+
+   a = (vec128){.d.i16 = {-2000, -40, -33, -32, -31, 31, 32, 2000}};
+   b = (vec128){.d.i16 = {-2000, -70, -1, 1, 31, 32, 2000, 2000}};
+   DO_BIN128("vsadd.h", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 0), __lsx_vsadd_h(a.v, b.v));
+   DO_BIN128("vssub.h", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 1), __lsx_vssub_h(a.v, b.v));
+   DO_IMM128("vsat.h", 5, model_sat_imm(exp.d.u8, a.d.u8, 16, 8, 5, 1), __lsx_vsat_h(a.v, 5));
+
+   a = (vec128){.d.u16 = {0, 1, 31, 32, 33, 255, 511, 60000}};
+   b = (vec128){.d.u16 = {0, 1, 32, 33, 34, 1000, 1000, 60000}};
+   DO_BIN128("vsadd.hu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0, 0), __lsx_vsadd_hu(a.v, b.v));
+   DO_BIN128("vssub.hu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0, 1), __lsx_vssub_hu(a.v, b.v));
+   DO_IMM128("vsat.hu", 5, model_sat_imm(exp.d.u8, a.d.u8, 16, 8, 5, 0), __lsx_vsat_hu(a.v, 5));
+
+   a = (vec128){.d.i32 = {-200000, -600, -513, -512}};
+   b = (vec128){.d.i32 = {-200000, -600, 1024, 200000}};
+   DO_BIN128("vsadd.w", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 0), __lsx_vsadd_w(a.v, b.v));
+   DO_BIN128("vssub.w", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 1), __lsx_vssub_w(a.v, b.v));
+   DO_IMM128("vsat.w", 9, model_sat_imm(exp.d.u8, a.d.u8, 32, 4, 9, 1), __lsx_vsat_w(a.v, 9));
+
+   a = (vec128){.d.u32 = {0, 1, 1023, 4000000000u}};
+   b = (vec128){.d.u32 = {0, 1024, 2048, 4000000000u}};
+   DO_BIN128("vsadd.wu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0, 0), __lsx_vsadd_wu(a.v, b.v));
+   DO_BIN128("vssub.wu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0, 1), __lsx_vssub_wu(a.v, b.v));
+   DO_IMM128("vsat.wu", 9, model_sat_imm(exp.d.u8, a.d.u8, 32, 4, 9, 0), __lsx_vsat_wu(a.v, 9));
+
+   a = (vec128){.d.i64 = {-500000000000LL, 500000000000LL}};
+   b = (vec128){.d.i64 = {-500000000000LL, 500000000000LL}};
+   DO_BIN128("vsadd.d", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 0), __lsx_vsadd_d(a.v, b.v));
+   DO_BIN128("vssub.d", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 1), __lsx_vssub_d(a.v, b.v));
+   DO_IMM128("vsat.d", 17, model_sat_imm(exp.d.u8, a.d.u8, 64, 2, 17, 1), __lsx_vsat_d(a.v, 17));
+
+   a = (vec128){.d.u64 = {0, UINT64_MAX}};
+   b = (vec128){.d.u64 = {1, UINT64_MAX}};
+   DO_BIN128("vsadd.du", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0, 0), __lsx_vsadd_du(a.v, b.v));
+   DO_BIN128("vssub.du", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0, 1), __lsx_vssub_du(a.v, b.v));
+   DO_IMM128("vsat.du", 17, model_sat_imm(exp.d.u8, a.d.u8, 64, 2, 17, 0), __lsx_vsat_du(a.v, 17));
+}
+
 static void test_widen(test_state* tst)
 {
    vec128 a = {.d.u8 = {
@@ -321,6 +374,7 @@ int main(void)
    test_state tst = {0, 0};
 
    test_basic(&tst);
+   test_sat(&tst);
    test_widen(&tst);
    test_divmod(&tst);
 
