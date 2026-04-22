@@ -176,6 +176,102 @@ insn vsigncov.d:
   v_arg1   = 10efdecdbcab9a89 | 7867564534231281
   v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
   v_result = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+insn vsadd.b:
+  v_arg1   = 786e641405040302 | 0100fffdfcfbec88
+  v_arg2   = 503c281404787878 | 020101fffe888888
+  v_result = 7f7f7f28097c7b7a | 030100fcfa838080
+insn vssub.b:
+  v_arg1   = 786e641405040302 | 0100fffdfcfbec88
+  v_arg2   = 503c281404787878 | 020101fffe888888
+  v_result = 28323c00018c8b8a | fffffefefe736400
+insn vsat.b:
+  v_arg1   = 786e641405040302 | 0100fffdfcfbec88
+  imm      = 0000000000000002
+  v_result = 0303030303030302 | 0100fffdfcfcfcfc
+insn vsadd.bu:
+  v_arg1   = ffdfbf7f5f3f1f0f | 0706050403020100
+  v_arg2   = 0807060504030201 | 0c0b0a0908070100
+  v_result = ffe6c58463422110 | 13110f0d0b090200
+insn vssub.bu:
+  v_arg1   = ffdfbf7f5f3f1f0f | 0706050403020100
+  v_arg2   = 0807060504030201 | 0c0b0a0908070100
+  v_result = f7d8b97a5b3c1d0e | 0000000000000000
+insn vsat.bu:
+  v_arg1   = ffdfbf7f5f3f1f0f | 0706050403020100
+  imm      = 0000000000000002
+  v_result = 0707070707070707 | 0706050403020100
+insn vsadd.h:
+  v_arg1   = 07d00020001fffe1 | ffe0ffdfffd8f830
+  v_arg2   = 07d007d00020001f | 0001ffffffbaf830
+  v_result = 0fa007f0003f0000 | ffe1ffdeff92f060
+insn vssub.h:
+  v_arg1   = 07d00020001fffe1 | ffe0ffdfffd8f830
+  v_arg2   = 07d007d00020001f | 0001ffffffbaf830
+  v_result = 0000f850ffffffc2 | ffdfffe0001e0000
+insn vsat.h:
+  v_arg1   = 07d00020001fffe1 | ffe0ffdfffd8f830
+  imm      = 0000000000000005
+  v_result = 001f001f001fffe1 | ffe0ffe0ffe0ffe0
+insn vsadd.hu:
+  v_arg1   = ea6001ff00ff0021 | 0020001f00010000
+  v_arg2   = ea6003e803e80022 | 0021002000010000
+  v_result = ffff05e704e70043 | 0041003f00020000
+insn vssub.hu:
+  v_arg1   = ea6001ff00ff0021 | 0020001f00010000
+  v_arg2   = ea6003e803e80022 | 0021002000010000
+  v_result = 0000000000000000 | 0000000000000000
+insn vsat.hu:
+  v_arg1   = ea6001ff00ff0021 | 0020001f00010000
+  imm      = 0000000000000005
+  v_result = 003f003f003f0021 | 0020001f00010000
+insn vsadd.w:
+  v_arg1   = fffffe00fffffdff | fffffda8fffcf2c0
+  v_arg2   = 00030d4000000400 | fffffda8fffcf2c0
+  v_result = 00030b40000001ff | fffffb50fff9e580
+insn vssub.w:
+  v_arg1   = fffffe00fffffdff | fffffda8fffcf2c0
+  v_arg2   = 00030d4000000400 | fffffda8fffcf2c0
+  v_result = fffcf0c0fffff9ff | 0000000000000000
+insn vsat.w:
+  v_arg1   = fffffe00fffffdff | fffffda8fffcf2c0
+  imm      = 0000000000000009
+  v_result = fffffe00fffffe00 | fffffe00fffffe00
+insn vsadd.wu:
+  v_arg1   = ee6b2800000003ff | 0000000100000000
+  v_arg2   = ee6b280000000800 | 0000040000000000
+  v_result = ffffffff00000bff | 0000040100000000
+insn vssub.wu:
+  v_arg1   = ee6b2800000003ff | 0000000100000000
+  v_arg2   = ee6b280000000800 | 0000040000000000
+  v_result = 0000000000000000 | 0000000000000000
+insn vsat.wu:
+  v_arg1   = ee6b2800000003ff | 0000000100000000
+  imm      = 0000000000000009
+  v_result = 000003ff000003ff | 0000000100000000
+insn vsadd.d:
+  v_arg1   = 000000746a528800 | ffffff8b95ad7800
+  v_arg2   = 000000746a528800 | ffffff8b95ad7800
+  v_result = 000000e8d4a51000 | ffffff172b5af000
+insn vssub.d:
+  v_arg1   = 000000746a528800 | ffffff8b95ad7800
+  v_arg2   = 000000746a528800 | ffffff8b95ad7800
+  v_result = 0000000000000000 | 0000000000000000
+insn vsat.d:
+  v_arg1   = 000000746a528800 | ffffff8b95ad7800
+  imm      = 0000000000000011
+  v_result = 000000000001ffff | fffffffffffe0000
+insn vsadd.du:
+  v_arg1   = ffffffffffffffff | 0000000000000000
+  v_arg2   = ffffffffffffffff | 0000000000000001
+  v_result = ffffffffffffffff | 0000000000000001
+insn vssub.du:
+  v_arg1   = ffffffffffffffff | 0000000000000000
+  v_arg2   = ffffffffffffffff | 0000000000000001
+  v_result = 0000000000000000 | 0000000000000000
+insn vsat.du:
+  v_arg1   = ffffffffffffffff | 0000000000000000
+  imm      = 0000000000000011
+  v_result = 000000000003ffff | 0000000000000000
 insn vhaddw.h.b:
   v_arg1   = f00ff20df40bf609 | f807fa05fc03fe01
   v_arg2   = 11100f0e0d0c0b0a | 0908070605040302
