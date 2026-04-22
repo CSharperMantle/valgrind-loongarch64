@@ -146,6 +146,67 @@ static void test_basic(test_state* tst)
    DO_BIN256("xvsigncov.w", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 32, 8), __lasx_xvsigncov_w(a.v, b.v));
 }
 
+static void test_sat(test_state* tst)
+{
+   vec256 a, b, got, exp;
+
+   a = (vec256){.d.i8 = {
+      -120, -20, -5, -4, -3, -1, 0, 1, 2, 3, 4, 5, 20, 100, 110, 120,
+      -128, -64, -7, -6, -5, -4, -2, -1, 6, 7, 8, 9, 40, 70, 90, 127}};
+   b = (vec256){.d.i8 = {
+      -120, -120, -120, -2, -1, 1, 1, 2, 120, 120, 120, 4, 20, 40, 60, 80,
+      -1, -80, -7, -3, -2, 2, 3, 4, 7, 8, 9, 10, 50, 60, 70, 1}};
+   DO_BIN256("xvsadd.b", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 0), __lasx_xvsadd_b(a.v, b.v));
+   DO_BIN256("xvssub.b", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 1), __lasx_xvssub_b(a.v, b.v));
+   DO_IMM256("xvsat.b", 2, model_sat_imm(exp.d.u8, a.d.u8, 8, 32, 2, 1), __lasx_xvsat_b(a.v, 2));
+
+   a = (vec256){.d.u8 = {
+      0, 1, 2, 3, 4, 5, 6, 7, 15, 31, 63, 95, 127, 191, 223, 255,
+      8, 9, 10, 11, 12, 13, 14, 15, 16, 32, 48, 64, 96, 128, 192, 250}};
+   b = (vec256){.d.u8 = {
+      0, 1, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8,
+      16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}};
+   DO_BIN256("xvsadd.bu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0, 0), __lasx_xvsadd_bu(a.v, b.v));
+   DO_BIN256("xvssub.bu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0, 1), __lasx_xvssub_bu(a.v, b.v));
+   DO_IMM256("xvsat.bu", 2, model_sat_imm(exp.d.u8, a.d.u8, 8, 32, 2, 0), __lasx_xvsat_bu(a.v, 2));
+
+   a = (vec256){.d.i16 = {-2000, -40, -33, -32, -31, 31, 32, 2000, -32768, -200, -33, -1, 0, 1, 200, 32767}};
+   b = (vec256){.d.i16 = {-2000, -70, -1, 1, 31, 32, 2000, 2000, -1, -400, 33, 1, 1, 200, 1000, 1}};
+   DO_BIN256("xvsadd.h", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 0), __lasx_xvsadd_h(a.v, b.v));
+   DO_BIN256("xvssub.h", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 1), __lasx_xvssub_h(a.v, b.v));
+   DO_IMM256("xvsat.h", 5, model_sat_imm(exp.d.u8, a.d.u8, 16, 16, 5, 1), __lasx_xvsat_h(a.v, 5));
+
+   a = (vec256){.d.u16 = {0, 1, 31, 32, 33, 255, 511, 60000, 2, 63, 64, 65, 1023, 4095, 32768, 65535}};
+   b = (vec256){.d.u16 = {0, 1, 32, 33, 34, 1000, 1000, 60000, 4, 8, 16, 32, 64, 128, 256, 512}};
+   DO_BIN256("xvsadd.hu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0, 0), __lasx_xvsadd_hu(a.v, b.v));
+   DO_BIN256("xvssub.hu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0, 1), __lasx_xvssub_hu(a.v, b.v));
+   DO_IMM256("xvsat.hu", 5, model_sat_imm(exp.d.u8, a.d.u8, 16, 16, 5, 0), __lasx_xvsat_hu(a.v, 5));
+
+   a = (vec256){.d.i32 = {-200000, -600, -513, -512, -511, 511, 512, 200000}};
+   b = (vec256){.d.i32 = {-200000, -600, 1024, 200000, -1, 1, 600, 200000}};
+   DO_BIN256("xvsadd.w", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 0), __lasx_xvsadd_w(a.v, b.v));
+   DO_BIN256("xvssub.w", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 1), __lasx_xvssub_w(a.v, b.v));
+   DO_IMM256("xvsat.w", 9, model_sat_imm(exp.d.u8, a.d.u8, 32, 8, 9, 1), __lasx_xvsat_w(a.v, 9));
+
+   a = (vec256){.d.u32 = {0, 1, 1023, 1024, 1025, 65535, 262143, 4000000000u}};
+   b = (vec256){.d.u32 = {0, 1024, 2048, 4096, 8192, 16384, 32768, 4000000000u}};
+   DO_BIN256("xvsadd.wu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0, 0), __lasx_xvsadd_wu(a.v, b.v));
+   DO_BIN256("xvssub.wu", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0, 1), __lasx_xvssub_wu(a.v, b.v));
+   DO_IMM256("xvsat.wu", 9, model_sat_imm(exp.d.u8, a.d.u8, 32, 8, 9, 0), __lasx_xvsat_wu(a.v, 9));
+
+   a = (vec256){.d.i64 = {-500000000000LL, -131073, -131072, 500000000000LL}};
+   b = (vec256){.d.i64 = {-500000000000LL, -200000, 200000, 500000000000LL}};
+   DO_BIN256("xvsadd.d", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 0), __lasx_xvsadd_d(a.v, b.v));
+   DO_BIN256("xvssub.d", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 1), __lasx_xvssub_d(a.v, b.v));
+   DO_IMM256("xvsat.d", 17, model_sat_imm(exp.d.u8, a.d.u8, 64, 4, 17, 1), __lasx_xvsat_d(a.v, 17));
+
+   a = (vec256){.d.u64 = {0, 1, 262143, UINT64_MAX}};
+   b = (vec256){.d.u64 = {1, 2, 262144, UINT64_MAX}};
+   DO_BIN256("xvsadd.du", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0, 0), __lasx_xvsadd_du(a.v, b.v));
+   DO_BIN256("xvssub.du", model_sat_addsub(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0, 1), __lasx_xvssub_du(a.v, b.v));
+   DO_IMM256("xvsat.du", 17, model_sat_imm(exp.d.u8, a.d.u8, 64, 4, 17, 0), __lasx_xvsat_du(a.v, 17));
+}
+
 static void test_widen(test_state* tst)
 {
    vec256 a = {.d.u8 = {
@@ -327,6 +388,7 @@ int main(void)
    test_state tst = {0, 0};
 
    test_basic(&tst);
+   test_sat(&tst);
    test_widen(&tst);
    test_divmod(&tst);
 
