@@ -1,0 +1,188 @@
+insn vadd.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 000e0c0a08060402 | 100e0c0a08060492
+insn vadd.h:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 010e0d0a09060502 | 110e0d0a09060492
+insn vadd.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 010f0d0a09070502 | 110f0d0a09070492
+insn vadd.d:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 010f0d0b09070502 | 110f0d0b09070492
+insn vadd.q:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 010f0d0b09070503 | 110f0d0b09070492
+insn vsub.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 20d0b09070503010 | e0c0a08060402070
+insn vsub.h:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 20d0b09070503010 | dfc09f805f402070
+insn vsub.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 20d0b09070503010 | dfbf9f805f3f2070
+insn vsub.d:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 20d0b09070503010 | dfbf9f7f5f3f2070
+insn vsub.q:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 20d0b0907050300f | dfbf9f7f5f3f2070
+insn vaddi.bu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000007
+  v_result = 17f6e5d4c3b2a190 | 7f6e5d4c3b2a1988
+insn vaddi.hu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000009
+  v_result = 10f8ded6bcb49a92 | 7870564e342c128a
+insn vaddi.wu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000000b
+  v_result = 10efded8bcab9a94 | 786756503423128c
+insn vaddi.du:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000000d
+  v_result = 10efdecdbcab9a96 | 786756453423128e
+insn vsubi.bu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000005
+  v_result = 0bead9c8b7a69584 | 736251402f1e0d7c
+insn vsubi.hu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000006
+  v_result = 10e9dec7bca59a83 | 7861563f341d127b
+insn vsubi.wu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000007
+  v_result = 10efdec6bcab9a82 | 7867563e3423127a
+insn vsubi.du:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000008
+  v_result = 10efdecdbcab9a81 | 7867564534231279
+insn vclo.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 0003020201010101 | 0000000000000001
+insn vclz.h:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 0003000000000000 | 0001000100020003
+insn vpcnt.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 0000001300000011 | 000000100000000a
+insn vneg.d:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = ef10213243546577 | 8798a9bacbdced7f
+insn vsadd.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 000e0c0a08060402 | 100e0c0a08060492
+insn vsadd.hu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = ffffffffffffffff | ffffffffffffffff
+insn vssub.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 20d0b09080000000 | 7fffffff5f3f2070
+insn vssub.du:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 0000000000000000 | 0000000000000000
+insn vavgr.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 0007060504030201 | 08070605040302c9
+insn vavgr.hu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 8087868584838281 | 8887868584838249
+insn vadda.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 20d0b0908fafcff0 | dfbf9f805f3f2070
+insn vabsd.h:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 20d04f708fb0cff0 | dfc09f805f402070
+insn vabsd.du:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = df2f4f6f8fafcff0 | 20406080a0c0df90
+insn vmax.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 101f2e3d4c5b6a79 | 7867564534231211
+insn vmin.hu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 10ef2e3d4c5b6a79 | 7867564534231281
+insn vmaxi.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000007
+  v_result = 10efdecd00000007 | 7867564534231281
+insn vmini.du:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000013
+  v_result = 0000000000000013 | 0000000000000013
+insn vmul.h:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = dbf1b89fa65db52b | e50935f7a7f5bc83
+insn vmuh.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 0230fab1f966aff7 | 0805f0eb01d6a9a1
+insn vmuh.hu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 02301954127d0cb8 | 0805046501d6005c
+insn vmadd.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_arg3   = 211f1d1b19171513 | 110f0d0b09070503
+  v_result = 00b0143c28d84c84 | 903094bca858ccb4
+insn vmsub.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_arg3   = 211f1d1b19171513 | 110f0d0b09070503
+  v_result = bf06155e3047c68e | 9a5f7ace0a45e74e
+insn vdiv.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 0000fffffefdfcfa | 07060606050503d6
+insn vmod.hu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 10ef13100d0a0704 | 00fe080307000378
+insn vsigncov.d:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+insn vmulwev.h.b:
+  v_arg1   = f00ff20df40bf609 | f807fa05fc03fe01
+  v_arg2   = 11100f0e0d0c0b0a | 0908070605040302
+  v_result = 00f000b60084005a | 0038001e000c0002
+insn vmulwod.h.bu.b:
+  v_arg1   = f00ff20df40bf609 | f807fa05fc03fe01
+  v_arg2   = 11100f0e0d0c0b0a | 0908070605040302
+  v_result = 0ff00e2e0c640a92 | 08b806d604ec02fa
+insn vmaddwev.h.b:
+  v_arg1   = 032002bc025801f4 | 0190012c00c80064
+  v_arg2   = f00ff20df40bf609 | f807fa05fc03fe01
+  v_arg3   = 11100f0e0d0c0b0a | 0908070605040302
+  v_result = 0410037202dc024e | 01c8014a00d40066
+insn vmaddwod.h.bu.b:
+  v_arg1   = 032002bc025801f4 | 0190012c00c80064
+  v_arg2   = f00ff20df40bf609 | f807fa05fc03fe01
+  v_arg3   = 11100f0e0d0c0b0a | 0908070605040302
+  v_result = 131010ea0ebc0c86 | 0a48080205b4035e

@@ -36,7 +36,7 @@ check_PROGRAMS = \
 	vector128 \
 	vector256
 
-AM_CFLAGS    += @FLAG_M64@
+AM_CFLAGS    += @FLAG_M64@ -mlsx -mlasx -fno-tree-vectorize
 AM_CXXFLAGS  += @FLAG_M64@
 AM_CCASFLAGS += @FLAG_M64@
 
