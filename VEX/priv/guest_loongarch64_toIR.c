@@ -9455,20 +9455,22 @@ static IRTemp macro_v128divmod_b ( IRTemp argL, IRTemp argR, UInt isMod, UInt is
    for (UInt i = 0; i < 16; i++) {
       tI8[i] = newTemp(Ity_I8);
       if (isMod) {
-         IRTemp tmp = newTemp(Ity_I64);
-         assign(tmp, binop(mathOp,
-                           unop(widenOp,
-                                binop(Iop_GetElem8x16, mkexpr(argL), mkU8(i))),
-                           unop(widenOp, binop(Iop_GetElem8x16, mkexpr(argR),
-                                               mkU8(i)))));
+         IRTemp  tmp = newTemp(Ity_I64);
+         IRExpr* l =
+            unop(widenOp, binop(Iop_GetElem8x16, mkexpr(argL), mkU8(i)));
+         IRExpr* r =
+            unop(widenOp, binop(Iop_GetElem8x16, mkexpr(argR), mkU8(i)));
+         assign(tmp, IRExpr_ITE(binop(Iop_CmpEQ32, r, mkU32(0)), mkU64(0),
+                                binop(mathOp, l, r)));
          assign(tI8[i], unop(Iop_32to8, unop(Iop_64HIto32, mkexpr(tmp))));
       } else {
-         IRTemp tmp = newTemp(Ity_I32);
-         assign(tmp, binop(mathOp,
-                           unop(widenOp,
-                                binop(Iop_GetElem8x16, mkexpr(argL), mkU8(i))),
-                           unop(widenOp, binop(Iop_GetElem8x16, mkexpr(argR),
-                                               mkU8(i)))));
+         IRTemp  tmp = newTemp(Ity_I32);
+         IRExpr* l =
+            unop(widenOp, binop(Iop_GetElem8x16, mkexpr(argL), mkU8(i)));
+         IRExpr* r =
+            unop(widenOp, binop(Iop_GetElem8x16, mkexpr(argR), mkU8(i)));
+         assign(tmp, IRExpr_ITE(binop(Iop_CmpEQ32, r, mkU32(0)), mkU32(0),
+                                binop(mathOp, l, r)));
          assign(tI8[i], unop(Iop_32to8, mkexpr(tmp)));
       }
    }
@@ -9735,20 +9737,22 @@ static IRTemp macro_v128divmod_h ( IRTemp argL, IRTemp argR, UInt isMod, UInt is
    for (UInt i = 0; i < 8; i++) {
       tI16[i] = newTemp(Ity_I16);
       if (isMod) {
-         IRTemp math = newTemp(Ity_I64);
-         assign(math, binop(mathOp,
-                            unop(widenOp,
-                                 binop(Iop_GetElem16x8, mkexpr(argL), mkU8(i))),
-                            unop(widenOp, binop(Iop_GetElem16x8, mkexpr(argR),
-                                                mkU8(i)))));
+         IRTemp  math = newTemp(Ity_I64);
+         IRExpr* l =
+            unop(widenOp, binop(Iop_GetElem16x8, mkexpr(argL), mkU8(i)));
+         IRExpr* r =
+            unop(widenOp, binop(Iop_GetElem16x8, mkexpr(argR), mkU8(i)));
+         assign(math, IRExpr_ITE(binop(Iop_CmpEQ32, r, mkU32(0)), mkU64(0),
+                                 binop(mathOp, l, r)));
          assign(tI16[i], unop(Iop_32to16, unop(Iop_64HIto32, mkexpr(math))));
       } else {
-         IRTemp math = newTemp(Ity_I32);
-         assign(math, binop(mathOp,
-                            unop(widenOp,
-                                 binop(Iop_GetElem16x8, mkexpr(argL), mkU8(i))),
-                            unop(widenOp, binop(Iop_GetElem16x8, mkexpr(argR),
-                                                mkU8(i)))));
+         IRTemp  math = newTemp(Ity_I32);
+         IRExpr* l =
+            unop(widenOp, binop(Iop_GetElem16x8, mkexpr(argL), mkU8(i)));
+         IRExpr* r =
+            unop(widenOp, binop(Iop_GetElem16x8, mkexpr(argR), mkU8(i)));
+         assign(math, IRExpr_ITE(binop(Iop_CmpEQ32, r, mkU32(0)), mkU32(0),
+                                 binop(mathOp, l, r)));
          assign(tI16[i], unop(Iop_32to16, mkexpr(math)));
       }
    }
@@ -9769,16 +9773,18 @@ static IRTemp macro_v128divmod_w ( IRTemp argL, IRTemp argR, UInt isMod, UInt is
    for (UInt i = 0; i < 4; i++) {
       tI32[i] = newTemp(Ity_I32);
       if (isMod) {
-         IRTemp math = newTemp(Ity_I64);
-         assign(math,
-                binop(mathOp, binop(Iop_GetElem32x4, mkexpr(argL), mkU8(i)),
-                      binop(Iop_GetElem32x4, mkexpr(argR), mkU8(i))));
+         IRTemp  math = newTemp(Ity_I64);
+         IRExpr* l    = binop(Iop_GetElem32x4, mkexpr(argL), mkU8(i));
+         IRExpr* r    = binop(Iop_GetElem32x4, mkexpr(argR), mkU8(i));
+         assign(math, IRExpr_ITE(binop(Iop_CmpEQ32, r, mkU32(0)), mkU64(0),
+                                 binop(mathOp, l, r)));
          assign(tI32[i], unop(Iop_64HIto32, mkexpr(math)));
       } else {
-         IRTemp math = newTemp(Ity_I32);
-         assign(math,
-                binop(mathOp, binop(Iop_GetElem32x4, mkexpr(argL), mkU8(i)),
-                      binop(Iop_GetElem32x4, mkexpr(argR), mkU8(i))));
+         IRTemp  math = newTemp(Ity_I32);
+         IRExpr* l    = binop(Iop_GetElem32x4, mkexpr(argL), mkU8(i));
+         IRExpr* r    = binop(Iop_GetElem32x4, mkexpr(argR), mkU8(i));
+         assign(math, IRExpr_ITE(binop(Iop_CmpEQ32, r, mkU32(0)), mkU32(0),
+                                 binop(mathOp, l, r)));
          assign(tI32[i], mkexpr(math));
       }
    }
@@ -9807,11 +9813,20 @@ static IRTemp macro_v128divmod_d ( IRTemp argL, IRTemp argR, UInt isMod, UInt is
       assign(
          res,
          binop(Iop_64HLtoV128,
-               unop(Iop_128HIto64, binop(mathOp, mkexpr(lHi), mkexpr(rHi))),
-               unop(Iop_128HIto64, binop(mathOp, mkexpr(lLo), mkexpr(rLo)))));
+               IRExpr_ITE(
+                  binop(Iop_CmpEQ64, mkexpr(rHi), mkU64(0)), mkU64(0),
+                  unop(Iop_128HIto64, binop(mathOp, mkexpr(lHi), mkexpr(rHi)))),
+               IRExpr_ITE(binop(Iop_CmpEQ64, mkexpr(rLo), mkU64(0)), mkU64(0),
+                          unop(Iop_128HIto64,
+                               binop(mathOp, mkexpr(lLo), mkexpr(rLo))))));
    } else {
-      assign(res, binop(Iop_64HLtoV128, binop(mathOp, mkexpr(lHi), mkexpr(rHi)),
-                        binop(mathOp, mkexpr(lLo), mkexpr(rLo))));
+      assign(
+         res,
+         binop(Iop_64HLtoV128,
+               IRExpr_ITE(binop(Iop_CmpEQ64, mkexpr(rHi), mkU64(0)), mkU64(0),
+                          binop(mathOp, mkexpr(lHi), mkexpr(rHi))),
+               IRExpr_ITE(binop(Iop_CmpEQ64, mkexpr(rLo), mkU64(0)), mkU64(0),
+                          binop(mathOp, mkexpr(lLo), mkexpr(rLo)))));
    }
 
    return res;
