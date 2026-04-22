@@ -208,6 +208,40 @@ static void test_sat(test_state* tst)
    DO_IMM128("vsat.du", 17, model_sat_imm(exp.d.u8, a.d.u8, 64, 2, 17, 0), __lsx_vsat_du(a.v, 17));
 }
 
+static void test_cmpmask(test_state* tst)
+{
+   vec128 a = {.d.i8 = {-2, -1, 0, 1, 2, 3, 4, 5, -8, -7, -6, 6, 7, 8, 9, 10}};
+   vec128 b = {.d.i8 = {-3, -1, 1, 1, 1, 4, 0, 5, -9, -7, -5, 5, 8, 7, 9, 11}};
+   vec128 got, exp;
+
+   DO_BIN128("vseq.b", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 0), __lsx_vseq_b(a.v, b.v));
+   DO_BIN128("vsle.b", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vsle_b(a.v, b.v));
+   DO_BIN128("vslt.bu", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 2), __lsx_vslt_bu(a.v, b.v));
+   DO_IMM128("vseqi.h", -1, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i16 = {-1, -1, -1, -1, -1, -1, -1, -1}}.d.u8, 16, 8, 1, 0), __lsx_vseqi_h(a.v, -1));
+   DO_IMM128("vslei.h", 3, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i16 = {3, 3, 3, 3, 3, 3, 3, 3}}.d.u8, 16, 8, 1, 1), __lsx_vslei_h(a.v, 3));
+   DO_IMM128("vslti.hu", 7, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u16 = {7, 7, 7, 7, 7, 7, 7, 7}}.d.u8, 16, 8, 0, 2), __lsx_vslti_hu(a.v, 7));
+   DO_UN128("vmskltz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 0), __lsx_vmskltz_b(a.v));
+   DO_UN128("vmskgez.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 1), __lsx_vmskgez_b(a.v));
+   DO_UN128("vmsknz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 2), __lsx_vmsknz_b(a.v));
+}
+
+static void test_exth(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 got, exp;
+
+   DO_UN128("vexth.h.b", model_exth(exp.d.u8, a.d.u8, 8, 16, 8, 0, sizeof(a.d.u8)), __lsx_vexth_h_b(a.v));
+   DO_UN128("vexth.w.h", model_exth(exp.d.u8, a.d.u8, 16, 32, 4, 0, sizeof(a.d.u8)), __lsx_vexth_w_h(a.v));
+   DO_UN128("vexth.d.w", model_exth(exp.d.u8, a.d.u8, 32, 64, 2, 0, sizeof(a.d.u8)), __lsx_vexth_d_w(a.v));
+   DO_UN128("vexth.q.d", model_exth(exp.d.u8, a.d.u8, 64, 128, 1, 0, sizeof(a.d.u8)), __lsx_vexth_q_d(a.v));
+   DO_UN128("vexth.hu.bu", model_exth(exp.d.u8, a.d.u8, 8, 16, 8, 1, sizeof(a.d.u8)), __lsx_vexth_hu_bu(a.v));
+   DO_UN128("vexth.wu.hu", model_exth(exp.d.u8, a.d.u8, 16, 32, 4, 1, sizeof(a.d.u8)), __lsx_vexth_wu_hu(a.v));
+   DO_UN128("vexth.du.wu", model_exth(exp.d.u8, a.d.u8, 32, 64, 2, 1, sizeof(a.d.u8)), __lsx_vexth_du_wu(a.v));
+   DO_UN128("vexth.qu.du", model_exth(exp.d.u8, a.d.u8, 64, 128, 1, 1, sizeof(a.d.u8)), __lsx_vexth_qu_du(a.v));
+}
+
 static void test_widen(test_state* tst)
 {
    vec128 a = {.d.u8 = {
@@ -375,6 +409,8 @@ int main(void)
 
    test_basic(&tst);
    test_sat(&tst);
+   test_cmpmask(&tst);
+   test_exth(&tst);
    test_widen(&tst);
    test_divmod(&tst);
 

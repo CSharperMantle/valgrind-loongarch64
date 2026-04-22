@@ -207,6 +207,53 @@ static void test_sat(test_state* tst)
    DO_IMM256("xvsat.du", 17, model_sat_imm(exp.d.u8, a.d.u8, 64, 4, 17, 0), __lasx_xvsat_du(a.v, 17));
 }
 
+static void test_cmpmask(test_state* tst)
+{
+   vec256 a = {.d.i16 = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}};
+   vec256 b = {.d.i16 = {-5, -3, -4, -2, 0, 0, 2, 1, 4, 4, 4, 7, 6, 9, 9, 9}};
+   vec256 got, exp;
+
+   DO_BIN256("xvseq.h", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 0), __lasx_xvseq_h(a.v, b.v));
+   DO_IMM256("xvseqi.w", -1, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i32 = {-1, -1, -1, -1, -1, -1, -1, -1}}.d.u8, 32, 8, 1, 0), __lasx_xvseqi_w(a.v, -1));
+   DO_IMM256("xvslei.w", 2, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i32 = {2, 2, 2, 2, 2, 2, 2, 2}}.d.u8, 32, 8, 1, 1), __lasx_xvslei_w(a.v, 2));
+   DO_IMM256("xvslti.wu", 7, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u32 = {7, 7, 7, 7, 7, 7, 7, 7}}.d.u8, 32, 8, 0, 2), __lasx_xvslti_wu(a.v, 7));
+   DO_UN256("xvmskltz.h", model_vmsk(exp.d.u8, a.d.u8, 16, sizeof(exp.d.u8), 0), __lasx_xvmskltz_h(a.v));
+   DO_UN256("xvmskgez.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 1), __lasx_xvmskgez_b(a.v));
+   DO_UN256("xvmsknz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 2), __lasx_xvmsknz_b(a.v));
+}
+
+static void test_exth(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 got, exp;
+
+   DO_UN256("xvexth.h.b", model_xvexth(exp.d.u8, a.d.u8, 8, 16, 8, 0), __lasx_xvexth_h_b(a.v));
+   DO_UN256("xvexth.w.h", model_xvexth(exp.d.u8, a.d.u8, 16, 32, 4, 0), __lasx_xvexth_w_h(a.v));
+   DO_UN256("xvexth.d.w", model_xvexth(exp.d.u8, a.d.u8, 32, 64, 2, 0), __lasx_xvexth_d_w(a.v));
+   DO_UN256("xvexth.q.d", model_xvexth(exp.d.u8, a.d.u8, 64, 128, 1, 0), __lasx_xvexth_q_d(a.v));
+   DO_UN256("xvexth.hu.bu", model_xvexth(exp.d.u8, a.d.u8, 8, 16, 8, 1), __lasx_xvexth_hu_bu(a.v));
+   DO_UN256("xvexth.wu.hu", model_xvexth(exp.d.u8, a.d.u8, 16, 32, 4, 1), __lasx_xvexth_wu_hu(a.v));
+   DO_UN256("xvexth.du.wu", model_xvexth(exp.d.u8, a.d.u8, 32, 64, 2, 1), __lasx_xvexth_du_wu(a.v));
+   DO_UN256("xvexth.qu.du", model_xvexth(exp.d.u8, a.d.u8, 64, 128, 1, 1), __lasx_xvexth_qu_du(a.v));
+
+   DO_UN256("vext2xv.h.b", model_vext2xv(exp.d.u8, a.d.u8, 8, 16, 16, 0), __lasx_vext2xv_h_b(a.v));
+   DO_UN256("vext2xv.w.b", model_vext2xv(exp.d.u8, a.d.u8, 8, 32, 8, 0), __lasx_vext2xv_w_b(a.v));
+   DO_UN256("vext2xv.d.b", model_vext2xv(exp.d.u8, a.d.u8, 8, 64, 4, 0), __lasx_vext2xv_d_b(a.v));
+   DO_UN256("vext2xv.w.h", model_vext2xv(exp.d.u8, a.d.u8, 16, 32, 8, 0), __lasx_vext2xv_w_h(a.v));
+   DO_UN256("vext2xv.d.h", model_vext2xv(exp.d.u8, a.d.u8, 16, 64, 4, 0), __lasx_vext2xv_d_h(a.v));
+   DO_UN256("vext2xv.d.w", model_vext2xv(exp.d.u8, a.d.u8, 32, 64, 4, 0), __lasx_vext2xv_d_w(a.v));
+   DO_UN256("vext2xv.hu.bu", model_vext2xv(exp.d.u8, a.d.u8, 8, 16, 16, 1), __lasx_vext2xv_hu_bu(a.v));
+   DO_UN256("vext2xv.wu.bu", model_vext2xv(exp.d.u8, a.d.u8, 8, 32, 8, 1), __lasx_vext2xv_wu_bu(a.v));
+   DO_UN256("vext2xv.du.bu", model_vext2xv(exp.d.u8, a.d.u8, 8, 64, 4, 1), __lasx_vext2xv_du_bu(a.v));
+   DO_UN256("vext2xv.wu.hu", model_vext2xv(exp.d.u8, a.d.u8, 16, 32, 8, 1), __lasx_vext2xv_wu_hu(a.v));
+   DO_UN256("vext2xv.du.hu", model_vext2xv(exp.d.u8, a.d.u8, 16, 64, 4, 1), __lasx_vext2xv_du_hu(a.v));
+   DO_UN256("vext2xv.du.wu", model_vext2xv(exp.d.u8, a.d.u8, 32, 64, 4, 1), __lasx_vext2xv_du_wu(a.v));
+}
+
 static void test_widen(test_state* tst)
 {
    vec256 a = {.d.u8 = {
@@ -389,6 +436,8 @@ int main(void)
 
    test_basic(&tst);
    test_sat(&tst);
+   test_cmpmask(&tst);
+   test_exth(&tst);
    test_widen(&tst);
    test_divmod(&tst);
 
