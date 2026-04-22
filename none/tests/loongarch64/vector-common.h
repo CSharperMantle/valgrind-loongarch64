@@ -271,6 +271,99 @@ static void model_sat_imm(uint8_t* dst, const uint8_t* a, unsigned bits,
    }
 }
 
+static void model_cmp(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                      unsigned bits, unsigned lanes, int is_signed, int mode)
+{
+   unsigned i;
+   uint64_t truev = bits == 64 ? UINT64_MAX : ((UINT64_C(1) << bits) - 1);
+   for (i = 0; i < lanes; i++) {
+      uint64_t rv = 0;
+      if (is_signed) {
+         int64_t av = sx64(read_lane_u64(a, bits, i), bits);
+         int64_t bv = sx64(read_lane_u64(b, bits, i), bits);
+         rv = mode == 0 ? (av == bv) : (mode == 1 ? (av <= bv) : (av < bv));
+      } else {
+         uint64_t av = read_lane_u64(a, bits, i);
+         uint64_t bv = read_lane_u64(b, bits, i);
+         rv = mode == 0 ? (av == bv) : (mode == 1 ? (av <= bv) : (av < bv));
+      }
+      write_lane_u64(dst, bits, i, rv ? truev : 0);
+   }
+}
+
+static void model_vmsk(uint8_t* dst, const uint8_t* a, unsigned bits,
+                       unsigned total_bytes, int mode)
+{
+   unsigned lanes_per_128 = 128 / bits;
+   unsigned chunks = total_bytes / 16;
+   memset(dst, 0, total_bytes);
+   for (unsigned chunk = 0; chunk < chunks; chunk++) {
+      uint64_t mask = 0;
+      const uint8_t* base = a + chunk * 16;
+      for (unsigned i = 0; i < lanes_per_128; i++) {
+         uint64_t raw = read_lane_u64(base, bits, i);
+         int set;
+         if (mode == 0)
+            set = sx64(raw, bits) < 0;
+         else if (mode == 1)
+            set = sx64(raw, 8) >= 0;
+         else
+            set = (raw & 0xff) != 0;
+         if (set)
+            mask |= UINT64_C(1) << i;
+      }
+      write_lane_u64(dst + chunk * 16, 64, 0, mask);
+      write_lane_u64(dst + chunk * 16, 64, 1, 0);
+   }
+}
+
+static void model_exth(uint8_t* dst, const uint8_t* a, unsigned src_bits,
+                       unsigned dst_bits, unsigned dst_lanes, int is_unsigned,
+                       unsigned bytes_total)
+{
+   unsigned src_lanes = (bytes_total * 8) / src_bits;
+   unsigned start = src_lanes / 2;
+   memset(dst, 0, bytes_total);
+   for (unsigned i = 0; i < dst_lanes; i++) {
+      uint64_t raw = read_lane_u64(a, src_bits, start + i);
+      unsigned __int128 val;
+      if (is_unsigned) {
+         val = raw;
+      } else if (dst_bits == 128) {
+         val = (unsigned __int128)((__int128)sx64(raw, src_bits));
+      } else {
+         val = (unsigned __int128)ux_from_sx(sx64(raw, src_bits), dst_bits);
+      }
+      write_lane_wide(dst, dst_bits, i, val);
+   }
+}
+
+static void model_xvexth(uint8_t* dst, const uint8_t* a, unsigned src_bits,
+                         unsigned dst_bits, unsigned dst_lanes_per_128,
+                         int is_unsigned)
+{
+   model_exth(dst, a, src_bits, dst_bits, dst_lanes_per_128, is_unsigned, 16);
+   model_exth(dst + 16, a + 16, src_bits, dst_bits, dst_lanes_per_128, is_unsigned, 16);
+}
+
+static void model_vext2xv(uint8_t* dst, const uint8_t* a, unsigned src_bits,
+                          unsigned dst_bits, unsigned dst_lanes, int is_unsigned)
+{
+   memset(dst, 0, 32);
+   for (unsigned i = 0; i < dst_lanes; i++) {
+      uint64_t raw = read_lane_u64(a, src_bits, i);
+      unsigned __int128 val;
+      if (is_unsigned) {
+         val = raw;
+      } else if (dst_bits == 128) {
+         val = (unsigned __int128)((__int128)sx64(raw, src_bits));
+      } else {
+         val = (unsigned __int128)ux_from_sx(sx64(raw, src_bits), dst_bits);
+      }
+      write_lane_wide(dst, dst_bits, i, val);
+   }
+}
+
 static void model_avgr(uint8_t* dst, const uint8_t* a, const uint8_t* b,
                        unsigned bits, unsigned lanes, int is_signed)
 {
