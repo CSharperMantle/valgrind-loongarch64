@@ -88,6 +88,23 @@ static void write_lane_u128(uint8_t* dst, unsigned idx, unsigned __int128 val)
       dst[idx * 16 + i] = (uint8_t)(val >> (8 * i));
 }
 
+static void write_lane_wide(uint8_t* dst, unsigned bits, unsigned idx,
+                            unsigned __int128 val)
+{
+   if (bits == 128)
+      write_lane_u128(dst, idx, val);
+   else
+      write_lane_u64(dst, bits, idx, (uint64_t)val);
+}
+
+static unsigned __int128 read_lane_wide(const uint8_t* src, unsigned bits,
+                                        unsigned idx)
+{
+   if (bits == 128)
+      return read_lane_u128(src, idx);
+   return read_lane_u64(src, bits, idx);
+}
+
 static int64_t sx64(uint64_t raw, unsigned bits)
 {
    uint64_t sign = UINT64_C(1) << (bits - 1);
@@ -254,6 +271,25 @@ static void model_avgr(uint8_t* dst, const uint8_t* a, const uint8_t* b,
    }
 }
 
+static void model_avg(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                      unsigned bits, unsigned lanes, int is_signed)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      uint64_t raw_a = read_lane_u64(a, bits, i);
+      uint64_t raw_b = read_lane_u64(b, bits, i);
+      if (is_signed) {
+         int64_t av = sx64(raw_a, bits);
+         int64_t bv = sx64(raw_b, bits);
+         int64_t rv = (av >> 1) + (bv >> 1) + ((raw_a & raw_b) & 1);
+         write_lane_u64(dst, bits, i, ux_from_sx(rv, bits));
+      } else {
+         uint64_t rv = (raw_a >> 1) + (raw_b >> 1) + ((raw_a & raw_b) & 1);
+         write_lane_u64(dst, bits, i, rv);
+      }
+   }
+}
+
 static uint64_t abs_signed_lane(uint64_t raw, unsigned bits)
 {
    int64_t v = sx64(raw, bits);
@@ -415,10 +451,63 @@ static void model_mulw(uint8_t* dst, const uint8_t* a, const uint8_t* b,
       __int128 bv = sign_b ? (__int128)sx64(read_lane_u64(b, src_bits, src_idx), src_bits)
                            : (__int128)read_lane_u64(b, src_bits, src_idx);
       unsigned __int128 raw = (unsigned __int128)(av * bv);
-      if (dst_bits == 64)
-         write_lane_u64(dst, dst_bits, i, (uint64_t)raw);
-      else
-         write_lane_u64(dst, dst_bits, i, (uint64_t)raw);
+      write_lane_wide(dst, dst_bits, i, raw);
+   }
+}
+
+static void model_half_addsub_widen(uint8_t* dst, const uint8_t* a,
+                                    const uint8_t* b, unsigned src_bits,
+                                    unsigned dst_bits, unsigned lanes,
+                                    int is_unsigned, int is_sub)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      unsigned idx_a = 2 * i + 1;
+      unsigned idx_b = 2 * i;
+      if (is_unsigned) {
+         uint64_t av = read_lane_u64(a, src_bits, idx_a);
+         uint64_t bv = read_lane_u64(b, src_bits, idx_b);
+         uint64_t rv = is_sub ? (av - bv) : (av + bv);
+         write_lane_wide(dst, dst_bits, i, rv);
+      } else {
+         __int128 av = sx64(read_lane_u64(a, src_bits, idx_a), src_bits);
+         __int128 bv = sx64(read_lane_u64(b, src_bits, idx_b), src_bits);
+         __int128 rv = is_sub ? (av - bv) : (av + bv);
+         write_lane_wide(dst, dst_bits, i, (unsigned __int128)rv);
+      }
+   }
+}
+
+static void model_addw(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                       unsigned src_bits, unsigned dst_bits, unsigned lanes,
+                       int odd, int sign_a, int sign_b)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      unsigned idx = 2 * i + (unsigned)odd;
+      __int128 av = sign_a ? (__int128)sx64(read_lane_u64(a, src_bits, idx), src_bits)
+                           : (__int128)read_lane_u64(a, src_bits, idx);
+      __int128 bv = sign_b ? (__int128)sx64(read_lane_u64(b, src_bits, idx), src_bits)
+                           : (__int128)read_lane_u64(b, src_bits, idx);
+      __int128 rv = av + bv;
+      write_lane_wide(dst, dst_bits, i, (unsigned __int128)rv);
+   }
+}
+
+static void model_addsubw(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                          unsigned src_bits, unsigned dst_bits,
+                          unsigned lanes, int odd, int sign_a, int sign_b,
+                          int is_sub)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      unsigned idx = 2 * i + (unsigned)odd;
+      __int128 av = sign_a ? (__int128)sx64(read_lane_u64(a, src_bits, idx), src_bits)
+                           : (__int128)read_lane_u64(a, src_bits, idx);
+      __int128 bv = sign_b ? (__int128)sx64(read_lane_u64(b, src_bits, idx), src_bits)
+                           : (__int128)read_lane_u64(b, src_bits, idx);
+      __int128 rv = is_sub ? (av - bv) : (av + bv);
+      write_lane_wide(dst, dst_bits, i, (unsigned __int128)rv);
    }
 }
 
@@ -434,8 +523,8 @@ static void model_maddw(uint8_t* dst, const uint8_t* acc, const uint8_t* a,
       __int128 bv = sign_b ? (__int128)sx64(read_lane_u64(b, src_bits, src_idx), src_bits)
                            : (__int128)read_lane_u64(b, src_bits, src_idx);
       unsigned __int128 raw = (unsigned __int128)(av * bv)
-                            + read_lane_u64(acc, dst_bits, i);
-      write_lane_u64(dst, dst_bits, i, (uint64_t)raw);
+                            + read_lane_wide(acc, dst_bits, i);
+      write_lane_wide(dst, dst_bits, i, raw);
    }
 }
 
