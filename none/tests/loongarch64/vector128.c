@@ -272,12 +272,57 @@ static void test_widen(test_state* tst)
    DO_TRI128_ACC("vmaddwod.q.du.d", model_maddw(exp.d.u8, acc.d.u8, a.d.u8, b.d.u8, 64, 128, 1, 1, 0, 1), __lsx_vmaddwod_q_du_d(acc.v, a.v, b.v));
 }
 
+static void test_divmod(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 b = {.d.u8 = {
+      3, 5, 7, 9, 11, 13, 15, 17,
+      19, 21, 23, 25, 27, 29, 31, 33}};
+   vec128 z = {.d.u8 = {
+      0, 5, 0, 9, 0, 13, 0, 17,
+      0, 21, 0, 25, 0, 29, 0, 33}};
+   vec128 neg_a = {.d.i64 = {-1000, 999}};
+   vec128 neg_b = {.d.i64 = {7, -9}};
+   vec128 got, exp;
+
+   DO_BIN128("vdiv.h", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 0), __lsx_vdiv_h(a.v, b.v));
+   DO_BIN128("vdiv.w", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 0), __lsx_vdiv_w(a.v, b.v));
+   DO_BIN128("vdiv.d", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 0), __lsx_vdiv_d(a.v, b.v));
+   DO_BIN128("vdiv.bu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 0), __lsx_vdiv_bu(a.v, b.v));
+   DO_BIN128("vdiv.hu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0, 0), __lsx_vdiv_hu(a.v, b.v));
+   DO_BIN128("vdiv.wu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0, 0), __lsx_vdiv_wu(a.v, b.v));
+   DO_BIN128("vdiv.du", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0, 0), __lsx_vdiv_du(a.v, b.v));
+   DO_BIN128("vmod.b", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vmod_b(a.v, b.v));
+   DO_BIN128("vmod.h", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 1), __lsx_vmod_h(a.v, b.v));
+   DO_BIN128("vmod.w", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 1), __lsx_vmod_w(a.v, b.v));
+   DO_BIN128("vmod.d", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 1), __lsx_vmod_d(a.v, b.v));
+   DO_BIN128("vmod.bu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 1), __lsx_vmod_bu(a.v, b.v));
+   DO_BIN128("vmod.hu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0, 1), __lsx_vmod_hu(a.v, b.v));
+   DO_BIN128("vmod.wu", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0, 1), __lsx_vmod_wu(a.v, b.v));
+   DO_BIN128("vmod.du", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0, 1), __lsx_vmod_du(a.v, b.v));
+
+   a = (vec128){.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   b = z;
+   DO_BIN128("vdiv.b.zero", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 0), __lsx_vdiv_b(a.v, b.v));
+   DO_BIN128("vmod.h.zero", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 1), __lsx_vmod_h(a.v, b.v));
+
+   a = neg_a;
+   b = neg_b;
+   DO_BIN128("vdiv.d.neg", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 0), __lsx_vdiv_d(a.v, b.v));
+   DO_BIN128("vmod.d.neg", model_divmod(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 1), __lsx_vmod_d(a.v, b.v));
+}
+
 int main(void)
 {
    test_state tst = {0, 0};
 
    test_basic(&tst);
    test_widen(&tst);
+   test_divmod(&tst);
 
    return tst.fails != 0;
 }
