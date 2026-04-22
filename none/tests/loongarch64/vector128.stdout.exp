@@ -272,6 +272,63 @@ insn vsat.du:
   v_arg1   = ffffffffffffffff | 0000000000000000
   imm      = 0000000000000011
   v_result = 000000000003ffff | 0000000000000000
+insn vseq.b:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  v_arg2   = 0b09070805fbf9f7 | 050004010101fffd
+  v_result = 00ff00000000ff00 | ff000000ff00ff00
+insn vsle.b:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  v_arg2   = 0b09070805fbf9f7 | 050004010101fffd
+  v_result = ffff00ff00ffff00 | ff00ff00ffffff00
+insn vslt.bu:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  v_arg2   = 0b09070805fbf9f7 | 050004010101fffd
+  v_result = ff0000ff00ff0000 | 0000ff0000ff0000
+insn vseqi.h:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  imm      = ffffffffffffffff
+  v_result = 0000000000000000 | 0000000000000000
+insn vslei.h:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  imm      = 0000000000000003
+  v_result = 000000000000ffff | 000000000000ffff
+insn vslti.hu:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  imm      = 0000000000000007
+  v_result = 0000000000000000 | 0000000000000000
+insn vmskltz.b:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  v_result = 0000000000000000 | 0000000000000703
+insn vmskgez.b:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  v_result = 0000000000000000 | 000000000000f8fc
+insn vmsknz.b:
+  v_arg1   = 0a09080706faf9f8 | 050403020100fffe
+  v_result = 0000000000000000 | 000000000000fffb
+insn vexth.h.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 0010ffefffdeffcd | ffbcffabff9aff89
+insn vexth.w.h:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 000010efffffdecd | ffffbcabffff9a89
+insn vexth.d.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 0000000010efdecd | ffffffffbcab9a89
+insn vexth.q.d:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 0000000000000000 | 10efdecdbcab9a89
+insn vexth.hu.bu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 001000ef00de00cd | 00bc00ab009a0089
+insn vexth.wu.hu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 000010ef0000decd | 0000bcab00009a89
+insn vexth.du.wu:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 0000000010efdecd | 00000000bcab9a89
+insn vexth.qu.du:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_result = 0000000000000000 | 10efdecdbcab9a89
 insn vhaddw.h.b:
   v_arg1   = f00ff20df40bf609 | f807fa05fc03fe01
   v_arg2   = 11100f0e0d0c0b0a | 0908070605040302
