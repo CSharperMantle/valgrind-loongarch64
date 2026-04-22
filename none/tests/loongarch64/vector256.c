@@ -254,6 +254,118 @@ static void test_exth(test_state* tst)
    DO_UN256("vext2xv.du.wu", model_vext2xv(exp.d.u8, a.d.u8, 32, 64, 4, 1), __lasx_vext2xv_du_wu(a.v));
 }
 
+static void test_unary_more(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 b = {.d.u8 = {
+      0x11, 0xf2, 0xe3, 0xd4, 0xc5, 0xb6, 0xa7, 0x98,
+      0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f, 0xf0,
+      0xe1, 0xd2, 0xc3, 0xb4, 0xa5, 0x96, 0x87, 0x78,
+      0x69, 0x5a, 0x4b, 0x3c, 0x2d, 0x1e, 0x0f, 0xff}};
+   vec256 got, exp;
+
+   DO_UN256("xvclo.d", model_clo(exp.d.u8, a.d.u8, 64, 4), __lasx_xvclo_d(a.v));
+   DO_UN256("xvclz.b", model_clz(exp.d.u8, a.d.u8, 8, 32), __lasx_xvclz_b(a.v));
+   DO_UN256("xvpcnt.h", model_pcnt(exp.d.u8, a.d.u8, 16, 16), __lasx_xvpcnt_h(a.v));
+   DO_UN256("xvneg.d", model_neg(exp.d.u8, a.d.u8, 64, 4), __lasx_xvneg_d(a.v));
+   DO_BIN256("xvsigncov.d", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 64, 4), __lasx_xvsigncov_d(a.v, b.v));
+}
+
+static void test_shift(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 zero = {.d.u64 = {0, 0, 0, 0}};
+   vec256 mix = {.d.u64 = {0, 63, 64, 65}};
+   vec256 got, exp, b;
+
+   DO_IMM256("xvslli.w.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 32, 8, 0, 0, 0), __lasx_xvslli_w(a.v, 0));
+   DO_IMM256("xvslli.w.31", 31, model_shift_imm(exp.d.u8, a.d.u8, 32, 8, 31, 0, 0), __lasx_xvslli_w(a.v, 31));
+   DO_IMM256("xvsrli.d.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 64, 4, 0, 1, 0), __lasx_xvsrli_d(a.v, 0));
+   DO_IMM256("xvsrli.d.63", 63, model_shift_imm(exp.d.u8, a.d.u8, 64, 4, 63, 1, 0), __lasx_xvsrli_d(a.v, 63));
+   DO_IMM256("xvsrai.h.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 16, 16, 0, 1, 1), __lasx_xvsrai_h(a.v, 0));
+   DO_IMM256("xvsrai.h.15", 15, model_shift_imm(exp.d.u8, a.d.u8, 16, 16, 15, 1, 1), __lasx_xvsrai_h(a.v, 15));
+
+   b = mix;
+   DO_BIN256("xvsll.d.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0, 0), __lasx_xvsll_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsll.d.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0, 0), __lasx_xvsll_d(a.v, b.v));
+   b = mix;
+   DO_BIN256("xvsrl.d.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 0), __lasx_xvsrl_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrl.d.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 0), __lasx_xvsrl_d(a.v, b.v));
+   b = mix;
+   DO_BIN256("xvsra.d.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 1), __lasx_xvsra_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsra.d.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 1), __lasx_xvsra_d(a.v, b.v));
+}
+
+static void test_shift_round(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 zero = {.d.u64 = {0, 0, 0, 0}};
+   vec256 mix = {.d.u64 = {0, 63, 64, 65}};
+   vec256 got, exp, b;
+
+   b = mix;
+   DO_BIN256("xvsrlr.d.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0), __lasx_xvsrlr_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrlr.d.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0), __lasx_xvsrlr_d(a.v, b.v));
+   b = mix;
+   DO_BIN256("xvsrar.d.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1), __lasx_xvsrar_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrar.d.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1), __lasx_xvsrar_d(a.v, b.v));
+}
+
+static void test_shift_narrow(test_state* tst)
+{
+   vec256 a = {.d.u32 = {
+      0x34231281, 0x78675645, 0xbcab9a89, 0x10efdecd,
+      0x53423120, 0x97867564, 0xdbcab9a8, 0x1f0efdec}};
+   vec256 zero = {.d.u32 = {0, 0, 0, 0, 0, 0, 0, 0}};
+   vec256 mix = {.d.u32 = {0, 1, 32, 33, 0, 1, 32, 33}};
+   vec256 got, exp, b;
+
+   b = mix;
+   DO_BIN256("xvsrln.h.w.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lasx_xvsrln_h_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrln.h.w.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lasx_xvsrln_h_w(a.v, b.v));
+   b = mix;
+   DO_BIN256("xvsran.h.w.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsran_h_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsran.h.w.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsran_h_w(a.v, b.v));
+}
+
+static void test_shift_narrow_round(test_state* tst)
+{
+   vec256 a = {.d.u32 = {
+      0x34231281, 0x78675645, 0xbcab9a89, 0x10efdecd,
+      0x53423120, 0x97867564, 0xdbcab9a8, 0x1f0efdec}};
+   vec256 zero = {.d.u32 = {0, 0, 0, 0, 0, 0, 0, 0}};
+   vec256 mix = {.d.u32 = {0, 1, 32, 33, 0, 1, 32, 33}};
+   vec256 got, exp, b;
+
+   b = mix;
+   DO_BIN256("xvsrlrn.h.w.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lasx_xvsrlrn_h_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrlrn.h.w.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lasx_xvsrlrn_h_w(a.v, b.v));
+   b = mix;
+   DO_BIN256("xvsrarn.h.w.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_h_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrarn.h.w.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_h_w(a.v, b.v));
+}
+
 static void test_widen(test_state* tst)
 {
    vec256 a = {.d.u8 = {
@@ -438,6 +550,11 @@ int main(void)
    test_sat(&tst);
    test_cmpmask(&tst);
    test_exth(&tst);
+   test_unary_more(&tst);
+   test_shift(&tst);
+   test_shift_round(&tst);
+   test_shift_narrow(&tst);
+   test_shift_narrow_round(&tst);
    test_widen(&tst);
    test_divmod(&tst);
 

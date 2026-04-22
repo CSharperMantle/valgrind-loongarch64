@@ -364,6 +364,144 @@ static void model_vext2xv(uint8_t* dst, const uint8_t* a, unsigned src_bits,
    }
 }
 
+static void model_shift_imm(uint8_t* dst, const uint8_t* a, unsigned bits,
+                            unsigned lanes, unsigned sh, int is_right,
+                            int is_arith)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      uint64_t raw = read_lane_u64(a, bits, i);
+      uint64_t rv;
+      if (!is_right) {
+         rv = (raw << sh) & lane_mask_u64(bits);
+      } else if (is_arith) {
+         rv = ux_from_sx(sx64(raw, bits) >> sh, bits);
+      } else {
+         rv = raw >> sh;
+      }
+      write_lane_u64(dst, bits, i, rv);
+   }
+}
+
+static void model_shift_var(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                            unsigned bits, unsigned lanes, int is_right,
+                            int is_arith)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      unsigned sh = (unsigned)(read_lane_u64(b, bits, i) % bits);
+      uint64_t raw = read_lane_u64(a, bits, i);
+      uint64_t rv;
+      if (!is_right) {
+         rv = (raw << sh) & lane_mask_u64(bits);
+      } else if (is_arith) {
+         rv = ux_from_sx(sx64(raw, bits) >> sh, bits);
+      } else {
+         rv = raw >> sh;
+      }
+      write_lane_u64(dst, bits, i, rv);
+   }
+}
+
+static void model_shift_round_var(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                                  unsigned bits, unsigned lanes, int is_arith)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      unsigned sh = (unsigned)(read_lane_u64(b, bits, i) % bits);
+      uint64_t raw = read_lane_u64(a, bits, i);
+      uint64_t rv;
+      if (sh == 0) {
+         rv = raw;
+      } else if (is_arith) {
+         int64_t base = sx64(raw, bits) >> sh;
+         uint64_t round = (raw >> (sh - 1)) & 1;
+         rv = ux_from_sx(base + (int64_t)round, bits);
+      } else {
+         rv = (raw >> sh) + ((raw >> (sh - 1)) & 1);
+      }
+      write_lane_u64(dst, bits, i, rv);
+   }
+}
+
+static void model_narrow_shift(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                               unsigned src_bits, unsigned dst_bits,
+                               unsigned src_lanes, int is_arith,
+                               unsigned total_bytes)
+{
+   unsigned chunk_bytes = src_lanes * src_bits / 8;
+   unsigned chunks = total_bytes / chunk_bytes;
+   memset(dst, 0, total_bytes);
+   for (unsigned chunk = 0; chunk < chunks; chunk++) {
+      const uint8_t* sa = a + chunk * chunk_bytes;
+      const uint8_t* sb = b + chunk * chunk_bytes;
+      uint8_t* dd = dst + chunk * chunk_bytes;
+      for (unsigned i = 0; i < src_lanes; i++) {
+         unsigned sh = (unsigned)(read_lane_u64(sb, src_bits, i) % src_bits);
+         uint64_t raw = read_lane_u64(sa, src_bits, i);
+         uint64_t rv = is_arith ? ux_from_sx(sx64(raw, src_bits) >> sh, src_bits)
+                                : (raw >> sh);
+         write_lane_u64(dd, dst_bits, i, rv);
+      }
+   }
+}
+
+static void model_narrow_shift_round(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                                     unsigned src_bits, unsigned dst_bits,
+                                     unsigned src_lanes, int is_arith,
+                                     unsigned total_bytes)
+{
+   unsigned chunk_bytes = src_lanes * src_bits / 8;
+   unsigned chunks = total_bytes / chunk_bytes;
+   memset(dst, 0, total_bytes);
+   for (unsigned chunk = 0; chunk < chunks; chunk++) {
+      const uint8_t* sa = a + chunk * chunk_bytes;
+      const uint8_t* sb = b + chunk * chunk_bytes;
+      uint8_t* dd = dst + chunk * chunk_bytes;
+      for (unsigned i = 0; i < src_lanes; i++) {
+         unsigned sh = (unsigned)(read_lane_u64(sb, src_bits, i) % src_bits);
+         uint64_t raw = read_lane_u64(sa, src_bits, i);
+         uint64_t rv;
+         if (sh == 0) {
+            rv = raw;
+         } else if (is_arith) {
+            int64_t base = sx64(raw, src_bits) >> sh;
+            uint64_t round = (raw >> (sh - 1)) & 1;
+            rv = ux_from_sx(base + (int64_t)round, src_bits);
+         } else {
+            rv = (raw >> sh) + ((raw >> (sh - 1)) & 1);
+         }
+         write_lane_u64(dd, dst_bits, i, rv);
+      }
+   }
+}
+
+static void model_rotate_imm(uint8_t* dst, const uint8_t* a, unsigned bits,
+                             unsigned lanes, unsigned sh)
+{
+   unsigned i;
+   sh %= bits;
+   for (i = 0; i < lanes; i++) {
+      uint64_t raw = read_lane_u64(a, bits, i);
+      uint64_t rv = sh == 0 ? raw
+                            : ((raw >> sh) | (raw << (bits - sh))) & lane_mask_u64(bits);
+      write_lane_u64(dst, bits, i, rv);
+   }
+}
+
+static void model_rotate_var(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                             unsigned bits, unsigned lanes)
+{
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      unsigned sh = (unsigned)(read_lane_u64(b, bits, i) % bits);
+      uint64_t raw = read_lane_u64(a, bits, i);
+      uint64_t rv = sh == 0 ? raw
+                            : ((raw >> sh) | (raw << (bits - sh))) & lane_mask_u64(bits);
+      write_lane_u64(dst, bits, i, rv);
+   }
+}
+
 static void model_avgr(uint8_t* dst, const uint8_t* a, const uint8_t* b,
                        unsigned bits, unsigned lanes, int is_signed)
 {
