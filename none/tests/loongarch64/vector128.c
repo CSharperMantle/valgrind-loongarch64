@@ -242,6 +242,110 @@ static void test_exth(test_state* tst)
    DO_UN128("vexth.qu.du", model_exth(exp.d.u8, a.d.u8, 64, 128, 1, 1, sizeof(a.d.u8)), __lsx_vexth_qu_du(a.v));
 }
 
+static void test_unary_more(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 b = {.d.u8 = {
+      0x11, 0xf2, 0xe3, 0xd4, 0xc5, 0xb6, 0xa7, 0x98,
+      0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f, 0xf0}};
+   vec128 got, exp;
+
+   DO_UN128("vclo.w", model_clo(exp.d.u8, a.d.u8, 32, 4), __lsx_vclo_w(a.v));
+   DO_UN128("vclz.d", model_clz(exp.d.u8, a.d.u8, 64, 2), __lsx_vclz_d(a.v));
+   DO_UN128("vpcnt.b", model_pcnt(exp.d.u8, a.d.u8, 8, 16), __lsx_vpcnt_b(a.v));
+   DO_UN128("vneg.h", model_neg(exp.d.u8, a.d.u8, 16, 8), __lsx_vneg_h(a.v));
+   DO_BIN128("vsigncov.h", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 16, 8), __lsx_vsigncov_h(a.v, b.v));
+}
+
+static void test_shift(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 zero = {.d.u8 = {0}};
+   vec128 mix = {.d.u8 = {
+      7, 8, 9, 15, 1, 2, 3, 4,
+      5, 6, 7, 8, 9, 10, 11, 12}};
+   vec128 got, exp, b;
+
+   DO_IMM128("vslli.b.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 8, 16, 0, 0, 0), __lsx_vslli_b(a.v, 0));
+   DO_IMM128("vslli.b.7", 7, model_shift_imm(exp.d.u8, a.d.u8, 8, 16, 7, 0, 0), __lsx_vslli_b(a.v, 7));
+   DO_IMM128("vsrli.h.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 16, 8, 0, 1, 0), __lsx_vsrli_h(a.v, 0));
+   DO_IMM128("vsrli.h.15", 15, model_shift_imm(exp.d.u8, a.d.u8, 16, 8, 15, 1, 0), __lsx_vsrli_h(a.v, 15));
+   DO_IMM128("vsrai.d.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 64, 2, 0, 1, 1), __lsx_vsrai_d(a.v, 0));
+   DO_IMM128("vsrai.d.63", 63, model_shift_imm(exp.d.u8, a.d.u8, 64, 2, 63, 1, 1), __lsx_vsrai_d(a.v, 63));
+
+   b = mix;
+   DO_BIN128("vsll.b.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 0), __lsx_vsll_b(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsll.b.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 0), __lsx_vsll_b(a.v, b.v));
+   b = mix;
+   DO_BIN128("vsrl.b.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 0), __lsx_vsrl_b(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrl.b.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 0), __lsx_vsrl_b(a.v, b.v));
+   b = mix;
+   DO_BIN128("vsra.b.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vsra_b(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsra.b.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vsra_b(a.v, b.v));
+}
+
+static void test_shift_round(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 zero = {.d.u8 = {0}};
+   vec128 mix = {.d.u8 = {
+      7, 8, 9, 15, 1, 2, 3, 4,
+      5, 6, 7, 8, 9, 10, 11, 12}};
+   vec128 got, exp, b;
+
+   b = mix;
+   DO_BIN128("vsrlr.b.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0), __lsx_vsrlr_b(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrlr.b.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0), __lsx_vsrlr_b(a.v, b.v));
+   b = mix;
+   DO_BIN128("vsrar.b.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1), __lsx_vsrar_b(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrar.b.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1), __lsx_vsrar_b(a.v, b.v));
+}
+
+static void test_shift_narrow(test_state* tst)
+{
+   vec128 a = {.d.u16 = {0x1281, 0x3423, 0x5645, 0x7867, 0x9a89, 0xbcab, 0xdecd, 0x10ef}};
+   vec128 zero = {.d.u16 = {0, 0, 0, 0, 0, 0, 0, 0}};
+   vec128 mix = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 got, exp, b;
+
+   b = mix;
+   DO_BIN128("vsrln.b.h.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lsx_vsrln_b_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrln.b.h.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lsx_vsrln_b_h(a.v, b.v));
+   b = mix;
+   DO_BIN128("vsran.b.h.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsran_b_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsran.b.h.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsran_b_h(a.v, b.v));
+}
+
+static void test_shift_narrow_round(test_state* tst)
+{
+   vec128 a = {.d.u16 = {0x1281, 0x3423, 0x5645, 0x7867, 0x9a89, 0xbcab, 0xdecd, 0x10ef}};
+   vec128 zero = {.d.u16 = {0, 0, 0, 0, 0, 0, 0, 0}};
+   vec128 mix = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 got, exp, b;
+
+   b = mix;
+   DO_BIN128("vsrlrn.b.h.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lsx_vsrlrn_b_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrlrn.b.h.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lsx_vsrlrn_b_h(a.v, b.v));
+   b = mix;
+   DO_BIN128("vsrarn.b.h.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsrarn_b_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrarn.b.h.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsrarn_b_h(a.v, b.v));
+}
+
 static void test_widen(test_state* tst)
 {
    vec128 a = {.d.u8 = {
@@ -411,6 +515,11 @@ int main(void)
    test_sat(&tst);
    test_cmpmask(&tst);
    test_exth(&tst);
+   test_unary_more(&tst);
+   test_shift(&tst);
+   test_shift_round(&tst);
+   test_shift_narrow(&tst);
+   test_shift_narrow_round(&tst);
    test_widen(&tst);
    test_divmod(&tst);
 
