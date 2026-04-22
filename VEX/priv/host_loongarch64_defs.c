@@ -997,6 +997,54 @@ static inline const HChar* showLOONGARCH64VecBinOp ( LOONGARCH64VecBinOp op )
          return "vmuh.hu";
       case LAvecbin_VMUH_WU:
          return "vmuh.wu";
+      case LAvecbin_VMULWEV_H_B:
+         return "vmulwev.h.b";
+      case LAvecbin_VMULWEV_W_H:
+         return "vmulwev.w.h";
+      case LAvecbin_VMULWEV_D_W:
+         return "vmulwev.d.w";
+      case LAvecbin_VMULWEV_Q_D:
+         return "vmulwev.q.d";
+      case LAvecbin_VMULWOD_H_B:
+         return "vmulwod.h.b";
+      case LAvecbin_VMULWOD_W_H:
+         return "vmulwod.w.h";
+      case LAvecbin_VMULWOD_D_W:
+         return "vmulwod.d.w";
+      case LAvecbin_VMULWOD_Q_D:
+         return "vmulwod.q.d";
+      case LAvecbin_VMULWEV_H_BU:
+         return "vmulwev.h.bu";
+      case LAvecbin_VMULWEV_W_HU:
+         return "vmulwev.w.hu";
+      case LAvecbin_VMULWEV_D_WU:
+         return "vmulwev.d.wu";
+      case LAvecbin_VMULWEV_Q_DU:
+         return "vmulwev.q.du";
+      case LAvecbin_VMULWOD_H_BU:
+         return "vmulwod.h.bu";
+      case LAvecbin_VMULWOD_W_HU:
+         return "vmulwod.w.hu";
+      case LAvecbin_VMULWOD_D_WU:
+         return "vmulwod.d.wu";
+      case LAvecbin_VMULWOD_Q_DU:
+         return "vmulwod.q.du";
+      case LAvecbin_VMULWEV_H_BU_B:
+         return "vmulwev.h.bu.b";
+      case LAvecbin_VMULWEV_W_HU_H:
+         return "vmulwev.w.hu.h";
+      case LAvecbin_VMULWEV_D_WU_W:
+         return "vmulwev.d.wu.w";
+      case LAvecbin_VMULWEV_Q_DU_D:
+         return "vmulwev.q.du.d";
+      case LAvecbin_VMULWOD_H_BU_B:
+         return "vmulwod.h.bu.b";
+      case LAvecbin_VMULWOD_W_HU_H:
+         return "vmulwod.w.hu.h";
+      case LAvecbin_VMULWOD_D_WU_W:
+         return "vmulwod.d.wu.w";
+      case LAvecbin_VMULWOD_Q_DU_D:
+         return "vmulwod.q.du.d";
       case LAvecbin_VSLL_B:
          return "vsll.b";
       case LAvecbin_VSLL_H:
@@ -3181,6 +3229,30 @@ static inline UInt* mkVecBinary ( UInt* p, LOONGARCH64VecBinOp op,
       case LAvecbin_VMUH_BU:
       case LAvecbin_VMUH_HU:
       case LAvecbin_VMUH_WU:
+      case LAvecbin_VMULWEV_H_B:
+      case LAvecbin_VMULWEV_W_H:
+      case LAvecbin_VMULWEV_D_W:
+      case LAvecbin_VMULWEV_Q_D:
+      case LAvecbin_VMULWOD_H_B:
+      case LAvecbin_VMULWOD_W_H:
+      case LAvecbin_VMULWOD_D_W:
+      case LAvecbin_VMULWOD_Q_D:
+      case LAvecbin_VMULWEV_H_BU:
+      case LAvecbin_VMULWEV_W_HU:
+      case LAvecbin_VMULWEV_D_WU:
+      case LAvecbin_VMULWEV_Q_DU:
+      case LAvecbin_VMULWOD_H_BU:
+      case LAvecbin_VMULWOD_W_HU:
+      case LAvecbin_VMULWOD_D_WU:
+      case LAvecbin_VMULWOD_Q_DU:
+      case LAvecbin_VMULWEV_H_BU_B:
+      case LAvecbin_VMULWEV_W_HU_H:
+      case LAvecbin_VMULWEV_D_WU_W:
+      case LAvecbin_VMULWEV_Q_DU_D:
+      case LAvecbin_VMULWOD_H_BU_B:
+      case LAvecbin_VMULWOD_W_HU_H:
+      case LAvecbin_VMULWOD_D_WU_W:
+      case LAvecbin_VMULWOD_Q_DU_D:
       case LAvecbin_VSLL_B:
       case LAvecbin_VSLL_H:
       case LAvecbin_VSLL_W:
