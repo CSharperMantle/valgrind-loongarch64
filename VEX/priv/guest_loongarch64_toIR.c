@@ -9352,7 +9352,7 @@ static IRTemp macro_v128mulw_x_x_x ( IRExpr* j, IRExpr* k, UInt insSz, UInt isOd
       case 0b11: /* .q.du.d */ {
          IRTemp wjHi   = newTemp(Ity_I64);
          IRTemp wkHi   = newTemp(Ity_I64);
-         IRTemp tmp1   = newTemp(Ity_V128);
+         IRTemp tmp1   = newTemp(Ity_I128);
          IRTemp tmp1Hi = newTemp(Ity_I64);
          IRTemp tmp1Lo = newTemp(Ity_I64);
          IRTemp tmp2   = newTemp(Ity_I64);
