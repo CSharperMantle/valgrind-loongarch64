@@ -2381,13 +2381,15 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
       case Iex_Triop: {
          IRTriop *triop = e->Iex.Triop.details;
          switch (triop->op) {
-            case Iop_SetElem8x16: case Iop_SetElem16x8: case Iop_SetElem32x4: {
+            case Iop_SetElem8x16: case Iop_SetElem16x8:
+            case Iop_SetElem32x4: case Iop_SetElem64x2: {
                   LOONGARCH64VecBinOp op;
                   UChar size;
                   switch (triop->op) {
                      case Iop_SetElem8x16: op = LAvecbin_VINSGR2VR_B; size = 4; break;
                      case Iop_SetElem16x8: op = LAvecbin_VINSGR2VR_H; size = 3; break;
                      case Iop_SetElem32x4: op = LAvecbin_VINSGR2VR_W; size = 2; break;
+                     case Iop_SetElem64x2: op = LAvecbin_VINSGR2VR_D; size = 1; break;
                      default:              vassert(0);                          break;
                   }
                   HReg            dst = newVRegV(env);
