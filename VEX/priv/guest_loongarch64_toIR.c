@@ -14170,7 +14170,7 @@ static Bool gen_xvpermi ( DisResult* dres, UInt insn,
          IRTemp s[4];
          s[0] = s[1] = s[2] = s[3] = IRTemp_INVALID;
          breakupV256to64s(sJ, &s[3], &s[2], &s[1], &s[0]);
-         assign(res, mkV256from64s(s[id0], s[id1], s[id2], s[id3]));
+         assign(res, mkV256from64s(s[id3], s[id2], s[id1], s[id0]));
          break;
       }
       case 0b11: {
