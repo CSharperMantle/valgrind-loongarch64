@@ -54,6 +54,48 @@ static void print_case3(const char* name, const vec256* a, const vec256* b,
    print_u64x4(got->d.u64);
 }
 
+static void print_case2v_imm256(const char* name, const vec256* a,
+                                const vec256* b, uint64_t imm,
+                                const vec256* got)
+{
+   printf("insn %s:\n", name);
+   printf("  v_arg1   = ");
+   print_u64x4(a->d.u64);
+   printf("  v_arg2   = ");
+   print_u64x4(b->d.u64);
+   printf("  imm      = %016llx\n", (unsigned long long)imm);
+   printf("  v_result = ");
+   print_u64x4(got->d.u64);
+}
+
+static void print_case_vs_ri256(const char* name, const vec256* a, uint64_t r,
+                                uint64_t imm)
+{
+   printf("insn %s:\n", name);
+   printf("  v_arg1   = ");
+   print_u64x4(a->d.u64);
+   printf("  r_arg2   = %016llx\n", (unsigned long long)r);
+   printf("  imm      = %016llx\n", (unsigned long long)imm);
+}
+
+static void print_case_pick256(const char* name, const vec256* a, uint64_t imm,
+                               uint64_t got)
+{
+   printf("insn %s:\n", name);
+   printf("  v_arg1   = ");
+   print_u64x4(a->d.u64);
+   printf("  imm      = %016llx\n", (unsigned long long)imm);
+   printf("  r_result = %016llx\n", (unsigned long long)got);
+}
+
+static void print_case_rv256(const char* name, uint64_t r, const vec256* got)
+{
+   printf("insn %s:\n", name);
+   printf("  r_arg1   = %016llx\n", (unsigned long long)r);
+   printf("  v_result = ");
+   print_u64x4(got->d.u64);
+}
+
 #define DO_UN256(name, model_stmt, expr) \
    do { \
       model_stmt; \
@@ -91,6 +133,32 @@ static void print_case3(const char* name, const vec256* a, const vec256* b,
       model_stmt; \
       got.v = (expr); \
       print_case3((name), &acc, &a, &b, &got); \
+      check_bytes(tst, (name), got.d.u8, exp.d.u8, sizeof(exp.d.u8)); \
+   } while (0)
+
+#define DO_INS256(name, immv, rval, model_stmt, expr) \
+   do { \
+      model_stmt; \
+      got.v = (expr); \
+      print_case_vs_ri256((name), &a, (rval), (immv)); \
+      printf("  v_result = "); \
+      print_u64x4(got.d.u64); \
+      check_bytes(tst, (name), got.d.u8, exp.d.u8, sizeof(exp.d.u8)); \
+   } while (0)
+
+#define DO_PICK256(name, immv, model_expr, expr) \
+   do { \
+      uint64_t got_r = (uint64_t)(expr); \
+      uint64_t exp_r = (model_expr); \
+      print_case_pick256((name), &a, (immv), got_r); \
+      check_u64(tst, (name), got_r, exp_r); \
+   } while (0)
+
+#define DO_RV256(name, rval, model_stmt, expr) \
+   do { \
+      model_stmt; \
+      got.v = (expr); \
+      print_case_rv256((name), (rval), &got); \
       check_bytes(tst, (name), got.d.u8, exp.d.u8, sizeof(exp.d.u8)); \
    } while (0)
 
@@ -366,6 +434,165 @@ static void test_shift_narrow_round(test_state* tst)
    DO_BIN256("xvsrarn.h.w.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_h_w(a.v, b.v));
 }
 
+static void test_rotate(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 zero = {.d.u64 = {0, 0, 0, 0}};
+   vec256 mix = {.d.u64 = {0, 63, 64, 65}};
+   vec256 got, exp, b;
+
+   DO_IMM256("xvrotri.w.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 32, 8, 0), __lasx_xvrotri_w(a.v, 0));
+   DO_IMM256("xvrotri.w.31", 31, model_rotate_imm(exp.d.u8, a.d.u8, 32, 8, 31), __lasx_xvrotri_w(a.v, 31));
+   DO_IMM256("xvrotri.d.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 64, 4, 0), __lasx_xvrotri_d(a.v, 0));
+   DO_IMM256("xvrotri.d.63", 63, model_rotate_imm(exp.d.u8, a.d.u8, 64, 4, 63), __lasx_xvrotri_d(a.v, 63));
+
+   b = mix;
+   DO_BIN256("xvrotr.d.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4), __lasx_xvrotr_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvrotr.d.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4), __lasx_xvrotr_d(a.v, b.v));
+}
+
+static void test_logic_bit(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 b = {.d.u8 = {
+      0x11, 0xf2, 0xe3, 0xd4, 0xc5, 0xb6, 0xa7, 0x98,
+      0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f, 0xf0,
+      0xe1, 0xd2, 0xc3, 0xb4, 0xa5, 0x96, 0x87, 0x78,
+      0x69, 0x5a, 0x4b, 0x3c, 0x2d, 0x1e, 0x0f, 0xff}};
+   vec256 c = {.d.u8 = {
+      0x00, 0xff, 0x0f, 0xf0, 0x33, 0xcc, 0x55, 0xaa,
+      0x01, 0x80, 0x7f, 0xfe, 0x10, 0x08, 0x04, 0x02,
+      0xaa, 0x55, 0xcc, 0x33, 0xf0, 0x0f, 0xff, 0x00,
+      0x11, 0x22, 0x44, 0x88, 0x7f, 0x3f, 0x1f, 0x0f}};
+   vec256 got, exp;
+
+   DO_BIN256("xvand.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 0), __lasx_xvand_v(a.v, b.v));
+   DO_BIN256("xvor.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 1), __lasx_xvor_v(a.v, b.v));
+   DO_BIN256("xvxor.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 2), __lasx_xvxor_v(a.v, b.v));
+   DO_BIN256("xvnor.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 3), __lasx_xvnor_v(a.v, b.v));
+   DO_BIN256("xvandn.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 4), __lasx_xvandn_v(a.v, b.v));
+   DO_BIN256("xvorn.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 5), __lasx_xvorn_v(a.v, b.v));
+   DO_IMM256("xvandi.b", 0x5a, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0x5a, 0), __lasx_xvandi_b(a.v, 0x5a));
+   DO_IMM256("xvori.b", 0xa5, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0xa5, 1), __lasx_xvori_b(a.v, 0xa5));
+   DO_IMM256("xvxori.b", 0xff, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0xff, 2), __lasx_xvxori_b(a.v, 0xff));
+   DO_IMM256("xvnori.b", 0xa5, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0xa5, 3), __lasx_xvnori_b(a.v, 0xa5));
+   DO_TRI256("xvbitsel.v", model_bitsel(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, sizeof(exp.d.u8)), __lasx_xvbitsel_v(a.v, b.v, c.v));
+
+   b = (vec256){.d.u8 = {
+      0, 7, 8, 15, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+      13, 14, 15, 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN256("xvbitclr.b", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1), __lasx_xvbitclr_b(a.v, b.v));
+   b = (vec256){.d.u16 = {0, 15, 16, 31, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN256("xvbitset.h", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 2), __lasx_xvbitset_h(a.v, b.v));
+   b = (vec256){.d.u64 = {0, 63, 64, 65}};
+   DO_BIN256("xvbitrev.d", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0), __lasx_xvbitrev_d(a.v, b.v));
+   DO_IMM256("xvbitclri.b.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 8, 32, 0, 0), __lasx_xvbitclri_b(a.v, 0));
+   DO_IMM256("xvbitclri.b.7", 7, model_bitop_imm(exp.d.u8, a.d.u8, 8, 32, 7, 0), __lasx_xvbitclri_b(a.v, 7));
+   DO_IMM256("xvbitseti.h.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 16, 16, 0, 1), __lasx_xvbitseti_h(a.v, 0));
+   DO_IMM256("xvbitseti.h.15", 15, model_bitop_imm(exp.d.u8, a.d.u8, 16, 16, 15, 1), __lasx_xvbitseti_h(a.v, 15));
+   DO_IMM256("xvbitrevi.d.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 64, 4, 0, 2), __lasx_xvbitrevi_d(a.v, 0));
+   DO_IMM256("xvbitrevi.d.63", 63, model_bitop_imm(exp.d.u8, a.d.u8, 64, 4, 63, 2), __lasx_xvbitrevi_d(a.v, 63));
+}
+
+static void test_lane_move(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+      0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+      0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 b = {.d.u8 = {
+      0x11, 0xf2, 0xe3, 0xd4, 0xc5, 0xb6, 0xa7, 0x98,
+      0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f, 0xf0,
+      0xe1, 0xd2, 0xc3, 0xb4, 0xa5, 0x96, 0x87, 0x78,
+      0x69, 0x5a, 0x4b, 0x3c, 0x2d, 0x1e, 0x0f, 0xff}};
+   vec256 got, exp;
+
+   DO_BIN256("xvilvl.b", model_lane_mix_128chunk(exp.d.u8, a.d.u8, b.d.u8, 8, sizeof(exp.d.u8), 0), __lasx_xvilvl_b(a.v, b.v));
+   DO_BIN256("xvilvh.h", model_lane_mix_128chunk(exp.d.u8, a.d.u8, b.d.u8, 16, sizeof(exp.d.u8), 1), __lasx_xvilvh_h(a.v, b.v));
+   DO_BIN256("xvpickev.w", model_lane_mix_128chunk(exp.d.u8, a.d.u8, b.d.u8, 32, sizeof(exp.d.u8), 2), __lasx_xvpickev_w(a.v, b.v));
+   DO_BIN256("xvpickod.d", model_lane_mix_128chunk(exp.d.u8, a.d.u8, b.d.u8, 64, sizeof(exp.d.u8), 3), __lasx_xvpickod_d(a.v, b.v));
+   DO_IMM256("xvshuf4i.b.0", 0x00, model_shuf4i_128chunk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 0x00), __lasx_xvshuf4i_b(a.v, 0x00));
+   DO_IMM256("xvshuf4i.b.e4", 0xe4, model_shuf4i_128chunk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 0xe4), __lasx_xvshuf4i_b(a.v, 0xe4));
+   DO_IMM256("xvshuf4i.w.1b", 0x1b, model_shuf4i_128chunk(exp.d.u8, a.d.u8, 32, sizeof(exp.d.u8), 0x1b), __lasx_xvshuf4i_w(a.v, 0x1b));
+   DO_BIN256("xvpermi.w.1b", model_permi_w_128chunk(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 0x1b), __lasx_xvpermi_w(a.v, b.v, 0x1b));
+   DO_IMM256("xvpermi.d.00", 0x00, model_xvpermi_d(exp.d.u8, a.d.u8, 0x00), __lasx_xvpermi_d(a.v, 0x00));
+   DO_IMM256("xvpermi.d.1b", 0x1b, model_xvpermi_d(exp.d.u8, a.d.u8, 0x1b), __lasx_xvpermi_d(a.v, 0x1b));
+   DO_IMM256("xvpermi.d.e4", 0xe4, model_xvpermi_d(exp.d.u8, a.d.u8, 0xe4), __lasx_xvpermi_d(a.v, 0xe4));
+   DO_BIN256("xvpermi.q.00", model_xvpermi_q(exp.d.u8, a.d.u8, b.d.u8, 0x00), __lasx_xvpermi_q(a.v, b.v, 0x00));
+   DO_BIN256("xvpermi.q.5a", model_xvpermi_q(exp.d.u8, a.d.u8, b.d.u8, 0x5a), __lasx_xvpermi_q(a.v, b.v, 0x5a));
+   DO_BIN256("xvpermi.q.ff", model_xvpermi_q(exp.d.u8, a.d.u8, b.d.u8, 0xff), __lasx_xvpermi_q(a.v, b.v, 0xff));
+   DO_BIN256("xvextrins.b", model_extrins_b_128chunk(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 0x4f), __lasx_xvextrins_b(a.v, b.v, 0x4f));
+}
+
+static void test_lane_scalar(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+      0x80, 0x7f, 0x01, 0xfe, 0x10, 0x20, 0x30, 0x40,
+      0x50, 0x60, 0x70, 0x81, 0x90, 0xa0, 0xb0, 0xc0,
+      0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+      0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xf0, 0x0f}};
+   vec256 b = {.d.u32 = {
+      0x11111111, 0x22222222, 0x33333333, 0x44444444,
+      0xaaaaaaaa, 0xbbbbbbbb, 0xcccccccc, 0xdddddddd}};
+   vec256 got, exp;
+
+   DO_INS256("xvinsgr2vr.w.5", 5, 0x13579bdfU,
+             model_insgr2vr(exp.d.u8, a.d.u8, 32, 5, 0x13579bdfU, sizeof(exp.d.u8)),
+             __lasx_xvinsgr2vr_w(a.v, 0x13579bdfU, 5));
+   DO_INS256("xvinsgr2vr.d.3", 3, 0xfedcba9876543210ULL,
+             model_insgr2vr(exp.d.u8, a.d.u8, 64, 3, 0xfedcba9876543210ULL, sizeof(exp.d.u8)),
+             __lasx_xvinsgr2vr_d(a.v, 0xfedcba9876543210ULL, 3));
+
+   DO_PICK256("xvpickve2gr.w.5", 5, model_pickve2gr(a.d.u8, 32, 5, 1),
+              __lasx_xvpickve2gr_w(a.v, 5));
+   DO_PICK256("xvpickve2gr.wu.5", 5, model_pickve2gr(a.d.u8, 32, 5, 0),
+              __lasx_xvpickve2gr_wu(a.v, 5));
+   DO_PICK256("xvpickve2gr.du.3", 3, model_pickve2gr(a.d.u8, 64, 3, 0),
+              __lasx_xvpickve2gr_du(a.v, 3));
+
+   DO_RV256("xvreplgr2vr.b", UINT64_MAX - 1,
+            model_replgr2vr(exp.d.u8, 8, sizeof(exp.d.u8), UINT64_MAX - 1),
+            __lasx_xvreplgr2vr_b(-2));
+   DO_RV256("xvreplgr2vr.d", 0x0123456789abcdefULL,
+            model_replgr2vr(exp.d.u8, 64, sizeof(exp.d.u8), 0x0123456789abcdefULL),
+            __lasx_xvreplgr2vr_d(0x0123456789abcdefULL));
+
+   model_xvreplve(exp.d.u8, a.d.u8, 32, 1);
+   got.v = __lasx_xvreplve_w(a.v, 1);
+   print_case2_imm("xvreplve.w.1", &a, 1, &got);
+   check_bytes(tst, "xvreplve.w.1", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_xvreplve(exp.d.u8, a.d.u8, 16, 7);
+   got.v = __lasx_xvrepl128vei_h(a.v, 7);
+   print_case2_imm("xvrepl128vei.h.7", &a, 7, &got);
+   check_bytes(tst, "xvrepl128vei.h.7", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_xvinsve0(exp.d.u8, b.d.u8, a.d.u8, 32, 6, sizeof(exp.d.u8));
+   got.v = __lasx_xvinsve0_w(b.v, a.v, 6);
+   print_case2v_imm256("xvinsve0.w.6", &b, &a, 6, &got);
+   check_bytes(tst, "xvinsve0.w.6", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_xvpickve(exp.d.u8, a.d.u8, 32, 5, sizeof(exp.d.u8));
+   got.v = __lasx_xvpickve_w(a.v, 5);
+   print_case2_imm("xvpickve.w.5", &a, 5, &got);
+   check_bytes(tst, "xvpickve.w.5", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_xvreplve0_q(exp.d.u8, a.d.u8);
+   got.v = __lasx_xvreplve0_q(a.v);
+   print_case1("xvreplve0.q", &a, &got);
+   check_bytes(tst, "xvreplve0.q", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+}
+
 static void test_widen(test_state* tst)
 {
    vec256 a = {.d.u8 = {
@@ -555,6 +782,10 @@ int main(void)
    test_shift_round(&tst);
    test_shift_narrow(&tst);
    test_shift_narrow_round(&tst);
+   test_rotate(&tst);
+   test_logic_bit(&tst);
+   test_lane_move(&tst);
+   test_lane_scalar(&tst);
    test_widen(&tst);
    test_divmod(&tst);
 

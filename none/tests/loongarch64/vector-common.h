@@ -502,6 +502,221 @@ static void model_rotate_var(uint8_t* dst, const uint8_t* a, const uint8_t* b,
    }
 }
 
+static void model_logic2(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                         unsigned bytes_total, int op)
+{
+   unsigned i;
+   for (i = 0; i < bytes_total; i++) {
+      uint8_t av = a[i];
+      uint8_t bv = b[i];
+      uint8_t rv;
+      switch (op) {
+         case 0: rv = av & bv; break;
+         case 1: rv = av | bv; break;
+         case 2: rv = av ^ bv; break;
+         case 3: rv = (uint8_t)~(av | bv); break;
+         case 4: rv = bv & (uint8_t)~av; break;
+         case 5: rv = av | (uint8_t)~bv; break;
+         default: rv = 0; break;
+      }
+      dst[i] = rv;
+   }
+}
+
+static void model_logic_imm(uint8_t* dst, const uint8_t* a, unsigned bytes_total,
+                            uint8_t imm, int op)
+{
+   unsigned i;
+   for (i = 0; i < bytes_total; i++) {
+      uint8_t av = a[i];
+      uint8_t rv;
+      switch (op) {
+         case 0: rv = av & imm; break;
+         case 1: rv = av | imm; break;
+         case 2: rv = av ^ imm; break;
+         case 3: rv = (uint8_t)~(av | imm); break;
+         default: rv = 0; break;
+      }
+      dst[i] = rv;
+   }
+}
+
+static void model_bitsel(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                         const uint8_t* m, unsigned bytes_total)
+{
+   unsigned i;
+   for (i = 0; i < bytes_total; i++)
+      dst[i] = (a[i] & (uint8_t)~m[i]) | (b[i] & m[i]);
+}
+
+static void model_bitop_var(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                            unsigned bits, unsigned lanes, int op)
+{
+   unsigned i;
+   uint64_t one = 1;
+   for (i = 0; i < lanes; i++) {
+      uint64_t av = read_lane_u64(a, bits, i);
+      unsigned sh = (unsigned)(read_lane_u64(b, bits, i) % bits);
+      uint64_t mask = (one << sh) & lane_mask_u64(bits);
+      uint64_t rv;
+      switch (op) {
+         case 0: rv = av ^ mask; break;
+         case 1: rv = av & ~mask; break;
+         case 2: rv = av | mask; break;
+         default: rv = 0; break;
+      }
+      write_lane_u64(dst, bits, i, rv);
+   }
+}
+
+static void model_bitop_imm(uint8_t* dst, const uint8_t* a, unsigned bits,
+                            unsigned lanes, unsigned sh, int op)
+{
+   unsigned i;
+   uint64_t one = 1;
+   uint64_t mask = (one << sh) & lane_mask_u64(bits);
+   for (i = 0; i < lanes; i++) {
+      uint64_t av = read_lane_u64(a, bits, i);
+      uint64_t rv;
+      switch (op) {
+         case 0: rv = av & ~mask; break;
+         case 1: rv = av | mask; break;
+         case 2: rv = av ^ mask; break;
+         default: rv = 0; break;
+      }
+      write_lane_u64(dst, bits, i, rv);
+   }
+}
+
+static void model_lane_mix_128chunk(uint8_t* dst, const uint8_t* a,
+                                    const uint8_t* b, unsigned bits,
+                                    unsigned total_bytes, int mode)
+{
+   unsigned chunk_bytes = 16;
+   unsigned lane_bytes = bits / 8;
+   unsigned lanes = chunk_bytes / lane_bytes;
+   unsigned chunks = total_bytes / chunk_bytes;
+   unsigned c, i;
+
+   for (c = 0; c < chunks; c++) {
+      const uint8_t* sa = a + c * chunk_bytes;
+      const uint8_t* sb = b + c * chunk_bytes;
+      uint8_t* dd = dst + c * chunk_bytes;
+      unsigned half = lanes / 2;
+
+      for (i = 0; i < lanes; i++) {
+         uint64_t rv = 0;
+         if (mode == 0) {
+            unsigned src = i / 2;
+            rv = read_lane_u64((i & 1) ? sa : sb, bits, src);
+         } else if (mode == 1) {
+            unsigned src = half + i / 2;
+            rv = read_lane_u64((i & 1) ? sa : sb, bits, src);
+         } else if (mode == 2) {
+            rv = i < half ? read_lane_u64(sb, bits, 2 * i)
+                          : read_lane_u64(sa, bits, 2 * (i - half));
+         } else if (mode == 3) {
+            rv = i < half ? read_lane_u64(sb, bits, 2 * i + 1)
+                          : read_lane_u64(sa, bits, 2 * (i - half) + 1);
+         }
+         write_lane_u64(dd, bits, i, rv);
+      }
+   }
+}
+
+static void model_shuf4i_128chunk(uint8_t* dst, const uint8_t* a,
+                                  unsigned bits, unsigned total_bytes,
+                                  unsigned imm)
+{
+   unsigned chunk_bytes = 16;
+   unsigned lane_bytes = bits / 8;
+   unsigned lanes = chunk_bytes / lane_bytes;
+   unsigned chunks = total_bytes / chunk_bytes;
+   unsigned id0 = imm & 3;
+   unsigned id1 = (imm >> 2) & 3;
+   unsigned id2 = (imm >> 4) & 3;
+   unsigned id3 = (imm >> 6) & 3;
+   unsigned ids[4] = {id0, id1, id2, id3};
+   unsigned c, g, i;
+
+   for (c = 0; c < chunks; c++) {
+      const uint8_t* sa = a + c * chunk_bytes;
+      uint8_t* dd = dst + c * chunk_bytes;
+      unsigned groups = lanes / 4;
+      for (g = 0; g < groups; g++) {
+         unsigned base = g * 4;
+         for (i = 0; i < 4; i++)
+            write_lane_u64(dd, bits, base + i,
+                           read_lane_u64(sa, bits, base + ids[i]));
+      }
+   }
+}
+
+static void model_permi_w_128chunk(uint8_t* dst, const uint8_t* d,
+                                   const uint8_t* j, unsigned total_bytes,
+                                   unsigned imm)
+{
+   unsigned chunk_bytes = 16;
+   unsigned chunks = total_bytes / chunk_bytes;
+   unsigned id0 = imm & 3;
+   unsigned id1 = (imm >> 2) & 3;
+   unsigned id2 = (imm >> 4) & 3;
+   unsigned id3 = (imm >> 6) & 3;
+   unsigned c;
+
+   for (c = 0; c < chunks; c++) {
+      const uint8_t* sd = d + c * chunk_bytes;
+      const uint8_t* sj = j + c * chunk_bytes;
+      uint8_t* dd = dst + c * chunk_bytes;
+      write_lane_u64(dd, 32, 0, read_lane_u64(sj, 32, id0));
+      write_lane_u64(dd, 32, 1, read_lane_u64(sj, 32, id1));
+      write_lane_u64(dd, 32, 2, read_lane_u64(sd, 32, id2));
+      write_lane_u64(dd, 32, 3, read_lane_u64(sd, 32, id3));
+   }
+}
+
+static void model_xvpermi_d(uint8_t* dst, const uint8_t* a, unsigned imm)
+{
+   unsigned id0 = imm & 3;
+   unsigned id1 = (imm >> 2) & 3;
+   unsigned id2 = (imm >> 4) & 3;
+   unsigned id3 = (imm >> 6) & 3;
+   write_lane_u64(dst, 64, 0, read_lane_u64(a, 64, id0));
+   write_lane_u64(dst, 64, 1, read_lane_u64(a, 64, id1));
+   write_lane_u64(dst, 64, 2, read_lane_u64(a, 64, id2));
+   write_lane_u64(dst, 64, 3, read_lane_u64(a, 64, id3));
+}
+
+static void model_xvpermi_q(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                            unsigned imm)
+{
+   unsigned id0 = imm & 3;
+   unsigned id2 = (imm >> 4) & 3;
+   unsigned __int128 src[4];
+   src[0] = read_lane_u128(b, 0);
+   src[1] = read_lane_u128(b, 1);
+   src[2] = read_lane_u128(a, 0);
+   src[3] = read_lane_u128(a, 1);
+   write_lane_u128(dst, 0, src[id0]);
+   write_lane_u128(dst, 1, src[id2]);
+}
+
+static void model_extrins_b_128chunk(uint8_t* dst, const uint8_t* d,
+                                     const uint8_t* j, unsigned total_bytes,
+                                     unsigned imm)
+{
+   unsigned chunk_bytes = 16;
+   unsigned chunks = total_bytes / chunk_bytes;
+   unsigned src = imm & 0x0f;
+   unsigned to = (imm >> 4) & 0x0f;
+   unsigned c;
+
+   for (c = 0; c < chunks; c++) {
+      memcpy(dst + c * chunk_bytes, d + c * chunk_bytes, chunk_bytes);
+      dst[c * chunk_bytes + to] = j[c * chunk_bytes + src];
+   }
+}
+
 static void model_avgr(uint8_t* dst, const uint8_t* a, const uint8_t* b,
                        unsigned bits, unsigned lanes, int is_signed)
 {
@@ -778,11 +993,122 @@ static void model_maddw(uint8_t* dst, const uint8_t* acc, const uint8_t* a,
    }
 }
 
+static void model_insgr2vr(uint8_t* dst, const uint8_t* a, unsigned bits,
+                           unsigned idx, uint64_t val, size_t nbytes)
+{
+   memcpy(dst, a, nbytes);
+   write_lane_u64(dst, bits, idx, val);
+}
+
+static uint64_t model_pickve2gr(const uint8_t* a, unsigned bits, unsigned idx,
+                                int is_signed)
+{
+   uint64_t raw = read_lane_u64(a, bits, idx);
+   return is_signed ? (uint64_t)sx64(raw, bits) : raw;
+}
+
+static void model_replgr2vr(uint8_t* dst, unsigned bits, size_t nbytes,
+                            uint64_t val)
+{
+   unsigned lanes = (unsigned)(nbytes / (bits / 8));
+   unsigned i;
+   for (i = 0; i < lanes; i++)
+      write_lane_u64(dst, bits, i, val);
+}
+
+static void model_replve(uint8_t* dst, const uint8_t* a, unsigned bits,
+                         size_t nbytes, unsigned idx)
+{
+   model_replgr2vr(dst, bits, nbytes, read_lane_u64(a, bits, idx));
+}
+
+static void model_xvreplve(uint8_t* dst, const uint8_t* a, unsigned bits,
+                           unsigned idx)
+{
+   unsigned half_bytes = 16;
+   model_replve(dst, a, bits, half_bytes, idx);
+   model_replve(dst + half_bytes, a + half_bytes, bits, half_bytes, idx);
+}
+
+static void model_xvinsve0(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                           unsigned bits, unsigned idx, size_t nbytes)
+{
+   uint64_t val = read_lane_u64(b, bits, 0);
+   memcpy(dst, a, nbytes);
+   write_lane_u64(dst, bits, idx, val);
+}
+
+static void model_xvpickve(uint8_t* dst, const uint8_t* a, unsigned bits,
+                           unsigned idx, size_t nbytes)
+{
+   memset(dst, 0, nbytes);
+   write_lane_u64(dst, 64, 0, read_lane_u64(a, bits, idx));
+}
+
+static void model_xvreplve0_q(uint8_t* dst, const uint8_t* a)
+{
+   memcpy(dst, a, 16);
+   memcpy(dst + 16, a, 16);
+}
+
+static void model_vshuf_b(uint8_t* dst, const uint8_t* j, const uint8_t* k,
+                          const uint8_t* a, size_t nbytes)
+{
+   unsigned i;
+   for (i = 0; i < nbytes; i++) {
+      unsigned sel = a[i] & 0x1f;
+      dst[i] = sel < 16 ? k[sel] : j[sel - 16];
+   }
+}
+
+static void model_xvshuf_b(uint8_t* dst, const uint8_t* j, const uint8_t* k,
+                           const uint8_t* a)
+{
+   model_vshuf_b(dst, j, k, a, 16);
+   model_vshuf_b(dst + 16, j + 16, k + 16, a + 16, 16);
+}
+
+static void model_vshuf_hwd_128chunk(uint8_t* dst, const uint8_t* id,
+                                     const uint8_t* hi, const uint8_t* lo,
+                                     unsigned bits)
+{
+   unsigned lanes = 128 / bits;
+   uint64_t idx_mask = lanes * 2 - 1;
+   unsigned i;
+   for (i = 0; i < lanes; i++) {
+      uint64_t sel = read_lane_u64(id, bits, i);
+      uint64_t idx = sel & idx_mask;
+      uint64_t out = idx < lanes
+                     ? read_lane_u64(lo, bits, (unsigned)idx)
+                     : read_lane_u64(hi, bits, (unsigned)(idx - lanes));
+      write_lane_u64(dst, bits, i, out);
+   }
+}
+
+static void model_xvshuf_hwd(uint8_t* dst, const uint8_t* id,
+                             const uint8_t* hi, const uint8_t* lo,
+                             unsigned bits)
+{
+   model_vshuf_hwd_128chunk(dst, id, hi, lo, bits);
+   model_vshuf_hwd_128chunk(dst + 16, id + 16, hi + 16, lo + 16, bits);
+}
+
 static void check_bytes(test_state* tst, const char* name,
                         const void* got, const void* exp, size_t nbytes)
 {
    tst->checks++;
    if (memcmp(got, exp, nbytes) == 0)
+      return;
+
+   tst->fails++;
+   printf("FAIL %s\n", name);
+}
+
+static void check_u64(test_state* tst, const char* name, uint64_t got,
+                      uint64_t exp)
+{
+   tst->checks++;
+   if (got == exp)
       return;
 
    tst->fails++;

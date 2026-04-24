@@ -441,6 +441,192 @@ insn vsrarn.b.h.zero:
   v_arg1   = 10efdecdbcab9a89 | 7867564534231281
   v_arg2   = 0000000000000000 | 0000000000000000
   v_result = 0000000000000000 | efcdab8967452381
+insn vrotri.b.0:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vrotri.b.7:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000007
+  v_result = 20dfbd9b79573513 | f0ceac8a68462403
+insn vrotri.d.0:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vrotri.d.63:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000003f
+  v_result = 21dfbd9b79573512 | f0ceac8a68462502
+insn vrotr.b.var:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = 0c0b0a0908070605 | 040302010f090807
+  v_result = 01fdb7e6bc576a4c | 87ec95a268911203
+insn vrotr.b.zero:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = 0000000000000000 | 0000000000000000
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vand.v:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 100f0e0d0c0b0a09 | 1827164514231201
+insn vor.v:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = f0fffefdfcfbfaf9 | f8e7f6c5f4e3f291
+insn vxor.v:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = e0f0f0f0f0f0f0f0 | e0c0e080e0c0e090
+insn vnor.v:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 0f00010203040506 | 0718093a0b1c0d6e
+insn vandn.v:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = e010203040506070 | 8080a080c0c0e010
+insn vorn.v:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 1fefdfcfbfaf9f8f | 7f7f5f7f3f3f1fef
+insn vandi.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000005a
+  v_result = 104a5a48180a1a08 | 5842524010021200
+insn vori.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 00000000000000a5
+  v_result = b5efffedbdafbfad | fde7f7e5b5a7b7a5
+insn vxori.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 00000000000000ff
+  v_result = ef10213243546576 | 8798a9bacbdced7e
+insn vnori.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 00000000000000a5
+  v_result = 4a10001242504052 | 0218081a4a58485a
+insn vbitsel.v:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_arg3   = 02040810fe7f8001 | aa55cc33f00fff00
+  v_result = 10efdedd4cdb1a89 | d8279645d423f281
+insn vbitclr.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = 0c0b0a0908070605 | 040302010f080700
+  v_result = 00e7dacdbc2b9a89 | 6867524534221280
+insn vbitset.h:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = 0004000300020001 | 001f0010000f0000
+  v_result = 10ffdecdbcaf9a8b | f8675645b4231281
+insn vbitrev.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = 0000002100000020 | 0000001f00000000
+  v_result = 10efdecfbcab9a88 | f867564534231280
+insn vbitclri.b.0:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 10eedeccbcaa9a88 | 7866564434221280
+insn vbitclri.b.7:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000007
+  v_result = 106f5e4d3c2b1a09 | 7867564534231201
+insn vbitseti.h.0:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vbitseti.h.15:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000000f
+  v_result = 90efdecdbcab9a89 | f867d645b4239281
+insn vbitrevi.d.0:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 10efdecdbcab9a88 | 7867564534231280
+insn vbitrevi.d.63:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000003f
+  v_result = 90efdecdbcab9a89 | f867564534231281
+insn vilvl.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 789867a756b645c5 | 34d423e312f28111
+insn vilvh.h:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 10eff01fdecd2e3d | bcab4c5b9a896a79
+insn vpickev.w:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = bcab9a8934231281 | 4c5b6a79d4e3f211
+insn vpickod.d:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 10efdecdbcab9a89 | f01f2e3d4c5b6a79
+insn vshuf4i.b.0:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = cdcdcdcd89898989 | 4545454581818181
+insn vshuf4i.b.e4:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 00000000000000e4
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vshuf4i.w.1b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000001b
+  v_result = 3423128178675645 | bcab9a8910efdecd
+insn vpermi.w.1b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 3423128178675645 | 4c5b6a79f01f2e3d
+insn vextrins.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
+  v_result = 10efdecdbcab9a89 | 786756f034231281
+insn vinsgr2vr.b.0:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  r_arg2   = ffffffffffffffff
+  imm      = 0000000000000000
+  v_result = c0b0a09081706050 | 40302010fe017fff
+insn vinsgr2vr.w.3:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  r_arg2   = 00000000deadbeef
+  imm      = 0000000000000003
+  v_result = deadbeef81706050 | 40302010fe017f80
+insn vinsgr2vr.d.1:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  r_arg2   = 0123456789abcdef
+  imm      = 0000000000000001
+  v_result = 0123456789abcdef | 40302010fe017f80
+insn vpickve2gr.b.0:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  imm      = 0000000000000000
+  r_result = ffffffffffffff80
+insn vpickve2gr.bu.0:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  imm      = 0000000000000000
+  r_result = 0000000000000080
+insn vpickve2gr.w.2:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  imm      = 0000000000000002
+  r_result = ffffffff81706050
+insn vpickve2gr.du.1:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  imm      = 0000000000000001
+  r_result = c0b0a09081706050
+insn vreplgr2vr.h:
+  r_arg1   = 0000000000001234
+  v_result = 1234123412341234 | 1234123412341234
+insn vreplgr2vr.d:
+  r_arg1   = 0123456789abcdef
+  v_result = 0123456789abcdef | 0123456789abcdef
+insn vreplve.w.3:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  imm      = 0000000000000003
+  v_result = c0b0a090c0b0a090 | c0b0a090c0b0a090
+insn vreplvei.b.15:
+  v_arg1   = c0b0a09081706050 | 40302010fe017f80
+  imm      = 000000000000000f
+  v_result = c0c0c0c0c0c0c0c0 | c0c0c0c0c0c0c0c0
 insn vhaddw.h.b:
   v_arg1   = f00ff20df40bf609 | f807fa05fc03fe01
   v_arg2   = 11100f0e0d0c0b0a | 0908070605040302
