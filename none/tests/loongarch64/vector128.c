@@ -54,6 +54,34 @@ static void print_case3(const char* name, const vec128* a, const vec128* b,
    print_u64x2(got->d.u64);
 }
 
+static void print_case_vs_ri(const char* name, const vec128* a, uint64_t r,
+                             uint64_t imm)
+{
+   printf("insn %s:\n", name);
+   printf("  v_arg1   = ");
+   print_u64x2(a->d.u64);
+   printf("  r_arg2   = %016llx\n", (unsigned long long)r);
+   printf("  imm      = %016llx\n", (unsigned long long)imm);
+}
+
+static void print_case_pick128(const char* name, const vec128* a, uint64_t imm,
+                               uint64_t got)
+{
+   printf("insn %s:\n", name);
+   printf("  v_arg1   = ");
+   print_u64x2(a->d.u64);
+   printf("  imm      = %016llx\n", (unsigned long long)imm);
+   printf("  r_result = %016llx\n", (unsigned long long)got);
+}
+
+static void print_case_rv128(const char* name, uint64_t r, const vec128* got)
+{
+   printf("insn %s:\n", name);
+   printf("  r_arg1   = %016llx\n", (unsigned long long)r);
+   printf("  v_result = ");
+   print_u64x2(got->d.u64);
+}
+
 #define DO_UN128(name, model_stmt, expr) \
    do { \
       model_stmt; \
@@ -91,6 +119,32 @@ static void print_case3(const char* name, const vec128* a, const vec128* b,
       model_stmt; \
       got.v = (expr); \
       print_case3((name), &acc, &a, &b, &got); \
+      check_bytes(tst, (name), got.d.u8, exp.d.u8, sizeof(exp.d.u8)); \
+   } while (0)
+
+#define DO_INS128(name, immv, rval, model_stmt, expr) \
+   do { \
+      model_stmt; \
+      got.v = (expr); \
+      print_case_vs_ri((name), &a, (rval), (immv)); \
+      printf("  v_result = "); \
+      print_u64x2(got.d.u64); \
+      check_bytes(tst, (name), got.d.u8, exp.d.u8, sizeof(exp.d.u8)); \
+   } while (0)
+
+#define DO_PICK128(name, immv, model_expr, expr) \
+   do { \
+      uint64_t got_r = (uint64_t)(expr); \
+      uint64_t exp_r = (model_expr); \
+      print_case_pick128((name), &a, (immv), got_r); \
+      check_u64(tst, (name), got_r, exp_r); \
+   } while (0)
+
+#define DO_RV128(name, rval, model_stmt, expr) \
+   do { \
+      model_stmt; \
+      got.v = (expr); \
+      print_case_rv128((name), (rval), &got); \
       check_bytes(tst, (name), got.d.u8, exp.d.u8, sizeof(exp.d.u8)); \
    } while (0)
 
@@ -346,6 +400,132 @@ static void test_shift_narrow_round(test_state* tst)
    DO_BIN128("vsrarn.b.h.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsrarn_b_h(a.v, b.v));
 }
 
+static void test_rotate(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 zero = {.d.u8 = {0}};
+   vec128 mix = {.d.u8 = {
+      7, 8, 9, 15, 1, 2, 3, 4,
+      5, 6, 7, 8, 9, 10, 11, 12}};
+   vec128 got, exp, b;
+
+   DO_IMM128("vrotri.b.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 8, 16, 0), __lsx_vrotri_b(a.v, 0));
+   DO_IMM128("vrotri.b.7", 7, model_rotate_imm(exp.d.u8, a.d.u8, 8, 16, 7), __lsx_vrotri_b(a.v, 7));
+   DO_IMM128("vrotri.d.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 64, 2, 0), __lsx_vrotri_d(a.v, 0));
+   DO_IMM128("vrotri.d.63", 63, model_rotate_imm(exp.d.u8, a.d.u8, 64, 2, 63), __lsx_vrotri_d(a.v, 63));
+
+   b = mix;
+   DO_BIN128("vrotr.b.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16), __lsx_vrotr_b(a.v, b.v));
+   b = zero;
+   DO_BIN128("vrotr.b.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16), __lsx_vrotr_b(a.v, b.v));
+}
+
+static void test_logic_bit(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 b = {.d.u8 = {
+      0x11, 0xf2, 0xe3, 0xd4, 0xc5, 0xb6, 0xa7, 0x98,
+      0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f, 0xf0}};
+   vec128 c = {.d.u8 = {
+      0x00, 0xff, 0x0f, 0xf0, 0x33, 0xcc, 0x55, 0xaa,
+      0x01, 0x80, 0x7f, 0xfe, 0x10, 0x08, 0x04, 0x02}};
+   vec128 got, exp;
+
+   DO_BIN128("vand.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 0), __lsx_vand_v(a.v, b.v));
+   DO_BIN128("vor.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 1), __lsx_vor_v(a.v, b.v));
+   DO_BIN128("vxor.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 2), __lsx_vxor_v(a.v, b.v));
+   DO_BIN128("vnor.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 3), __lsx_vnor_v(a.v, b.v));
+   DO_BIN128("vandn.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 4), __lsx_vandn_v(a.v, b.v));
+   DO_BIN128("vorn.v", model_logic2(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 5), __lsx_vorn_v(a.v, b.v));
+   DO_IMM128("vandi.b", 0x5a, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0x5a, 0), __lsx_vandi_b(a.v, 0x5a));
+   DO_IMM128("vori.b", 0xa5, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0xa5, 1), __lsx_vori_b(a.v, 0xa5));
+   DO_IMM128("vxori.b", 0xff, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0xff, 2), __lsx_vxori_b(a.v, 0xff));
+   DO_IMM128("vnori.b", 0xa5, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0xa5, 3), __lsx_vnori_b(a.v, 0xa5));
+   DO_TRI128("vbitsel.v", model_bitsel(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, sizeof(exp.d.u8)), __lsx_vbitsel_v(a.v, b.v, c.v));
+
+   b = (vec128){.d.u8 = {
+      0, 7, 8, 15, 1, 2, 3, 4,
+      5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN128("vbitclr.b", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1), __lsx_vbitclr_b(a.v, b.v));
+   b = (vec128){.d.u16 = {0, 15, 16, 31, 1, 2, 3, 4}};
+   DO_BIN128("vbitset.h", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 2), __lsx_vbitset_h(a.v, b.v));
+   b = (vec128){.d.u32 = {0, 31, 32, 33}};
+   DO_BIN128("vbitrev.w", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0), __lsx_vbitrev_w(a.v, b.v));
+   DO_IMM128("vbitclri.b.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 8, 16, 0, 0), __lsx_vbitclri_b(a.v, 0));
+   DO_IMM128("vbitclri.b.7", 7, model_bitop_imm(exp.d.u8, a.d.u8, 8, 16, 7, 0), __lsx_vbitclri_b(a.v, 7));
+   DO_IMM128("vbitseti.h.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 16, 8, 0, 1), __lsx_vbitseti_h(a.v, 0));
+   DO_IMM128("vbitseti.h.15", 15, model_bitop_imm(exp.d.u8, a.d.u8, 16, 8, 15, 1), __lsx_vbitseti_h(a.v, 15));
+   DO_IMM128("vbitrevi.d.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 64, 2, 0, 2), __lsx_vbitrevi_d(a.v, 0));
+   DO_IMM128("vbitrevi.d.63", 63, model_bitop_imm(exp.d.u8, a.d.u8, 64, 2, 63, 2), __lsx_vbitrevi_d(a.v, 63));
+}
+
+static void test_lane_move(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+      0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 b = {.d.u8 = {
+      0x11, 0xf2, 0xe3, 0xd4, 0xc5, 0xb6, 0xa7, 0x98,
+      0x79, 0x6a, 0x5b, 0x4c, 0x3d, 0x2e, 0x1f, 0xf0}};
+   vec128 got, exp;
+
+   DO_BIN128("vilvl.b", model_lane_mix_128chunk(exp.d.u8, a.d.u8, b.d.u8, 8, sizeof(exp.d.u8), 0), __lsx_vilvl_b(a.v, b.v));
+   DO_BIN128("vilvh.h", model_lane_mix_128chunk(exp.d.u8, a.d.u8, b.d.u8, 16, sizeof(exp.d.u8), 1), __lsx_vilvh_h(a.v, b.v));
+   DO_BIN128("vpickev.w", model_lane_mix_128chunk(exp.d.u8, a.d.u8, b.d.u8, 32, sizeof(exp.d.u8), 2), __lsx_vpickev_w(a.v, b.v));
+   DO_BIN128("vpickod.d", model_lane_mix_128chunk(exp.d.u8, a.d.u8, b.d.u8, 64, sizeof(exp.d.u8), 3), __lsx_vpickod_d(a.v, b.v));
+   DO_IMM128("vshuf4i.b.0", 0x00, model_shuf4i_128chunk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 0x00), __lsx_vshuf4i_b(a.v, 0x00));
+   DO_IMM128("vshuf4i.b.e4", 0xe4, model_shuf4i_128chunk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 0xe4), __lsx_vshuf4i_b(a.v, 0xe4));
+   DO_IMM128("vshuf4i.w.1b", 0x1b, model_shuf4i_128chunk(exp.d.u8, a.d.u8, 32, sizeof(exp.d.u8), 0x1b), __lsx_vshuf4i_w(a.v, 0x1b));
+   DO_BIN128("vpermi.w.1b", model_permi_w_128chunk(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 0x1b), __lsx_vpermi_w(a.v, b.v, 0x1b));
+   DO_BIN128("vextrins.b", model_extrins_b_128chunk(exp.d.u8, a.d.u8, b.d.u8, sizeof(exp.d.u8), 0x4f), __lsx_vextrins_b(a.v, b.v, 0x4f));
+}
+
+static void test_lane_scalar(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+      0x80, 0x7f, 0x01, 0xfe, 0x10, 0x20, 0x30, 0x40,
+      0x50, 0x60, 0x70, 0x81, 0x90, 0xa0, 0xb0, 0xc0}};
+   vec128 got, exp;
+
+   DO_INS128("vinsgr2vr.b.0", 0, UINT64_MAX,
+             model_insgr2vr(exp.d.u8, a.d.u8, 8, 0, UINT64_MAX, sizeof(exp.d.u8)),
+             __lsx_vinsgr2vr_b(a.v, -1, 0));
+   DO_INS128("vinsgr2vr.w.3", 3, 0xdeadbeefU,
+             model_insgr2vr(exp.d.u8, a.d.u8, 32, 3, 0xdeadbeefU, sizeof(exp.d.u8)),
+             __lsx_vinsgr2vr_w(a.v, 0xdeadbeefU, 3));
+   DO_INS128("vinsgr2vr.d.1", 1, 0x0123456789abcdefULL,
+             model_insgr2vr(exp.d.u8, a.d.u8, 64, 1, 0x0123456789abcdefULL, sizeof(exp.d.u8)),
+             __lsx_vinsgr2vr_d(a.v, 0x0123456789abcdefULL, 1));
+
+   DO_PICK128("vpickve2gr.b.0", 0, model_pickve2gr(a.d.u8, 8, 0, 1),
+              __lsx_vpickve2gr_b(a.v, 0));
+   DO_PICK128("vpickve2gr.bu.0", 0, model_pickve2gr(a.d.u8, 8, 0, 0),
+              __lsx_vpickve2gr_bu(a.v, 0));
+   DO_PICK128("vpickve2gr.w.2", 2, model_pickve2gr(a.d.u8, 32, 2, 1),
+              __lsx_vpickve2gr_w(a.v, 2));
+   DO_PICK128("vpickve2gr.du.1", 1, model_pickve2gr(a.d.u8, 64, 1, 0),
+              __lsx_vpickve2gr_du(a.v, 1));
+
+   DO_RV128("vreplgr2vr.h", 0x1234,
+            model_replgr2vr(exp.d.u8, 16, sizeof(exp.d.u8), 0x1234),
+            __lsx_vreplgr2vr_h(0x1234));
+   DO_RV128("vreplgr2vr.d", 0x0123456789abcdefULL,
+            model_replgr2vr(exp.d.u8, 64, sizeof(exp.d.u8), 0x0123456789abcdefULL),
+            __lsx_vreplgr2vr_d(0x0123456789abcdefULL));
+   model_replve(exp.d.u8, a.d.u8, 32, sizeof(exp.d.u8), 3);
+   got.v = __lsx_vreplve_w(a.v, 3);
+   print_case2_imm("vreplve.w.3", &a, 3, &got);
+   check_bytes(tst, "vreplve.w.3", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+   model_replve(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 15);
+   got.v = __lsx_vreplvei_b(a.v, 15);
+   print_case2_imm("vreplvei.b.15", &a, 15, &got);
+   check_bytes(tst, "vreplvei.b.15", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+}
+
 static void test_widen(test_state* tst)
 {
    vec128 a = {.d.u8 = {
@@ -520,6 +700,10 @@ int main(void)
    test_shift_round(&tst);
    test_shift_narrow(&tst);
    test_shift_narrow_round(&tst);
+   test_rotate(&tst);
+   test_logic_bit(&tst);
+   test_lane_move(&tst);
+   test_lane_scalar(&tst);
    test_widen(&tst);
    test_divmod(&tst);
 
