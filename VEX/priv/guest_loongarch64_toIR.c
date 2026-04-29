@@ -13737,29 +13737,28 @@ static IRTemp macro_v128shuf_h ( IRTemp sHi, IRTemp sLo, IRTemp sId )
    IRTemp id[8], res[8];
    IRTemp out = newTemp(Ity_V128);
 
+   // FIXME: Manual notes high selector bits for vshuf.h may vary across
+   // LoongArch variants. Current lowering masks selector bits, but this is
+   // not known to be portable ISA behavior.
    for (UInt i = 0; i < 8; i++) {
       id[i]  = newTemp(Ity_I16);
       res[i] = newTemp(Ity_I16);
 
       assign(id[i], binop(Iop_GetElem16x8, mkexpr(sId), mkU8(i)));
-      assign(res[i],
-             IRExpr_ITE(
-                binop(Iop_CmpEQ64,
-                      extendU(Ity_I16,
-                              binop(Iop_And16, mkexpr(id[i]), mkU16(0xC0))),
-                      mkU64(0x0)),
-                IRExpr_ITE(
-                   binop(Iop_CmpLT64U,
-                         extendU(Ity_I16,
-                                 binop(Iop_And16, mkexpr(id[i]), mkU16(0xf))),
-                         mkU64(0x8)),
-                   binop(Iop_GetElem16x8, mkexpr(sLo),
-                         unop(Iop_16to8, mkexpr(id[i]))),
-                   binop(Iop_GetElem16x8, mkexpr(sHi),
-                         unop(Iop_64to8,
-                              binop(Iop_Sub64, extendU(Ity_I16, mkexpr(id[i])),
-                                    mkU64(0x8))))),
-                mkU16(0x0)));
+      assign(
+         res[i],
+         IRExpr_ITE(
+            binop(Iop_CmpLT64U,
+                  extendU(Ity_I16, binop(Iop_And16, mkexpr(id[i]), mkU16(0xf))),
+                  mkU64(0x8)),
+            binop(Iop_GetElem16x8, mkexpr(sLo),
+                  unop(Iop_16to8, binop(Iop_And16, mkexpr(id[i]), mkU16(0xf)))),
+            binop(Iop_GetElem16x8, mkexpr(sHi),
+                  unop(Iop_64to8,
+                       binop(Iop_Sub64,
+                             extendU(Ity_I16, binop(Iop_And16, mkexpr(id[i]),
+                                                    mkU16(0xf))),
+                             mkU64(0x8))))));
    }
 
    assign(out, mkV128from16s(res[7], res[6], res[5], res[4], res[3], res[2],
@@ -13772,29 +13771,28 @@ static IRTemp macro_v128shuf_w ( IRTemp sHi, IRTemp sLo, IRTemp sId )
    IRTemp id[4], res[4];
    IRTemp out = newTemp(Ity_V128);
 
+   // FIXME: Manual notes high selector bits for vshuf.w may vary across
+   // LoongArch variants. Current lowering masks selector bits, but this is
+   // not known to be portable ISA behavior.
    for (UInt i = 0; i < 4; i++) {
       id[i]  = newTemp(Ity_I32);
       res[i] = newTemp(Ity_I32);
 
       assign(id[i], binop(Iop_GetElem32x4, mkexpr(sId), mkU8(i)));
-      assign(res[i],
-             IRExpr_ITE(
-                binop(Iop_CmpEQ64,
-                      extendU(Ity_I32,
-                              binop(Iop_And32, mkexpr(id[i]), mkU32(0xC0))),
-                      mkU64(0x0)),
-                IRExpr_ITE(
-                   binop(Iop_CmpLT64U,
-                         extendU(Ity_I32,
-                                 binop(Iop_And32, mkexpr(id[i]), mkU32(0x7))),
-                         mkU64(0x4)),
-                   binop(Iop_GetElem32x4, mkexpr(sLo),
-                         unop(Iop_32to8, mkexpr(id[i]))),
-                   binop(Iop_GetElem32x4, mkexpr(sHi),
-                         unop(Iop_64to8,
-                              binop(Iop_Sub64, extendU(Ity_I32, mkexpr(id[i])),
-                                    mkU64(0x4))))),
-                mkU32(0x0)));
+      assign(
+         res[i],
+         IRExpr_ITE(
+            binop(Iop_CmpLT64U,
+                  extendU(Ity_I32, binop(Iop_And32, mkexpr(id[i]), mkU32(0x7))),
+                  mkU64(0x4)),
+            binop(Iop_GetElem32x4, mkexpr(sLo),
+                  unop(Iop_32to8, binop(Iop_And32, mkexpr(id[i]), mkU32(0x7)))),
+            binop(Iop_GetElem32x4, mkexpr(sHi),
+                  unop(Iop_64to8,
+                       binop(Iop_Sub64,
+                             extendU(Ity_I32, binop(Iop_And32, mkexpr(id[i]),
+                                                    mkU32(0x7))),
+                             mkU64(0x4))))));
    }
 
    assign(out, mkV128from32s(res[3], res[2], res[1], res[0]));
@@ -13807,25 +13805,27 @@ static IRTemp macro_v128shuf_d ( IRTemp sHi, IRTemp sLo, IRTemp sId )
    IRTemp id[2], res[2];
    IRTemp out = newTemp(Ity_V128);
 
+   // FIXME: Manual notes high selector bits for vshuf.d may vary across
+   // LoongArch variants. Current lowering masks selector bits, but this is
+   // not known to be portable ISA behavior.
    for (UInt i = 0; i < 2; i++) {
       id[i]  = newTemp(Ity_I64);
       res[i] = newTemp(Ity_I64);
 
       assign(id[i], binop(Iop_GetElem64x2, mkexpr(sId), mkU8(i)));
 
-      assign(res[i],
-             IRExpr_ITE(
-                binop(Iop_CmpEQ64, binop(Iop_And64, mkexpr(id[i]), mkU64(0xC0)),
-                      mkU64(0x0)),
-                IRExpr_ITE(binop(Iop_CmpLT64U,
-                                 binop(Iop_And64, mkexpr(id[i]), mkU64(0x3)),
-                                 mkU64(0x2)),
-                           binop(Iop_GetElem64x2, mkexpr(sLo),
-                                 unop(Iop_64to8, mkexpr(id[i]))),
-                           binop(Iop_GetElem64x2, mkexpr(sHi),
-                                 unop(Iop_64to8, binop(Iop_Sub64, mkexpr(id[i]),
-                                                       mkU64(0x2))))),
-                mkU64(0x0)));
+      assign(
+         res[i],
+         IRExpr_ITE(
+            binop(Iop_CmpLT64U, binop(Iop_And64, mkexpr(id[i]), mkU64(0x3)),
+                  mkU64(0x2)),
+            binop(Iop_GetElem64x2, mkexpr(sLo),
+                  unop(Iop_64to8, binop(Iop_And64, mkexpr(id[i]), mkU64(0x3)))),
+            binop(Iop_GetElem64x2, mkexpr(sHi),
+                  unop(Iop_64to8,
+                       binop(Iop_Sub64,
+                             binop(Iop_And64, mkexpr(id[i]), mkU64(0x3)),
+                             mkU64(0x2))))));
    }
 
    assign(out, mkV128from64s(res[1], res[0]));
