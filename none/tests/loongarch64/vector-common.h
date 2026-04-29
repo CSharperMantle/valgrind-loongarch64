@@ -1093,6 +1093,45 @@ static void model_xvshuf_hwd(uint8_t* dst, const uint8_t* id,
    model_vshuf_hwd_128chunk(dst + 16, id + 16, hi + 16, lo + 16, bits);
 }
 
+static uint64_t model_vset(const uint8_t* a, unsigned bits, unsigned lanes,
+                           unsigned mode)
+{
+   unsigned i;
+
+   switch (mode) {
+      case 0: {
+         for (i = 0; i < lanes * (bits / 8); i++) {
+            if (a[i] != 0)
+               return 0;
+         }
+         return 1;
+      }
+      case 1: {
+         for (i = 0; i < lanes * (bits / 8); i++) {
+            if (a[i] != 0)
+               return 1;
+         }
+         return 0;
+      }
+      case 2: {
+         for (i = 0; i < lanes; i++) {
+            if (read_lane_u64(a, bits, i) == 0)
+               return 1;
+         }
+         return 0;
+      }
+      case 3: {
+         for (i = 0; i < lanes; i++) {
+            if (read_lane_u64(a, bits, i) == 0)
+               return 0;
+         }
+         return 1;
+      }
+      default:
+         return 0;
+   }
+}
+
 static void check_bytes(test_state* tst, const char* name,
                         const void* got, const void* exp, size_t nbytes)
 {

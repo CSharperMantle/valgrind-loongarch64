@@ -82,6 +82,14 @@ static void print_case_rv128(const char* name, uint64_t r, const vec128* got)
    print_u64x2(got->d.u64);
 }
 
+static void print_case_set128(const char* name, const vec128* a, uint64_t got)
+{
+   printf("insn %s:\n", name);
+   printf("  v_arg1   = ");
+   print_u64x2(a->d.u64);
+   printf("  r_result = %016llx\n", (unsigned long long)got);
+}
+
 #define DO_UN128(name, model_stmt, expr) \
    do { \
       model_stmt; \
@@ -146,6 +154,14 @@ static void print_case_rv128(const char* name, uint64_t r, const vec128* got)
       got.v = (expr); \
       print_case_rv128((name), (rval), &got); \
       check_bytes(tst, (name), got.d.u8, exp.d.u8, sizeof(exp.d.u8)); \
+   } while (0)
+
+#define DO_SET128(name, vecv, model_expr, expr) \
+   do { \
+      uint64_t got_r = (uint64_t)(expr); \
+      uint64_t exp_r = (model_expr); \
+      print_case_set128((name), &(vecv), got_r); \
+      check_u64(tst, (name), got_r, exp_r); \
    } while (0)
 
 static void test_basic(test_state* tst)
@@ -279,6 +295,40 @@ static void test_cmpmask(test_state* tst)
    DO_UN128("vmsknz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 2), __lsx_vmsknz_b(a.v));
 }
 
+static void test_vset(test_state* tst)
+{
+   vec128 z = {.d.u64 = {0, 0}};
+   vec128 bh = {.d.u64 = {
+      0x1122334400006677ULL, 0x8899aabbccddeeffULL}};
+   vec128 w = {.d.u32 = {1, 0, 2, 3}};
+   vec128 d = {.d.u64 = {0, 0x0102030405060708ULL}};
+   vec128 nz = {.d.u64 = {
+      0x0102030405060708ULL, 0x1112131415161718ULL}};
+
+   DO_SET128("bz.v.z", z, model_vset(z.d.u8, 8, sizeof(z.d.u8), 0), __lsx_bz_v(z.v));
+   DO_SET128("bz.v.nz", nz, model_vset(nz.d.u8, 8, sizeof(nz.d.u8), 0), __lsx_bz_v(nz.v));
+   DO_SET128("bnz.v.z", z, model_vset(z.d.u8, 8, sizeof(z.d.u8), 1), __lsx_bnz_v(z.v));
+   DO_SET128("bnz.v.nz", nz, model_vset(nz.d.u8, 8, sizeof(nz.d.u8), 1), __lsx_bnz_v(nz.v));
+
+   DO_SET128("bz.b.haszero", bh, model_vset(bh.d.u8, 8, 16, 2), __lsx_bz_b(bh.v));
+   DO_SET128("bz.b.nz", nz, model_vset(nz.d.u8, 8, 16, 2), __lsx_bz_b(nz.v));
+   DO_SET128("bz.h.haszero", bh, model_vset(bh.d.u8, 16, 8, 2), __lsx_bz_h(bh.v));
+   DO_SET128("bz.h.nz", nz, model_vset(nz.d.u8, 16, 8, 2), __lsx_bz_h(nz.v));
+   DO_SET128("bz.w.haszero", w, model_vset(w.d.u8, 32, 4, 2), __lsx_bz_w(w.v));
+   DO_SET128("bz.w.nz", nz, model_vset(nz.d.u8, 32, 4, 2), __lsx_bz_w(nz.v));
+   DO_SET128("bz.d.haszero", d, model_vset(d.d.u8, 64, 2, 2), __lsx_bz_d(d.v));
+   DO_SET128("bz.d.nz", nz, model_vset(nz.d.u8, 64, 2, 2), __lsx_bz_d(nz.v));
+
+   DO_SET128("bnz.b.haszero", bh, model_vset(bh.d.u8, 8, 16, 3), __lsx_bnz_b(bh.v));
+   DO_SET128("bnz.b.nz", nz, model_vset(nz.d.u8, 8, 16, 3), __lsx_bnz_b(nz.v));
+   DO_SET128("bnz.h.haszero", bh, model_vset(bh.d.u8, 16, 8, 3), __lsx_bnz_h(bh.v));
+   DO_SET128("bnz.h.nz", nz, model_vset(nz.d.u8, 16, 8, 3), __lsx_bnz_h(nz.v));
+   DO_SET128("bnz.w.haszero", w, model_vset(w.d.u8, 32, 4, 3), __lsx_bnz_w(w.v));
+   DO_SET128("bnz.w.nz", nz, model_vset(nz.d.u8, 32, 4, 3), __lsx_bnz_w(nz.v));
+   DO_SET128("bnz.d.haszero", d, model_vset(d.d.u8, 64, 2, 3), __lsx_bnz_d(d.v));
+   DO_SET128("bnz.d.nz", nz, model_vset(nz.d.u8, 64, 2, 3), __lsx_bnz_d(nz.v));
+}
+
 static void test_exth(test_state* tst)
 {
    vec128 a = {.d.u8 = {
@@ -311,6 +361,45 @@ static void test_unary_more(test_state* tst)
    DO_UN128("vpcnt.b", model_pcnt(exp.d.u8, a.d.u8, 8, 16), __lsx_vpcnt_b(a.v));
    DO_UN128("vneg.h", model_neg(exp.d.u8, a.d.u8, 16, 8), __lsx_vneg_h(a.v));
    DO_BIN128("vsigncov.h", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 16, 8), __lsx_vsigncov_h(a.v, b.v));
+}
+
+static void test_vshuf(test_state* tst)
+{
+   vec128 j = {.d.u8 = {
+      0x00, 0x01, 0x02, 0x03, 0x10, 0x11, 0x12, 0x13,
+      0x20, 0x21, 0x22, 0x23, 0x30, 0x31, 0x32, 0x33}};
+   vec128 k = {.d.u8 = {
+      0x80, 0x81, 0x82, 0x83, 0x90, 0x91, 0x92, 0x93,
+      0xa0, 0xa1, 0xa2, 0xa3, 0xb0, 0xb1, 0xb2, 0xb3}};
+   vec128 selb = {.d.u8 = {
+      0x00, 0x01, 0x08, 0x09, 0x10, 0x11, 0x18, 0x19,
+      0x80, 0x81, 0x88, 0x89, 0xc0, 0xc1, 0xc8, 0xc9}};
+   // FIXME: Manual says high selector bits for vshuf.h/w/d are disputed
+   // across LoongArch variants. Keep tests to portable low-bit selectors.
+   vec128 selh = {.d.u16 = {0, 1, 2, 3, 4, 5, 6, 7}};
+   vec128 selw = {.d.u32 = {0, 1, 4, 7}};
+   vec128 seld = {.d.u64 = {0, 3}};
+   vec128 got, exp;
+
+   model_vshuf_b(exp.d.u8, j.d.u8, k.d.u8, selb.d.u8, sizeof(exp.d.u8));
+   got.v = __lsx_vshuf_b(j.v, k.v, selb.v);
+   print_case3("vshuf.b", &j, &k, &selb, &got);
+   check_bytes(tst, "vshuf.b", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_vshuf_hwd_128chunk(exp.d.u8, selh.d.u8, j.d.u8, k.d.u8, 16);
+   got.v = __lsx_vshuf_h(selh.v, j.v, k.v);
+   print_case3("vshuf.h", &selh, &j, &k, &got);
+   check_bytes(tst, "vshuf.h", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_vshuf_hwd_128chunk(exp.d.u8, selw.d.u8, j.d.u8, k.d.u8, 32);
+   got.v = __lsx_vshuf_w(selw.v, j.v, k.v);
+   print_case3("vshuf.w", &selw, &j, &k, &got);
+   check_bytes(tst, "vshuf.w", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_vshuf_hwd_128chunk(exp.d.u8, seld.d.u8, j.d.u8, k.d.u8, 64);
+   got.v = __lsx_vshuf_d(seld.v, j.v, k.v);
+   print_case3("vshuf.d", &seld, &j, &k, &got);
+   check_bytes(tst, "vshuf.d", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
 }
 
 static void test_shift(test_state* tst)
@@ -694,8 +783,10 @@ int main(void)
    test_basic(&tst);
    test_sat(&tst);
    test_cmpmask(&tst);
+   test_vset(&tst);
    test_exth(&tst);
    test_unary_more(&tst);
+   test_vshuf(&tst);
    test_shift(&tst);
    test_shift_round(&tst);
    test_shift_narrow(&tst);

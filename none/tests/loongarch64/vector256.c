@@ -96,6 +96,14 @@ static void print_case_rv256(const char* name, uint64_t r, const vec256* got)
    print_u64x4(got->d.u64);
 }
 
+static void print_case_set256(const char* name, const vec256* a, uint64_t got)
+{
+   printf("insn %s:\n", name);
+   printf("  v_arg1   = ");
+   print_u64x4(a->d.u64);
+   printf("  r_result = %016llx\n", (unsigned long long)got);
+}
+
 #define DO_UN256(name, model_stmt, expr) \
    do { \
       model_stmt; \
@@ -160,6 +168,14 @@ static void print_case_rv256(const char* name, uint64_t r, const vec256* got)
       got.v = (expr); \
       print_case_rv256((name), (rval), &got); \
       check_bytes(tst, (name), got.d.u8, exp.d.u8, sizeof(exp.d.u8)); \
+   } while (0)
+
+#define DO_SET256(name, vecv, model_expr, expr) \
+   do { \
+      uint64_t got_r = (uint64_t)(expr); \
+      uint64_t exp_r = (model_expr); \
+      print_case_set256((name), &(vecv), got_r); \
+      check_u64(tst, (name), got_r, exp_r); \
    } while (0)
 
 static void test_basic(test_state* tst)
@@ -290,6 +306,43 @@ static void test_cmpmask(test_state* tst)
    DO_UN256("xvmsknz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 2), __lasx_xvmsknz_b(a.v));
 }
 
+static void test_vset(test_state* tst)
+{
+   vec256 z = {.d.u64 = {0, 0, 0, 0}};
+   vec256 bh = {.d.u64 = {
+      0x1122334455667788ULL, 0x00000000aabbccddULL,
+      0x0102030405060708ULL, 0x1112131415161718ULL}};
+   vec256 w = {.d.u32 = {1, 2, 0, 4, 5, 6, 7, 8}};
+   vec256 d = {.d.u64 = {
+      0x0102030405060708ULL, 0, 0x1112131415161718ULL, 0x2122232425262728ULL}};
+   vec256 nz = {.d.u64 = {
+      0x0102030405060708ULL, 0x1112131415161718ULL,
+      0x2122232425262728ULL, 0x3132333435363738ULL}};
+
+   DO_SET256("xbz.v.z", z, model_vset(z.d.u8, 8, sizeof(z.d.u8), 0), __lasx_xbz_v(z.v));
+   DO_SET256("xbz.v.nz", nz, model_vset(nz.d.u8, 8, sizeof(nz.d.u8), 0), __lasx_xbz_v(nz.v));
+   DO_SET256("xbnz.v.z", z, model_vset(z.d.u8, 8, sizeof(z.d.u8), 1), __lasx_xbnz_v(z.v));
+   DO_SET256("xbnz.v.nz", nz, model_vset(nz.d.u8, 8, sizeof(nz.d.u8), 1), __lasx_xbnz_v(nz.v));
+
+   DO_SET256("xbz.b.haszero", bh, model_vset(bh.d.u8, 8, 32, 2), __lasx_xbz_b(bh.v));
+   DO_SET256("xbz.b.nz", nz, model_vset(nz.d.u8, 8, 32, 2), __lasx_xbz_b(nz.v));
+   DO_SET256("xbz.h.haszero", bh, model_vset(bh.d.u8, 16, 16, 2), __lasx_xbz_h(bh.v));
+   DO_SET256("xbz.h.nz", nz, model_vset(nz.d.u8, 16, 16, 2), __lasx_xbz_h(nz.v));
+   DO_SET256("xbz.w.haszero", w, model_vset(w.d.u8, 32, 8, 2), __lasx_xbz_w(w.v));
+   DO_SET256("xbz.w.nz", nz, model_vset(nz.d.u8, 32, 8, 2), __lasx_xbz_w(nz.v));
+   DO_SET256("xbz.d.haszero", d, model_vset(d.d.u8, 64, 4, 2), __lasx_xbz_d(d.v));
+   DO_SET256("xbz.d.nz", nz, model_vset(nz.d.u8, 64, 4, 2), __lasx_xbz_d(nz.v));
+
+   DO_SET256("xbnz.b.haszero", bh, model_vset(bh.d.u8, 8, 32, 3), __lasx_xbnz_b(bh.v));
+   DO_SET256("xbnz.b.nz", nz, model_vset(nz.d.u8, 8, 32, 3), __lasx_xbnz_b(nz.v));
+   DO_SET256("xbnz.h.haszero", bh, model_vset(bh.d.u8, 16, 16, 3), __lasx_xbnz_h(bh.v));
+   DO_SET256("xbnz.h.nz", nz, model_vset(nz.d.u8, 16, 16, 3), __lasx_xbnz_h(nz.v));
+   DO_SET256("xbnz.w.haszero", w, model_vset(w.d.u8, 32, 8, 3), __lasx_xbnz_w(w.v));
+   DO_SET256("xbnz.w.nz", nz, model_vset(nz.d.u8, 32, 8, 3), __lasx_xbnz_w(nz.v));
+   DO_SET256("xbnz.d.haszero", d, model_vset(d.d.u8, 64, 4, 3), __lasx_xbnz_d(d.v));
+   DO_SET256("xbnz.d.nz", nz, model_vset(nz.d.u8, 64, 4, 3), __lasx_xbnz_d(nz.v));
+}
+
 static void test_exth(test_state* tst)
 {
    vec256 a = {.d.u8 = {
@@ -341,6 +394,53 @@ static void test_unary_more(test_state* tst)
    DO_UN256("xvpcnt.h", model_pcnt(exp.d.u8, a.d.u8, 16, 16), __lasx_xvpcnt_h(a.v));
    DO_UN256("xvneg.d", model_neg(exp.d.u8, a.d.u8, 64, 4), __lasx_xvneg_d(a.v));
    DO_BIN256("xvsigncov.d", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 64, 4), __lasx_xvsigncov_d(a.v, b.v));
+}
+
+static void test_vshuf(test_state* tst)
+{
+   vec256 j = {.d.u8 = {
+      0x00, 0x01, 0x02, 0x03, 0x10, 0x11, 0x12, 0x13,
+      0x20, 0x21, 0x22, 0x23, 0x30, 0x31, 0x32, 0x33,
+      0x40, 0x41, 0x42, 0x43, 0x50, 0x51, 0x52, 0x53,
+      0x60, 0x61, 0x62, 0x63, 0x70, 0x71, 0x72, 0x73}};
+   vec256 k = {.d.u8 = {
+      0x80, 0x81, 0x82, 0x83, 0x90, 0x91, 0x92, 0x93,
+      0xa0, 0xa1, 0xa2, 0xa3, 0xb0, 0xb1, 0xb2, 0xb3,
+      0xc0, 0xc1, 0xc2, 0xc3, 0xd0, 0xd1, 0xd2, 0xd3,
+      0xe0, 0xe1, 0xe2, 0xe3, 0xf0, 0xf1, 0xf2, 0xf3}};
+   vec256 selb = {.d.u8 = {
+      0x00, 0x01, 0x08, 0x09, 0x10, 0x11, 0x18, 0x19,
+      0x80, 0x81, 0x88, 0x89, 0xc0, 0xc1, 0xc8, 0xc9,
+      0x00, 0x01, 0x08, 0x09, 0x10, 0x11, 0x18, 0x19,
+      0x80, 0x81, 0x88, 0x89, 0xc0, 0xc1, 0xc8, 0xc9}};
+   // FIXME: Manual says high selector bits for xvshuf.h/w/d are disputed
+   // across LoongArch variants. Keep tests to portable low-bit selectors.
+   vec256 selh = {.d.u16 = {
+      0, 1, 2, 3, 4, 5, 6, 7,
+      0, 1, 2, 3, 4, 5, 6, 7}};
+   vec256 selw = {.d.u32 = {0, 1, 4, 7, 0, 1, 4, 7}};
+   vec256 seld = {.d.u64 = {0, 3, 0, 3}};
+   vec256 got, exp;
+
+   model_xvshuf_b(exp.d.u8, j.d.u8, k.d.u8, selb.d.u8);
+   got.v = __lasx_xvshuf_b(j.v, k.v, selb.v);
+   print_case3("xvshuf.b", &j, &k, &selb, &got);
+   check_bytes(tst, "xvshuf.b", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_xvshuf_hwd(exp.d.u8, selh.d.u8, j.d.u8, k.d.u8, 16);
+   got.v = __lasx_xvshuf_h(selh.v, j.v, k.v);
+   print_case3("xvshuf.h", &selh, &j, &k, &got);
+   check_bytes(tst, "xvshuf.h", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_xvshuf_hwd(exp.d.u8, selw.d.u8, j.d.u8, k.d.u8, 32);
+   got.v = __lasx_xvshuf_w(selw.v, j.v, k.v);
+   print_case3("xvshuf.w", &selw, &j, &k, &got);
+   check_bytes(tst, "xvshuf.w", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_xvshuf_hwd(exp.d.u8, seld.d.u8, j.d.u8, k.d.u8, 64);
+   got.v = __lasx_xvshuf_d(seld.v, j.v, k.v);
+   print_case3("xvshuf.d", &seld, &j, &k, &got);
+   check_bytes(tst, "xvshuf.d", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
 }
 
 static void test_shift(test_state* tst)
@@ -776,8 +876,10 @@ int main(void)
    test_basic(&tst);
    test_sat(&tst);
    test_cmpmask(&tst);
+   test_vset(&tst);
    test_exth(&tst);
    test_unary_more(&tst);
+   test_vshuf(&tst);
    test_shift(&tst);
    test_shift_round(&tst);
    test_shift_narrow(&tst);
