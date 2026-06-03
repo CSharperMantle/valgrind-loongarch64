@@ -441,6 +441,11 @@ static void test_vshuf(test_state* tst)
    got.v = __lasx_xvshuf_d(seld.v, j.v, k.v);
    print_case3("xvshuf.d", &seld, &j, &k, &got);
    check_bytes(tst, "xvshuf.d", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
+
+   model_xvperm_w(exp.d.u8, j.d.u8, selw.d.u8);
+   got.v = __lasx_xvperm_w(j.v, selw.v);
+   print_case2("xvperm.w", &j, &selw, &got);
+   check_bytes(tst, "xvperm.w", got.d.u8, exp.d.u8, sizeof(exp.d.u8));
 }
 
 static void test_shift(test_state* tst)

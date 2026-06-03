@@ -13990,6 +13990,55 @@ static Bool gen_xvshuf_hwd ( DisResult* dres, UInt insn,
    return True;
 }
 
+static Bool gen_xvperm_w ( DisResult* dres, UInt insn,
+                           const VexArchInfo* archinfo,
+                           const VexAbiInfo*  abiinfo )
+{
+   UInt xd = SLICE(insn, 4, 0);
+   UInt xj = SLICE(insn, 9, 5);
+   UInt xk = SLICE(insn, 14, 10);
+
+   IRTemp j   = newTemp(Ity_V256);
+   IRTemp k   = newTemp(Ity_V256);
+   IRTemp jHi = IRTemp_INVALID;
+   IRTemp jLo = IRTemp_INVALID;
+   IRTemp s[8];
+   IRTemp res[8];
+
+   assign(j, getXReg(xj));
+   assign(k, getXReg(xk));
+   breakupV256toV128s(j, &jHi, &jLo);
+   s[7] = s[6] = s[5] = s[4] = s[3] = s[2] = s[1] = s[0] = IRTemp_INVALID;
+   breakupV256to32s(k, &s[7], &s[6], &s[5], &s[4], &s[3], &s[2], &s[1], &s[0]);
+
+   for (UInt i = 0; i < 8; i++) {
+      res[i] = newTemp(Ity_I32);
+      assign(
+         res[i],
+         IRExpr_ITE(
+            binop(Iop_CmpLT64U,
+                  extendU(Ity_I32, binop(Iop_And32, mkexpr(s[i]), mkU32(0x7))),
+                  mkU64(0x4)),
+            binop(Iop_GetElem32x4, mkexpr(jLo),
+                  unop(Iop_32to8, binop(Iop_And32, mkexpr(s[i]), mkU32(0x7)))),
+            binop(Iop_GetElem32x4, mkexpr(jHi),
+                  unop(Iop_64to8,
+                       binop(Iop_Sub64,
+                             extendU(Ity_I32, binop(Iop_And32, mkexpr(s[i]),
+                                                    mkU32(0x7))),
+                             mkU64(0x4))))));
+   }
+
+   DIP("xvperm.w %s, %s, %s\n", nameXReg(xd), nameXReg(xj), nameXReg(xk));
+
+   STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LASX);
+
+   putXReg(xd, mkV256from32s(res[7], res[6], res[5], res[4], res[3], res[2],
+                             res[1], res[0]));
+
+   return True;
+}
+
 static IRTemp macro_v128shuf4i_b ( IRTemp sJ, UInt id0,  UInt id1,  UInt id2,  UInt id3 )
 {
    IRTemp res = newTemp(Ity_V128);
@@ -17074,6 +17123,9 @@ static Bool disInstr_LOONGARCH64_WRK_01_1101_0101 ( DisResult* dres, UInt insn,
    switch (SLICE(insn, 21, 17)) {
       case 0b11101:
          ok = gen_xvshuf_hwd(dres, insn, archinfo, abiinfo);
+         break;
+      case 0b11110:
+         ok = gen_xvperm_w(dres, insn, archinfo, abiinfo);
          break;
       default:
          ok = False;
