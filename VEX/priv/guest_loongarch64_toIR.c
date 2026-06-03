@@ -12720,7 +12720,7 @@ static Bool gen_vbsll_vbsrl ( DisResult* dres, UInt insn,
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
-   putVReg(vd, binop(op, getVReg(vj), mkU8(ui5)));
+   putVReg(vd, binop(op, getVReg(vj), mkU8(ui5 * 8)));
 
    return True;
 }
@@ -12745,21 +12745,23 @@ static Bool gen_xvbsll_xvbsrl ( DisResult* dres, UInt insn,
    if (insTy == 0b00) {
       if (ui5 < 16) {
          assign(resHi,
-                binop(Iop_OrV128, binop(Iop_ShlV128, mkexpr(srcHi), mkU8(ui5)),
-                      binop(Iop_ShrV128, mkexpr(srcLo), mkU8(16 - ui5))));
-         assign(resLo, binop(Iop_ShlV128, mkexpr(srcLo), mkU8(ui5)));
+                binop(Iop_OrV128,
+                      binop(Iop_ShlV128, mkexpr(srcHi), mkU8(ui5 * 8)),
+                      binop(Iop_ShrV128, mkexpr(srcLo), mkU8((16 - ui5) * 8))));
+         assign(resLo, binop(Iop_ShlV128, mkexpr(srcLo), mkU8(ui5 * 8)));
       } else {
-         assign(resHi, binop(Iop_ShlV128, mkexpr(srcLo), mkU8(ui5 - 16)));
+         assign(resHi, binop(Iop_ShlV128, mkexpr(srcLo), mkU8((ui5 - 16) * 8)));
          assign(resLo, mkV128(0x0000));
       }
    } else if (insTy == 0b01) {
       if (ui5 < 16) {
          assign(resLo,
-                binop(Iop_OrV128, binop(Iop_ShrV128, mkexpr(srcLo), mkU8(ui5)),
-                      binop(Iop_ShlV128, mkexpr(srcHi), mkU8(16 - ui5))));
-         assign(resHi, binop(Iop_ShrV128, mkexpr(srcHi), mkU8(ui5)));
+                binop(Iop_OrV128,
+                      binop(Iop_ShrV128, mkexpr(srcLo), mkU8(ui5 * 8)),
+                      binop(Iop_ShlV128, mkexpr(srcHi), mkU8((16 - ui5) * 8))));
+         assign(resHi, binop(Iop_ShrV128, mkexpr(srcHi), mkU8(ui5 * 8)));
       } else {
-         assign(resLo, binop(Iop_ShrV128, mkexpr(srcHi), mkU8(ui5 - 16)));
+         assign(resLo, binop(Iop_ShrV128, mkexpr(srcHi), mkU8((ui5 - 16) * 8)));
          assign(resHi, mkV128(0x0000));
       }
    } else {

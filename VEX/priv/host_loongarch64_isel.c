@@ -2608,8 +2608,7 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
             }
             case Iop_ShlN8x16: case Iop_ShlN16x8: case Iop_ShlN32x4: case Iop_ShlN64x2:
             case Iop_ShrN8x16: case Iop_ShrN16x8: case Iop_ShrN32x4: case Iop_ShrN64x2:
-            case Iop_SarN8x16: case Iop_SarN16x8: case Iop_SarN32x4: case Iop_SarN64x2:
-            case Iop_ShlV128:  case Iop_ShrV128: {
+            case Iop_SarN8x16: case Iop_SarN16x8: case Iop_SarN32x4: case Iop_SarN64x2: {
                UChar size;
                LOONGARCH64VecBinOp op;
                switch (e->Iex.Binop.op) {
@@ -2625,8 +2624,6 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
                   case Iop_SarN16x8: op = LAvecbin_VSRAI_H; size = 4; break;
                   case Iop_SarN32x4: op = LAvecbin_VSRAI_W; size = 5; break;
                   case Iop_SarN64x2: op = LAvecbin_VSRAI_D; size = 6; break;
-                  case Iop_ShlV128:  op = LAvecbin_VBSLL_V; size = 5; break;
-                  case Iop_ShrV128:  op = LAvecbin_VBSRL_V; size = 5; break;
                   default:           vassert(0);                      break;
                }
                HReg           dst  = newVRegV(env);
@@ -2637,6 +2634,53 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
                vassert(e->Iex.Binop.arg2->Iex.Const.con->Ico.U8 <=
                        ((1u << size) - 1));
                addInstr(env, LOONGARCH64Instr_VecBinary(op, src2, src1, dst));
+               return dst;
+            }
+            case Iop_ShlV128: case Iop_ShrV128: {
+               LOONGARCH64VecBinOp t0Op, t1Op, t2Op, t3Op;
+               switch (e->Iex.Binop.op) {
+                  case Iop_ShlV128:
+                     t0Op = LAvecbin_VBSLL_V;
+                     t1Op = LAvecbin_VSLLI_B;
+                     t2Op = LAvecbin_VSRLI_B;
+                     t3Op = LAvecbin_VBSLL_V;
+                     break;
+                  case Iop_ShrV128:
+                     t0Op = LAvecbin_VBSRL_V;
+                     t1Op = LAvecbin_VSRLI_B;
+                     t2Op = LAvecbin_VSLLI_B;
+                     t3Op = LAvecbin_VBSRL_V;
+                     break;
+                  default: vassert(0); break;
+               }
+               const HReg src1 = iselV128Expr(env, e->Iex.Binop.arg1);
+               vassert(e->Iex.Binop.arg2->tag == Iex_Const);
+               vassert(e->Iex.Binop.arg2->Iex.Const.con->tag == Ico_U8);
+               vassert(e->Iex.Binop.arg2->Iex.Const.con->Ico.U8 <= 127);
+
+               const UChar shamt = e->Iex.Binop.arg2->Iex.Const.con->Ico.U8;
+               const UChar bytes = shamt / 8;
+               const UChar bits  = shamt % 8;
+               const HReg  t0    = newVRegV(env);
+               addInstr(env,
+                        LOONGARCH64Instr_VecBinary(
+                           t0Op, LOONGARCH64RI_I(bytes, 5, False), src1, t0));
+               if (bits == 0) {
+                  return t0;
+               }
+               const HReg dst = newVRegV(env);
+               const HReg t1  = newVRegV(env);
+               const HReg t2  = newVRegV(env);
+               const HReg t3  = newVRegV(env);
+               addInstr(env, LOONGARCH64Instr_VecBinary(
+                                t1Op, LOONGARCH64RI_I(bits, 3, False), t0, t1));
+               addInstr(env,
+                        LOONGARCH64Instr_VecBinary(
+                           t2Op, LOONGARCH64RI_I(8 - bits, 3, False), t0, t2));
+               addInstr(env, LOONGARCH64Instr_VecBinary(
+                                t3Op, LOONGARCH64RI_I(1, 5, False), t2, t3));
+               addInstr(env, LOONGARCH64Instr_VecBinary(
+                                LAvecbin_VOR_V, LOONGARCH64RI_R(t3), t1, dst));
                return dst;
             }
             case Iop_64HLtoV128: {
