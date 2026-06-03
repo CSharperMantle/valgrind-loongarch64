@@ -2683,6 +2683,78 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
                                 LAvecbin_VOR_V, LOONGARCH64RI_R(t3), t1, dst));
                return dst;
             }
+            case Iop_SarV128: {
+               const HReg src1 = iselV128Expr(env, e->Iex.Binop.arg1);
+               vassert(e->Iex.Binop.arg2->tag == Iex_Const);
+               vassert(e->Iex.Binop.arg2->Iex.Const.con->tag == Ico_U8);
+               vassert(e->Iex.Binop.arg2->Iex.Const.con->Ico.U8 <= 127);
+               const UChar shamt = e->Iex.Binop.arg2->Iex.Const.con->Ico.U8;
+               const HReg dst = newVRegV(env);
+               if (shamt < 64) {
+                  const HReg t0 = newVRegV(env);
+                  const HReg t1 = newVRegV(env);
+                  const HReg t2 = newVRegV(env);
+                  const HReg t3 = newVRegV(env);
+                  const HReg t4 = newVRegV(env);
+                  const HReg t5 = newVRegV(env);
+                  const HReg t6 = newVRegV(env);
+                  const HReg t7 = newVRegV(env);
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VSRLI_D,
+                                   LOONGARCH64RI_I(shamt, 6, False), src1, t0));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VSLLI_D,
+                                   LOONGARCH64RI_I(1, 6, False), src1, t1));
+                  addInstr(env,
+                           LOONGARCH64Instr_VecBinary(
+                              LAvecbin_VSLLI_D,
+                              LOONGARCH64RI_I(63 - shamt, 6, False), t1, t2));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VBSRL_V,
+                                   LOONGARCH64RI_I(8, 5, False), t2, t3));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(LAvecbin_VOR_V,
+                                                           LOONGARCH64RI_R(t0),
+                                                           t3, t4));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VBSRL_V,
+                                   LOONGARCH64RI_I(8, 5, False), src1, t5));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VSRAI_D,
+                                   LOONGARCH64RI_I(shamt, 6, False), t5, t6));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VBSLL_V,
+                                   LOONGARCH64RI_I(8, 5, False), t6, t7));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(LAvecbin_VOR_V,
+                                                           LOONGARCH64RI_R(t4),
+                                                           t7, dst));
+               } else {
+                  const HReg t0 = newVRegV(env);
+                  const HReg t1 = newVRegV(env);
+                  const HReg t2 = newVRegV(env);
+                  const HReg t3 = newVRegV(env);
+                  const HReg t4 = newVRegV(env);
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VBSRL_V,
+                                   LOONGARCH64RI_I(8, 5, False), src1, t0));
+                  addInstr(env,
+                           LOONGARCH64Instr_VecBinary(
+                              LAvecbin_VSRAI_D,
+                              LOONGARCH64RI_I(shamt - 64, 6, False), t0, t1));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VBSRL_V,
+                                   LOONGARCH64RI_I(8, 5, False), src1, t2));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VSRAI_D,
+                                   LOONGARCH64RI_I(63, 6, False), t2, t3));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(
+                                   LAvecbin_VBSLL_V,
+                                   LOONGARCH64RI_I(8, 5, False), t3, t4));
+                  addInstr(env, LOONGARCH64Instr_VecBinary(LAvecbin_VOR_V,
+                                                           LOONGARCH64RI_R(t1),
+                                                           t4, dst));
+               }
+               return dst;
+            }
             case Iop_64HLtoV128: {
                HReg dst  = newVRegV(env);
                HReg sHi  = iselIntExpr_R(env, e->Iex.Binop.arg1);
