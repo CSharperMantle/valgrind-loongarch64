@@ -549,6 +549,14 @@ static void model_bitsel(uint8_t* dst, const uint8_t* a, const uint8_t* b,
       dst[i] = (a[i] & (uint8_t)~m[i]) | (b[i] & m[i]);
 }
 
+static void model_bitseli(uint8_t* dst, const uint8_t* a, const uint8_t* b,
+                          uint8_t imm, unsigned bytes_total)
+{
+   unsigned i;
+   for (i = 0; i < bytes_total; i++)
+      dst[i] = (~a[i] & b[i]) | (a[i] & imm);
+}
+
 static void model_bitop_var(uint8_t* dst, const uint8_t* a, const uint8_t* b,
                             unsigned bits, unsigned lanes, int op)
 {

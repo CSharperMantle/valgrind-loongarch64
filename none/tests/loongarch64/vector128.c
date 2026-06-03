@@ -535,6 +535,9 @@ static void test_logic_bit(test_state* tst)
    DO_IMM128("vxori.b", 0xff, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0xff, 2), __lsx_vxori_b(a.v, 0xff));
    DO_IMM128("vnori.b", 0xa5, model_logic_imm(exp.d.u8, a.d.u8, sizeof(exp.d.u8), 0xa5, 3), __lsx_vnori_b(a.v, 0xa5));
    DO_TRI128("vbitsel.v", model_bitsel(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, sizeof(exp.d.u8)), __lsx_vbitsel_v(a.v, b.v, c.v));
+   DO_IMM128("vbitseli.b", 0x12, model_bitseli(exp.d.u8, a.d.u8, b.d.u8, 0x12, sizeof(exp.d.u8)), __lsx_vbitseli_b(a.v, b.v, 0x12));
+   DO_IMM128("vbitseli.b.0xff", 0xff, model_bitseli(exp.d.u8, a.d.u8, b.d.u8, 0xff, sizeof(exp.d.u8)), __lsx_vbitseli_b(a.v, b.v, 0xff));
+   DO_IMM128("vbitseli.b.0x00", 0x00, model_bitseli(exp.d.u8, a.d.u8, b.d.u8, 0x00, sizeof(exp.d.u8)), __lsx_vbitseli_b(a.v, b.v, 0x00));
 
    b = (vec128){.d.u8 = {
       0, 7, 8, 15, 1, 2, 3, 4,

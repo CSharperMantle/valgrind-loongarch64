@@ -562,6 +562,18 @@ insn xvbitsel.v:
   v_arg2   = ff0f1e2d3c4b5a69 | 788796a5b4c3d2e1 | f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
   v_arg3   = 0f1f3f7f88442211 | 00ff0ff033cc55aa | 02040810fe7f8001 | aa55cc33f00fff00
   v_result = 1f0fdead5bca9ba9 | 978776a470c270a0 | 10efdedd4cdb1a89 | d8279645d423f281
+insn xvbitseli.b:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000012
+  v_result = f203120136035241 | 7a039281b683d2c1 | f012323050527270 | 9082b280d0c2f210
+insn xvbitseli.b.0xff:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 00000000000000ff
+  v_result = ff0fffedffcbfbe9 | ff87f7e5f7c3f3e1 | f0fffefdfcfbfaf9 | f8e7f6c5f4e3f291
+insn xvbitseli.b.0x00:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = e001020124014241 | 68018281a481c2c1 | e010203040506070 | 8080a080c0c0e010
 insn xvbitclr.b:
   v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
   v_arg2   = 0c0b0a0908070605 | 04030201100f0e0d | 0c0b0a0908070605 | 040302010f080700
