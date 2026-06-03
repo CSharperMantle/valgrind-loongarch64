@@ -590,6 +590,18 @@ insn vbitsel.v:
   v_arg2   = f01f2e3d4c5b6a79 | 98a7b6c5d4e3f211
   v_arg3   = 02040810fe7f8001 | aa55cc33f00fff00
   v_result = 10efdedd4cdb1a89 | d8279645d423f281
+insn vbitseli.b:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000012
+  v_result = f012323050527270 | 9082b280d0c2f210
+insn vbitseli.b.0xff:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 00000000000000ff
+  v_result = f0fffefdfcfbfaf9 | f8e7f6c5f4e3f291
+insn vbitseli.b.0x00:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = e010203040506070 | 8080a080c0c0e010
 insn vbitclr.b:
   v_arg1   = 10efdecdbcab9a89 | 7867564534231281
   v_arg2   = 0c0b0a0908070605 | 040302010f080700
