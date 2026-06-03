@@ -1101,6 +1101,17 @@ static void model_xvshuf_hwd(uint8_t* dst, const uint8_t* id,
    model_vshuf_hwd_128chunk(dst + 16, id + 16, hi + 16, lo + 16, bits);
 }
 
+static void model_xvperm_w(uint8_t* dst, const uint8_t* a, const uint8_t* b)
+{
+   unsigned i;
+   for (i = 0; i < 8; i++) {
+      uint64_t sel = read_lane_u64(b, 32, i);
+      uint64_t idx = sel & 0x7;
+      uint64_t out = read_lane_u64(a, 32, (unsigned)idx);
+      write_lane_u64(dst, 32, i, out);
+   }
+}
+
 static uint64_t model_vset(const uint8_t* a, unsigned bits, unsigned lanes,
                            unsigned mode)
 {
