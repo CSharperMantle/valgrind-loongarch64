@@ -2634,7 +2634,8 @@ static HReg iselV128Expr_wrk ( ISelEnv* env, IRExpr* e )
                LOONGARCH64RI* src2 = iselIntExpr_RI(env, e->Iex.Binop.arg2, size, False);
                vassert(e->Iex.Binop.arg2->tag == Iex_Const);
                vassert(e->Iex.Binop.arg2->Iex.Const.con->tag == Ico_U8);
-               vassert(e->Iex.Binop.arg2->Iex.Const.con->Ico.U8 <= 63);
+               vassert(e->Iex.Binop.arg2->Iex.Const.con->Ico.U8 <=
+                       ((1u << size) - 1));
                addInstr(env, LOONGARCH64Instr_VecBinary(op, src2, src1, dst));
                return dst;
             }
