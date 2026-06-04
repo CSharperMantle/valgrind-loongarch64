@@ -735,6 +735,186 @@ static void test_widen(test_state* tst)
    DO_TRI128_ACC("vmaddwod.q.du.d", model_maddw(exp.d.u8, acc.d.u8, a.d.u8, b.d.u8, 64, 128, 1, 1, 0, 1), __lsx_vmaddwod_q_du_d(acc.v, a.v, b.v));
 }
 
+static void test_bsll_bsrl(test_state* tst)
+{
+   vec128 a = {.d.u8 = {
+       0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+       0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10}};
+   vec128 got, exp;
+
+   DO_IMM128("vbsll.v.0", 0, model_bsll_128chunk(exp.d.u8, a.d.u8, 0), __lsx_vbsll_v(a.v, 0));
+   DO_IMM128("vbsll.v.1", 1, model_bsll_128chunk(exp.d.u8, a.d.u8, 1), __lsx_vbsll_v(a.v, 1));
+   DO_IMM128("vbsll.v.4", 4, model_bsll_128chunk(exp.d.u8, a.d.u8, 4), __lsx_vbsll_v(a.v, 4));
+   DO_IMM128("vbsll.v.8", 8, model_bsll_128chunk(exp.d.u8, a.d.u8, 8), __lsx_vbsll_v(a.v, 8));
+   DO_IMM128("vbsll.v.15", 15, model_bsll_128chunk(exp.d.u8, a.d.u8, 15), __lsx_vbsll_v(a.v, 15));
+   DO_IMM128("vbsll.v.16", 16, model_bsll_128chunk(exp.d.u8, a.d.u8, 16), __lsx_vbsll_v(a.v, 16));
+   DO_IMM128("vbsrl.v.0", 0, model_bsrl_128chunk(exp.d.u8, a.d.u8, 0), __lsx_vbsrl_v(a.v, 0));
+   DO_IMM128("vbsrl.v.1", 1, model_bsrl_128chunk(exp.d.u8, a.d.u8, 1), __lsx_vbsrl_v(a.v, 1));
+   DO_IMM128("vbsrl.v.4", 4, model_bsrl_128chunk(exp.d.u8, a.d.u8, 4), __lsx_vbsrl_v(a.v, 4));
+   DO_IMM128("vbsrl.v.8", 8, model_bsrl_128chunk(exp.d.u8, a.d.u8, 8), __lsx_vbsrl_v(a.v, 8));
+   DO_IMM128("vbsrl.v.15", 15, model_bsrl_128chunk(exp.d.u8, a.d.u8, 15), __lsx_vbsrl_v(a.v, 15));
+   DO_IMM128("vbsrl.v.16", 16, model_bsrl_128chunk(exp.d.u8, a.d.u8, 16), __lsx_vbsrl_v(a.v, 16));
+}
+
+static void test_frstpi(test_state* tst)
+{
+   vec128 old_vd = {.d.u8 = {
+       0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
+       0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa}};
+   vec128 vj;
+   vec128 got, exp;
+
+   exp = old_vd;
+   for (int i = 0; i < 16; i++) vj.d.u8[i] = 0x10 + i;
+   model_frstpi_128chunk(exp.d.u8, vj.d.u8, 8, 16, 3);
+   got.v = __lsx_vfrstpi_b(old_vd.v, vj.v, 3);
+   printf("insn vfrstpi.b.no_neg:\n");
+   printf("  v_old_vd = "); print_u64x2(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x2(vj.d.u64);
+   printf("  imm      = 3\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vfrstpi.b.no_neg", got.d.u8, exp.d.u8, 16);
+
+   exp = old_vd;
+   for (int i = 0; i < 16; i++) vj.d.u8[i] = 0x20;
+   vj.d.u8[5] = 0x80;
+   model_frstpi_128chunk(exp.d.u8, vj.d.u8, 8, 16, 1);
+   got.v = __lsx_vfrstpi_b(old_vd.v, vj.v, 1);
+   printf("insn vfrstpi.b.neg_at_5:\n");
+   printf("  v_old_vd = "); print_u64x2(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x2(vj.d.u64);
+   printf("  imm      = 1\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vfrstpi.b.neg_at_5", got.d.u8, exp.d.u8, 16);
+
+   exp = old_vd;
+   for (int i = 0; i < 16; i++) vj.d.u8[i] = 0x20;
+   vj.d.u8[2] = 0x80;
+   vj.d.u8[9] = 0x90;
+   model_frstpi_128chunk(exp.d.u8, vj.d.u8, 8, 16, 7);
+   got.v = __lsx_vfrstpi_b(old_vd.v, vj.v, 7);
+   printf("insn vfrstpi.b.first_neg_at_2:\n");
+   printf("  v_old_vd = "); print_u64x2(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x2(vj.d.u64);
+   printf("  imm      = 7\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vfrstpi.b.first_neg_at_2", got.d.u8, exp.d.u8, 16);
+
+   exp = old_vd;
+   for (int i = 0; i < 16; i++) vj.d.u8[i] = 0x20;
+   vj.d.u8[0] = 0x80;
+   model_frstpi_128chunk(exp.d.u8, vj.d.u8, 8, 16, 15);
+   got.v = __lsx_vfrstpi_b(old_vd.v, vj.v, 15);
+   printf("insn vfrstpi.b.neg_at_0:\n");
+   printf("  v_old_vd = "); print_u64x2(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x2(vj.d.u64);
+   printf("  imm      = 15\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vfrstpi.b.neg_at_0", got.d.u8, exp.d.u8, 16);
+
+   exp = old_vd;
+   vj.d.u64[0] = 0x0001000200030004ULL;
+   vj.d.u64[1] = 0x0005000600070008ULL;
+   vj.d.u16[3] = 0x8000;
+   model_frstpi_128chunk(exp.d.u8, vj.d.u8, 16, 8, 2);
+   got.v = __lsx_vfrstpi_h(old_vd.v, vj.v, 2);
+   printf("insn vfrstpi.h.neg_at_3:\n");
+   printf("  v_old_vd = "); print_u64x2(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x2(vj.d.u64);
+   printf("  imm      = 2\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vfrstpi.h.neg_at_3", got.d.u8, exp.d.u8, 16);
+
+   exp = old_vd;
+   vj.d.u64[0] = 0x0001000200030004ULL;
+   vj.d.u64[1] = 0x0005000600070008ULL;
+   model_frstpi_128chunk(exp.d.u8, vj.d.u8, 16, 8, 5);
+   got.v = __lsx_vfrstpi_h(old_vd.v, vj.v, 5);
+   printf("insn vfrstpi.h.no_neg:\n");
+   printf("  v_old_vd = "); print_u64x2(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x2(vj.d.u64);
+   printf("  imm      = 5\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vfrstpi.h.no_neg", got.d.u8, exp.d.u8, 16);
+}
+
+static void test_vldi(test_state* tst)
+{
+   vec128 got, exp;
+
+   exp.d.u64[0] = 0x0000000000000000ULL;
+   exp.d.u64[1] = 0x0000000000000000ULL;
+   got.v = __lsx_vldi(0x000);
+   printf("insn vldi.repli.b.zero:\n");
+   printf("  imm      = 0x000\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.b.zero", got.d.u8, exp.d.u8, 16);
+
+   exp.d.u64[0] = 0x0101010101010101ULL;
+   exp.d.u64[1] = 0x0101010101010101ULL;
+   got.v = __lsx_vldi(0x001);
+   printf("insn vldi.repli.b.0x01:\n");
+   printf("  imm      = 0x001\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.b.0x01", got.d.u8, exp.d.u8, 16);
+
+   exp.d.u64[0] = 0xffffffffffffffffULL;
+   exp.d.u64[1] = 0xffffffffffffffffULL;
+   got.v = __lsx_vldi(0x0ff);
+   printf("insn vldi.repli.b.0xff:\n");
+   printf("  imm      = 0x0ff\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.b.0xff", got.d.u8, exp.d.u8, 16);
+
+   exp.d.u64[0] = 0x0001000100010001ULL;
+   exp.d.u64[1] = 0x0001000100010001ULL;
+   got.v = __lsx_vldi(0x401);
+   printf("insn vldi.repli.h.0x0001:\n");
+   printf("  imm      = 0x401\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.h.0x0001", got.d.u8, exp.d.u8, 16);
+
+   exp.d.u64[0] = 0xfe00fe00fe00fe00ULL;
+   exp.d.u64[1] = 0xfe00fe00fe00fe00ULL;
+   got.v = __lsx_vldi(0x600);
+   printf("insn vldi.repli.h.neg:\n");
+   printf("  imm      = 0x600\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.h.neg", got.d.u8, exp.d.u8, 16);
+
+   exp.d.u64[0] = 0x0000000100000001ULL;
+   exp.d.u64[1] = 0x0000000100000001ULL;
+   got.v = __lsx_vldi(0x801);
+   printf("insn vldi.repli.w.0x0001:\n");
+   printf("  imm      = 0x801\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.w.0x0001", got.d.u8, exp.d.u8, 16);
+
+   exp.d.u64[0] = 0xfffffffefffffffeULL;
+   exp.d.u64[1] = 0xfffffffefffffffeULL;
+   got.v = __lsx_vldi(0xbfe);
+   printf("insn vldi.repli.w.neg:\n");
+   printf("  imm      = 0xbfe\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.w.neg", got.d.u8, exp.d.u8, 16);
+
+   exp.d.u64[0] = 0x0000000000000001ULL;
+   exp.d.u64[1] = 0x0000000000000001ULL;
+   got.v = __lsx_vldi(0xc01);
+   printf("insn vldi.repli.d.0x0001:\n");
+   printf("  imm      = 0xc01\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.d.0x0001", got.d.u8, exp.d.u8, 16);
+
+   exp.d.u64[0] = 0xfffffffffffffffeULL;
+   exp.d.u64[1] = 0xfffffffffffffffeULL;
+   got.v = __lsx_vldi(0xffe);
+   printf("insn vldi.repli.d.neg:\n");
+   printf("  imm      = 0xffe\n");
+   printf("  v_result = "); print_u64x2(got.d.u64);
+   check_bytes(tst, "vldi.repli.d.neg", got.d.u8, exp.d.u8, 16);
+}
+
 static void test_divmod(test_state* tst)
 {
    vec128 a = {.d.u8 = {
@@ -799,6 +979,9 @@ int main(void)
    test_lane_move(&tst);
    test_lane_scalar(&tst);
    test_widen(&tst);
+   test_bsll_bsrl(&tst);
+   test_frstpi(&tst);
+   test_vldi(&tst);
    test_divmod(&tst);
 
    return tst.fails != 0;
