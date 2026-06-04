@@ -227,7 +227,53 @@ static void test_basic(test_state* tst)
    DO_TRI256("xvmsub.d", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 64, 4, 1), __lasx_xvmsub_d(a.v, b.v, c.v));
    DO_BIN256("xvdiv.h", model_divmod(exp.d.u8, a.d.u8, c.d.u8, 16, 16, 1, 0), __lasx_xvdiv_h(a.v, c.v));
    DO_BIN256("xvmod.wu", model_divmod(exp.d.u8, a.d.u8, c.d.u8, 32, 8, 0, 1), __lasx_xvmod_wu(a.v, c.v));
-   DO_BIN256("xvsigncov.w", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 32, 8), __lasx_xvsigncov_w(a.v, b.v));
+   DO_BIN256("xvadda.b", model_adda(exp.d.u8, a.d.u8, b.d.u8, 8, 32), __lasx_xvadda_b(a.v, b.v));
+   DO_BIN256("xvadda.h", model_adda(exp.d.u8, a.d.u8, b.d.u8, 16, 16), __lasx_xvadda_h(a.v, b.v));
+   DO_BIN256("xvadda.w", model_adda(exp.d.u8, a.d.u8, b.d.u8, 32, 8), __lasx_xvadda_w(a.v, b.v));
+   DO_BIN256("xvabsd.h", model_absd(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1), __lasx_xvabsd_h(a.v, b.v));
+   DO_BIN256("xvabsd.w", model_absd(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1), __lasx_xvabsd_w(a.v, b.v));
+   DO_BIN256("xvabsd.hu", model_absd(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0), __lasx_xvabsd_hu(a.v, b.v));
+   DO_BIN256("xvabsd.wu", model_absd(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0), __lasx_xvabsd_wu(a.v, b.v));
+   DO_BIN256("xvavg.h", model_avg(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1), __lasx_xvavg_h(a.v, b.v));
+   DO_BIN256("xvavg.w", model_avg(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1), __lasx_xvavg_w(a.v, b.v));
+   DO_BIN256("xvavg.d", model_avg(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1), __lasx_xvavg_d(a.v, b.v));
+   DO_BIN256("xvavg.bu", model_avg(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0), __lasx_xvavg_bu(a.v, b.v));
+   DO_BIN256("xvavg.wu", model_avg(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0), __lasx_xvavg_wu(a.v, b.v));
+   DO_BIN256("xvavg.du", model_avg(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0), __lasx_xvavg_du(a.v, b.v));
+   DO_BIN256("xvavgr.b", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1), __lasx_xvavgr_b(a.v, b.v));
+   DO_BIN256("xvavgr.w", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1), __lasx_xvavgr_w(a.v, b.v));
+   DO_BIN256("xvavgr.d", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1), __lasx_xvavgr_d(a.v, b.v));
+   DO_BIN256("xvavgr.bu", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0), __lasx_xvavgr_bu(a.v, b.v));
+   DO_BIN256("xvavgr.du", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0), __lasx_xvavgr_du(a.v, b.v));
+   DO_BIN256("xvmax.b", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 0), __lasx_xvmax_b(a.v, b.v));
+   DO_BIN256("xvmax.w", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 0), __lasx_xvmax_w(a.v, b.v));
+   DO_BIN256("xvmax.d", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 0), __lasx_xvmax_d(a.v, b.v));
+   DO_BIN256("xvmin.b", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 1), __lasx_xvmin_b(a.v, b.v));
+   DO_BIN256("xvmin.w", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 1), __lasx_xvmin_w(a.v, b.v));
+   DO_BIN256("xvmin.d", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 1), __lasx_xvmin_d(a.v, b.v));
+   DO_IMM256("xvmaxi.h", -5, model_minmaxi(exp.d.u8, a.d.u8, 16, 16, -5, 1, 0), __lasx_xvmaxi_h(a.v, -5));
+   DO_IMM256("xvmaxi.w", 7, model_minmaxi(exp.d.u8, a.d.u8, 32, 8, 7, 1, 0), __lasx_xvmaxi_w(a.v, 7));
+   DO_IMM256("xvmaxi.d", 11, model_minmaxi(exp.d.u8, a.d.u8, 64, 4, 11, 1, 0), __lasx_xvmaxi_d(a.v, 11));
+   DO_IMM256("xvmini.b", -3, model_minmaxi(exp.d.u8, a.d.u8, 8, 32, -3, 1, 1), __lasx_xvmini_b(a.v, -3));
+   DO_IMM256("xvmini.h", 5, model_minmaxi(exp.d.u8, a.d.u8, 16, 16, 5, 1, 1), __lasx_xvmini_h(a.v, 5));
+   DO_IMM256("xvmini.w", -7, model_minmaxi(exp.d.u8, a.d.u8, 32, 8, -7, 1, 1), __lasx_xvmini_w(a.v, -7));
+   DO_IMM256("xvmaxi.bu", 9, model_minmaxi(exp.d.u8, a.d.u8, 8, 32, 9, 0, 0), __lasx_xvmaxi_bu(a.v, 9));
+   DO_IMM256("xvmaxi.du", 7, model_minmaxi(exp.d.u8, a.d.u8, 64, 4, 7, 0, 0), __lasx_xvmaxi_du(a.v, 7));
+   DO_IMM256("xvmini.bu", 23, model_minmaxi(exp.d.u8, a.d.u8, 8, 32, 23, 0, 1), __lasx_xvmini_bu(a.v, 23));
+   DO_IMM256("xvmini.hu", 13, model_minmaxi(exp.d.u8, a.d.u8, 16, 16, 13, 0, 1), __lasx_xvmini_hu(a.v, 13));
+   DO_BIN256("xvmul.b", model_mullo(exp.d.u8, a.d.u8, c.d.u8, 8, 32), __lasx_xvmul_b(a.v, c.v));
+   DO_BIN256("xvmul.h", model_mullo(exp.d.u8, a.d.u8, c.d.u8, 16, 16), __lasx_xvmul_h(a.v, c.v));
+   DO_BIN256("xvmul.d", model_mullo(exp.d.u8, a.d.u8, c.d.u8, 64, 4), __lasx_xvmul_d(a.v, c.v));
+   DO_BIN256("xvmuh.b", model_mulhi(exp.d.u8, a.d.u8, c.d.u8, 8, 32, 1), __lasx_xvmuh_b(a.v, c.v));
+   DO_BIN256("xvmuh.w", model_mulhi(exp.d.u8, a.d.u8, c.d.u8, 32, 8, 1), __lasx_xvmuh_w(a.v, c.v));
+   DO_TRI256("xvmadd.b", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 8, 32, 0), __lasx_xvmadd_b(a.v, b.v, c.v));
+   DO_TRI256("xvmadd.w", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 32, 8, 0), __lasx_xvmadd_w(a.v, b.v, c.v));
+   DO_TRI256("xvmadd.d", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 64, 4, 0), __lasx_xvmadd_d(a.v, b.v, c.v));
+   DO_TRI256("xvmsub.b", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 8, 32, 1), __lasx_xvmsub_b(a.v, b.v, c.v));
+   DO_TRI256("xvmsub.h", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 16, 16, 1), __lasx_xvmsub_h(a.v, b.v, c.v));
+   DO_TRI256("xvmsub.w", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 32, 8, 1), __lasx_xvmsub_w(a.v, b.v, c.v));
+   DO_BIN256("xvsigncov.b", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 8, 32), __lasx_xvsigncov_b(a.v, b.v));
+   DO_BIN256("xvsigncov.d", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 64, 4), __lasx_xvsigncov_d(a.v, b.v));
 }
 
 static void test_sat(test_state* tst)
@@ -295,15 +341,63 @@ static void test_cmpmask(test_state* tst)
 {
    vec256 a = {.d.i16 = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}};
    vec256 b = {.d.i16 = {-5, -3, -4, -2, 0, 0, 2, 1, 4, 4, 4, 7, 6, 9, 9, 9}};
+   vec256 aw = {.d.i32 = {-100, -50, 0, 50, 100, -200, -300, 400}};
+   vec256 ad = {.d.i64 = {-1000, 1000, -2000, 2000}};
    vec256 got, exp;
 
    DO_BIN256("xvseq.h", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 0), __lasx_xvseq_h(a.v, b.v));
+   DO_BIN256("xvseq.b", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 0), __lasx_xvseq_b(a.v, b.v));
+   DO_BIN256("xvseq.w", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 0), __lasx_xvseq_w(a.v, b.v));
+   DO_BIN256("xvseq.d", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 0), __lasx_xvseq_d(a.v, b.v));
    DO_IMM256("xvseqi.w", -1, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i32 = {-1, -1, -1, -1, -1, -1, -1, -1}}.d.u8, 32, 8, 1, 0), __lasx_xvseqi_w(a.v, -1));
+   DO_IMM256("xvseqi.b", 1, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i8 = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}}.d.u8, 8, 32, 1, 0), __lasx_xvseqi_b(a.v, 1));
+   a = (vec256){.d.i32 = {-100, -50, 0, 50, 100, -200, -300, 400}};
+   DO_IMM256("xvseqi.h", -5, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i16 = {-5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5, -5}}.d.u8, 16, 16, 1, 0), __lasx_xvseqi_h(a.v, -5));
+   a = (vec256){.d.i64 = {-1000, 1000, -2000, 2000}};
+   DO_IMM256("xvseqi.d", 7, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i64 = {7, 7, 7, 7}}.d.u8, 64, 4, 1, 0), __lasx_xvseqi_d(a.v, 7));
+   a = (vec256){.d.i16 = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}};
    DO_IMM256("xvslei.w", 2, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i32 = {2, 2, 2, 2, 2, 2, 2, 2}}.d.u8, 32, 8, 1, 1), __lasx_xvslei_w(a.v, 2));
+   DO_IMM256("xvslei.b", 3, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i8 = {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3}}.d.u8, 8, 32, 1, 1), __lasx_xvslei_b(a.v, 3));
+   a = (vec256){.d.i32 = {-100, -50, 0, 50, 100, -200, -300, 400}};
+   DO_IMM256("xvslei.h", -3, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i16 = {-3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3}}.d.u8, 16, 16, 1, 1), __lasx_xvslei_h(a.v, -3));
+   a = (vec256){.d.i64 = {-1000, 1000, -2000, 2000}};
+   DO_IMM256("xvslei.d", -5, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i64 = {-5, -5, -5, -5}}.d.u8, 64, 4, 1, 1), __lasx_xvslei_d(a.v, -5));
+   a = (vec256){.d.u16 = {0, 1, 100, 500, 1000, 5000, 60000, 65000,
+                          200, 300, 400, 800, 2000, 7000, 50000, 60000}};
+   DO_IMM256("xvsleiu.b", 3, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u8 = {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3}}.d.u8, 8, 32, 0, 1), __lasx_xvslei_bu(a.v, 3));
+   a = (vec256){.d.u32 = {0, 1, 1000, 4000000000u, 500, 600, 700, 800}};
+   DO_IMM256("xvsleiu.h", 7, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u16 = {7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7}}.d.u8, 16, 16, 0, 1), __lasx_xvslei_hu(a.v, 7));
+   a = (vec256){.d.u64 = {0, 100000, 200000, 300000}};
+   DO_IMM256("xvsleiu.w", 31, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u32 = {31, 31, 31, 31, 31, 31, 31, 31}}.d.u8, 32, 8, 0, 1), __lasx_xvslei_wu(a.v, 31));
+   a = (vec256){.d.u16 = {0, 1, 100, 500, 1000, 5000, 60000, 65000,
+                          200, 300, 400, 800, 2000, 7000, 50000, 60000}};
+   DO_IMM256("xvsleiu.d", 31, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u64 = {31, 31, 31, 31}}.d.u8, 64, 4, 0, 1), __lasx_xvslei_du(a.v, 31));
+   a = (vec256){.d.i16 = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}};
    DO_IMM256("xvslti.wu", 7, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u32 = {7, 7, 7, 7, 7, 7, 7, 7}}.d.u8, 32, 8, 0, 2), __lasx_xvslti_wu(a.v, 7));
+   DO_IMM256("xvslti.b", 1, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i8 = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}}.d.u8, 8, 32, 1, 2), __lasx_xvslti_b(a.v, 1));
+   a = (vec256){.d.i32 = {-100, -50, 0, 50, 100, -200, -300, 400}};
+   DO_IMM256("xvslti.h", -3, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i16 = {-3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3, -3}}.d.u8, 16, 16, 1, 2), __lasx_xvslti_h(a.v, -3));
+   a = (vec256){.d.i64 = {-1000, 1000, -2000, 2000}};
+   DO_IMM256("xvslti.d", -5, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.i64 = {-5, -5, -5, -5}}.d.u8, 64, 4, 1, 2), __lasx_xvslti_d(a.v, -5));
+   a = (vec256){.d.u16 = {0, 1, 100, 500, 1000, 5000, 60000, 65000,
+                          200, 300, 400, 800, 2000, 7000, 50000, 60000}};
+   DO_IMM256("xvsltiu.b", 1, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u8 = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}}.d.u8, 8, 32, 0, 2), __lasx_xvslti_bu(a.v, 1));
+   a = (vec256){.d.u32 = {0, 1, 1000, 4000000000u, 500, 600, 700, 800}};
+   DO_IMM256("xvsltiu.h", 7, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u16 = {7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7}}.d.u8, 16, 16, 0, 2), __lasx_xvslti_hu(a.v, 7));
+   a = (vec256){.d.u64 = {0, 100000, 200000, 300000}};
+   DO_IMM256("xvsltiu.w", 31, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u32 = {31, 31, 31, 31, 31, 31, 31, 31}}.d.u8, 32, 8, 0, 2), __lasx_xvslti_wu(a.v, 31));
+   a = (vec256){.d.u16 = {0, 1, 100, 500, 1000, 5000, 60000, 65000,
+                          200, 300, 400, 800, 2000, 7000, 50000, 60000}};
+   DO_IMM256("xvsltiu.d", 31, model_cmp(exp.d.u8, a.d.u8, (vec256){.d.u64 = {31, 31, 31, 31}}.d.u8, 64, 4, 0, 2), __lasx_xvslti_du(a.v, 31));
    DO_UN256("xvmskltz.h", model_vmsk(exp.d.u8, a.d.u8, 16, sizeof(exp.d.u8), 0), __lasx_xvmskltz_h(a.v));
    DO_UN256("xvmskgez.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 1), __lasx_xvmskgez_b(a.v));
    DO_UN256("xvmsknz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 2), __lasx_xvmsknz_b(a.v));
+   a = aw;
+   DO_UN256("xvmskltz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 0), __lasx_xvmskltz_b(a.v));
+   a = ad;
+   DO_UN256("xvmskltz.w", model_vmsk(exp.d.u8, a.d.u8, 32, sizeof(exp.d.u8), 0), __lasx_xvmskltz_w(a.v));
+   a = (vec256){.d.u64 = {-1000, 1000, -2000, 2000}};
+   DO_UN256("xvmskltz.d", model_vmsk(exp.d.u8, a.d.u8, 64, sizeof(exp.d.u8), 0), __lasx_xvmskltz_d(a.v));
 }
 
 static void test_vset(test_state* tst)
@@ -392,7 +486,10 @@ static void test_unary_more(test_state* tst)
    DO_UN256("xvclo.d", model_clo(exp.d.u8, a.d.u8, 64, 4), __lasx_xvclo_d(a.v));
    DO_UN256("xvclz.b", model_clz(exp.d.u8, a.d.u8, 8, 32), __lasx_xvclz_b(a.v));
    DO_UN256("xvpcnt.h", model_pcnt(exp.d.u8, a.d.u8, 16, 16), __lasx_xvpcnt_h(a.v));
+   DO_UN256("xvneg.b", model_neg(exp.d.u8, a.d.u8, 8, 32), __lasx_xvneg_b(a.v));
+   DO_UN256("xvneg.w", model_neg(exp.d.u8, a.d.u8, 32, 8), __lasx_xvneg_w(a.v));
    DO_UN256("xvneg.d", model_neg(exp.d.u8, a.d.u8, 64, 4), __lasx_xvneg_d(a.v));
+   DO_BIN256("xvsigncov.h", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 16, 16), __lasx_xvsigncov_h(a.v, b.v));
    DO_BIN256("xvsigncov.d", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 64, 4), __lasx_xvsigncov_d(a.v, b.v));
 }
 
@@ -457,14 +554,36 @@ static void test_shift(test_state* tst)
       0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
    vec256 zero = {.d.u64 = {0, 0, 0, 0}};
    vec256 mix = {.d.u64 = {0, 63, 64, 65}};
+   vec256 mixb = {.d.u8 = {7,8,9,15,1,2,3,4,5,6,7,8,9,10,11,12,
+                           7,8,9,15,1,2,3,4,5,6,7,8,9,10,11,12}};
+   vec256 mix16 = {.d.u16 = {0,1,8,15,0,1,8,15,0,1,8,15,0,1,8,15}};
+   vec256 mix32 = {.d.u32 = {0,16,31,8,0,16,31,8}};
    vec256 got, exp, b;
 
    DO_IMM256("xvslli.w.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 32, 8, 0, 0, 0), __lasx_xvslli_w(a.v, 0));
    DO_IMM256("xvslli.w.31", 31, model_shift_imm(exp.d.u8, a.d.u8, 32, 8, 31, 0, 0), __lasx_xvslli_w(a.v, 31));
+   DO_IMM256("xvslli.b.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 8, 32, 0, 0, 0), __lasx_xvslli_b(a.v, 0));
+   DO_IMM256("xvslli.b.7", 7, model_shift_imm(exp.d.u8, a.d.u8, 8, 32, 7, 0, 0), __lasx_xvslli_b(a.v, 7));
+   DO_IMM256("xvslli.h.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 16, 16, 0, 0, 0), __lasx_xvslli_h(a.v, 0));
+   DO_IMM256("xvslli.h.15", 15, model_shift_imm(exp.d.u8, a.d.u8, 16, 16, 15, 0, 0), __lasx_xvslli_h(a.v, 15));
+   DO_IMM256("xvslli.d.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 64, 4, 0, 0, 0), __lasx_xvslli_d(a.v, 0));
+   DO_IMM256("xvslli.d.63", 63, model_shift_imm(exp.d.u8, a.d.u8, 64, 4, 63, 0, 0), __lasx_xvslli_d(a.v, 63));
    DO_IMM256("xvsrli.d.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 64, 4, 0, 1, 0), __lasx_xvsrli_d(a.v, 0));
    DO_IMM256("xvsrli.d.63", 63, model_shift_imm(exp.d.u8, a.d.u8, 64, 4, 63, 1, 0), __lasx_xvsrli_d(a.v, 63));
+   DO_IMM256("xvsrli.b.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 8, 32, 0, 1, 0), __lasx_xvsrli_b(a.v, 0));
+   DO_IMM256("xvsrli.b.7", 7, model_shift_imm(exp.d.u8, a.d.u8, 8, 32, 7, 1, 0), __lasx_xvsrli_b(a.v, 7));
+   DO_IMM256("xvsrli.h.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 16, 16, 0, 1, 0), __lasx_xvsrli_h(a.v, 0));
+   DO_IMM256("xvsrli.h.15", 15, model_shift_imm(exp.d.u8, a.d.u8, 16, 16, 15, 1, 0), __lasx_xvsrli_h(a.v, 15));
+   DO_IMM256("xvsrli.w.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 32, 8, 0, 1, 0), __lasx_xvsrli_w(a.v, 0));
+   DO_IMM256("xvsrli.w.31", 31, model_shift_imm(exp.d.u8, a.d.u8, 32, 8, 31, 1, 0), __lasx_xvsrli_w(a.v, 31));
    DO_IMM256("xvsrai.h.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 16, 16, 0, 1, 1), __lasx_xvsrai_h(a.v, 0));
    DO_IMM256("xvsrai.h.15", 15, model_shift_imm(exp.d.u8, a.d.u8, 16, 16, 15, 1, 1), __lasx_xvsrai_h(a.v, 15));
+   DO_IMM256("xvsrai.b.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 8, 32, 0, 1, 1), __lasx_xvsrai_b(a.v, 0));
+   DO_IMM256("xvsrai.b.7", 7, model_shift_imm(exp.d.u8, a.d.u8, 8, 32, 7, 1, 1), __lasx_xvsrai_b(a.v, 7));
+   DO_IMM256("xvsrai.w.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 32, 8, 0, 1, 1), __lasx_xvsrai_w(a.v, 0));
+   DO_IMM256("xvsrai.w.31", 31, model_shift_imm(exp.d.u8, a.d.u8, 32, 8, 31, 1, 1), __lasx_xvsrai_w(a.v, 31));
+   DO_IMM256("xvsrai.d.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 64, 4, 0, 1, 1), __lasx_xvsrai_d(a.v, 0));
+   DO_IMM256("xvsrai.d.63", 63, model_shift_imm(exp.d.u8, a.d.u8, 64, 4, 63, 1, 1), __lasx_xvsrai_d(a.v, 63));
 
    b = mix;
    DO_BIN256("xvsll.d.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0, 0), __lasx_xvsll_d(a.v, b.v));
@@ -478,6 +597,42 @@ static void test_shift(test_state* tst)
    DO_BIN256("xvsra.d.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 1), __lasx_xvsra_d(a.v, b.v));
    b = zero;
    DO_BIN256("xvsra.d.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1, 1), __lasx_xvsra_d(a.v, b.v));
+   b = mixb;
+   DO_BIN256("xvsll.b.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0, 0), __lasx_xvsll_b(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsll.b.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0, 0), __lasx_xvsll_b(a.v, b.v));
+   b = mixb;
+   DO_BIN256("xvsrl.b.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 0), __lasx_xvsrl_b(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrl.b.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 0), __lasx_xvsrl_b(a.v, b.v));
+   b = mixb;
+   DO_BIN256("xvsra.b.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 1), __lasx_xvsra_b(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsra.b.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1, 1), __lasx_xvsra_b(a.v, b.v));
+   b = mix16;
+   DO_BIN256("xvsll.h.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0, 0), __lasx_xvsll_h(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsll.h.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0, 0), __lasx_xvsll_h(a.v, b.v));
+   b = mix16;
+   DO_BIN256("xvsrl.h.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 0), __lasx_xvsrl_h(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrl.h.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 0), __lasx_xvsrl_h(a.v, b.v));
+   b = mix16;
+   DO_BIN256("xvsra.h.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 1), __lasx_xvsra_h(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsra.h.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1, 1), __lasx_xvsra_h(a.v, b.v));
+   b = mix32;
+   DO_BIN256("xvsll.w.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0, 0), __lasx_xvsll_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsll.w.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0, 0), __lasx_xvsll_w(a.v, b.v));
+   b = mix32;
+   DO_BIN256("xvsrl.w.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 0), __lasx_xvsrl_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrl.w.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 0), __lasx_xvsrl_w(a.v, b.v));
+   b = mix32;
+   DO_BIN256("xvsra.w.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 1), __lasx_xvsra_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsra.w.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1, 1), __lasx_xvsra_w(a.v, b.v));
 }
 
 static void test_shift_round(test_state* tst)
@@ -489,8 +644,36 @@ static void test_shift_round(test_state* tst)
       0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
    vec256 zero = {.d.u64 = {0, 0, 0, 0}};
    vec256 mix = {.d.u64 = {0, 63, 64, 65}};
+   vec256 mixb = {.d.u8 = {7,8,9,15,1,2,3,4,5,6,7,8,9,10,11,12,
+                           7,8,9,15,1,2,3,4,5,6,7,8,9,10,11,12}};
+   vec256 mix16 = {.d.u16 = {0,1,8,15,0,1,8,15,0,1,8,15,0,1,8,15}};
+   vec256 mix32 = {.d.u32 = {0,16,31,8,0,16,31,8}};
    vec256 got, exp, b;
 
+   b = mixb;
+   DO_BIN256("xvsrlr.b.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0), __lasx_xvsrlr_b(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrlr.b.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0), __lasx_xvsrlr_b(a.v, b.v));
+   b = mixb;
+   DO_BIN256("xvsrar.b.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1), __lasx_xvsrar_b(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrar.b.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1), __lasx_xvsrar_b(a.v, b.v));
+   b = mix16;
+   DO_BIN256("xvsrlr.h.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0), __lasx_xvsrlr_h(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrlr.h.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0), __lasx_xvsrlr_h(a.v, b.v));
+   b = mix16;
+   DO_BIN256("xvsrar.h.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1), __lasx_xvsrar_h(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrar.h.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1), __lasx_xvsrar_h(a.v, b.v));
+   b = mix32;
+   DO_BIN256("xvsrlr.w.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0), __lasx_xvsrlr_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrlr.w.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0), __lasx_xvsrlr_w(a.v, b.v));
+   b = mix32;
+   DO_BIN256("xvsrar.w.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1), __lasx_xvsrar_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrar.w.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1), __lasx_xvsrar_w(a.v, b.v));
    b = mix;
    DO_BIN256("xvsrlr.d.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0), __lasx_xvsrlr_d(a.v, b.v));
    b = zero;
@@ -506,18 +689,39 @@ static void test_shift_narrow(test_state* tst)
    vec256 a = {.d.u32 = {
       0x34231281, 0x78675645, 0xbcab9a89, 0x10efdecd,
       0x53423120, 0x97867564, 0xdbcab9a8, 0x1f0efdec}};
+   vec256 a16 = {.d.u16 = {
+      0x8123, 0x3456, 0x9ab8, 0xdead, 0xbeef, 0x1234, 0x5678, 0x90ab,
+      0xcdef, 0x2468, 0x1357, 0xfedc, 0xba98, 0x7654, 0x3210, 0xffff}};
    vec256 zero = {.d.u32 = {0, 0, 0, 0, 0, 0, 0, 0}};
    vec256 mix = {.d.u32 = {0, 1, 32, 33, 0, 1, 32, 33}};
+   vec256 mix16 = {.d.u16 = {0, 8, 15, 1, 0, 8, 15, 1,
+                             0, 8, 15, 1, 0, 8, 15, 1}};
    vec256 got, exp, b;
 
+   b = mix16;
+   DO_BIN256("xvsrln.b.h.var", model_narrow_shift(exp.d.u8, a16.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lasx_xvsrln_b_h(a16.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrln.b.h.zero", model_narrow_shift(exp.d.u8, a16.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lasx_xvsrln_b_h(a16.v, b.v));
    b = mix;
    DO_BIN256("xvsrln.h.w.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lasx_xvsrln_h_w(a.v, b.v));
    b = zero;
    DO_BIN256("xvsrln.h.w.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lasx_xvsrln_h_w(a.v, b.v));
    b = mix;
+   DO_BIN256("xvsrln.w.d.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 64, 32, 2, 0, sizeof(exp.d.u8)), __lasx_xvsrln_w_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrln.w.d.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 64, 32, 2, 0, sizeof(exp.d.u8)), __lasx_xvsrln_w_d(a.v, b.v));
+   b = mix16;
+   DO_BIN256("xvsran.b.h.var", model_narrow_shift(exp.d.u8, a16.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lasx_xvsran_b_h(a16.v, b.v));
+   b = zero;
+   DO_BIN256("xvsran.b.h.zero", model_narrow_shift(exp.d.u8, a16.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lasx_xvsran_b_h(a16.v, b.v));
+   b = mix;
    DO_BIN256("xvsran.h.w.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsran_h_w(a.v, b.v));
    b = zero;
    DO_BIN256("xvsran.h.w.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsran_h_w(a.v, b.v));
+   b = mix;
+   DO_BIN256("xvsran.w.d.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 64, 32, 2, 1, sizeof(exp.d.u8)), __lasx_xvsran_w_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsran.w.d.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 64, 32, 2, 1, sizeof(exp.d.u8)), __lasx_xvsran_w_d(a.v, b.v));
 }
 
 static void test_shift_narrow_round(test_state* tst)
@@ -525,18 +729,39 @@ static void test_shift_narrow_round(test_state* tst)
    vec256 a = {.d.u32 = {
       0x34231281, 0x78675645, 0xbcab9a89, 0x10efdecd,
       0x53423120, 0x97867564, 0xdbcab9a8, 0x1f0efdec}};
+   vec256 a16 = {.d.u16 = {
+      0x8123, 0x3456, 0x9ab8, 0xdead, 0xbeef, 0x1234, 0x5678, 0x90ab,
+      0xcdef, 0x2468, 0x1357, 0xfedc, 0xba98, 0x7654, 0x3210, 0xffff}};
    vec256 zero = {.d.u32 = {0, 0, 0, 0, 0, 0, 0, 0}};
    vec256 mix = {.d.u32 = {0, 1, 32, 33, 0, 1, 32, 33}};
+   vec256 mix16 = {.d.u16 = {0, 8, 15, 1, 0, 8, 15, 1,
+                             0, 8, 15, 1, 0, 8, 15, 1}};
    vec256 got, exp, b;
 
+   b = mix16;
+   DO_BIN256("xvsrlrn.b.h.var", model_narrow_shift_round(exp.d.u8, a16.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lasx_xvsrlrn_b_h(a16.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrlrn.b.h.zero", model_narrow_shift_round(exp.d.u8, a16.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lasx_xvsrlrn_b_h(a16.v, b.v));
    b = mix;
    DO_BIN256("xvsrlrn.h.w.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lasx_xvsrlrn_h_w(a.v, b.v));
    b = zero;
    DO_BIN256("xvsrlrn.h.w.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lasx_xvsrlrn_h_w(a.v, b.v));
    b = mix;
+   DO_BIN256("xvsrlrn.w.d.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 64, 32, 2, 0, sizeof(exp.d.u8)), __lasx_xvsrlrn_w_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrlrn.w.d.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 64, 32, 2, 0, sizeof(exp.d.u8)), __lasx_xvsrlrn_w_d(a.v, b.v));
+   b = mix16;
+   DO_BIN256("xvsrarn.b.h.var", model_narrow_shift_round(exp.d.u8, a16.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_b_h(a16.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrarn.b.h.zero", model_narrow_shift_round(exp.d.u8, a16.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_b_h(a16.v, b.v));
+   b = mix;
    DO_BIN256("xvsrarn.h.w.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_h_w(a.v, b.v));
    b = zero;
    DO_BIN256("xvsrarn.h.w.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_h_w(a.v, b.v));
+   b = mix;
+   DO_BIN256("xvsrarn.w.d.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 64, 32, 2, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_w_d(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvsrarn.w.d.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 64, 32, 2, 1, sizeof(exp.d.u8)), __lasx_xvsrarn_w_d(a.v, b.v));
 }
 
 static void test_rotate(test_state* tst)
@@ -548,13 +773,33 @@ static void test_rotate(test_state* tst)
       0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
    vec256 zero = {.d.u64 = {0, 0, 0, 0}};
    vec256 mix = {.d.u64 = {0, 63, 64, 65}};
+   vec256 mixb = {.d.u8 = {7,8,9,15,1,2,3,4,5,6,7,8,9,10,11,12,
+                           7,8,9,15,1,2,3,4,5,6,7,8,9,10,11,12}};
+   vec256 mix16 = {.d.u16 = {0,1,8,15,0,1,8,15,0,1,8,15,0,1,8,15}};
+   vec256 mix32 = {.d.u32 = {0,16,31,8,0,16,31,8}};
    vec256 got, exp, b;
 
+   DO_IMM256("xvrotri.b.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 8, 32, 0), __lasx_xvrotri_b(a.v, 0));
+   DO_IMM256("xvrotri.b.7", 7, model_rotate_imm(exp.d.u8, a.d.u8, 8, 32, 7), __lasx_xvrotri_b(a.v, 7));
+   DO_IMM256("xvrotri.h.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 16, 16, 0), __lasx_xvrotri_h(a.v, 0));
+   DO_IMM256("xvrotri.h.15", 15, model_rotate_imm(exp.d.u8, a.d.u8, 16, 16, 15), __lasx_xvrotri_h(a.v, 15));
    DO_IMM256("xvrotri.w.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 32, 8, 0), __lasx_xvrotri_w(a.v, 0));
    DO_IMM256("xvrotri.w.31", 31, model_rotate_imm(exp.d.u8, a.d.u8, 32, 8, 31), __lasx_xvrotri_w(a.v, 31));
    DO_IMM256("xvrotri.d.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 64, 4, 0), __lasx_xvrotri_d(a.v, 0));
    DO_IMM256("xvrotri.d.63", 63, model_rotate_imm(exp.d.u8, a.d.u8, 64, 4, 63), __lasx_xvrotri_d(a.v, 63));
 
+   b = mixb;
+   DO_BIN256("xvrotr.b.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32), __lasx_xvrotr_b(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvrotr.b.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32), __lasx_xvrotr_b(a.v, b.v));
+   b = mix16;
+   DO_BIN256("xvrotr.h.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16), __lasx_xvrotr_h(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvrotr.h.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16), __lasx_xvrotr_h(a.v, b.v));
+   b = mix32;
+   DO_BIN256("xvrotr.w.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8), __lasx_xvrotr_w(a.v, b.v));
+   b = zero;
+   DO_BIN256("xvrotr.w.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8), __lasx_xvrotr_w(a.v, b.v));
    b = mix;
    DO_BIN256("xvrotr.d.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4), __lasx_xvrotr_d(a.v, b.v));
    b = zero;
@@ -600,13 +845,51 @@ static void test_logic_bit(test_state* tst)
       13, 14, 15, 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
    DO_BIN256("xvbitclr.b", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 1), __lasx_xvbitclr_b(a.v, b.v));
    b = (vec256){.d.u16 = {0, 15, 16, 31, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN256("xvbitclr.h", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 1), __lasx_xvbitclr_h(a.v, b.v));
+   b = (vec256){.d.u32 = {0, 31, 32, 5, 0, 31, 32, 5}};
+   DO_BIN256("xvbitclr.w", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 1), __lasx_xvbitclr_w(a.v, b.v));
+   b = (vec256){.d.u64 = {0, 63, 64, 65}};
+   DO_BIN256("xvbitclr.d", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 1), __lasx_xvbitclr_d(a.v, b.v));
+   b = (vec256){.d.u8 = {
+      0, 7, 8, 15, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+      13, 14, 15, 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN256("xvbitset.b", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 2), __lasx_xvbitset_b(a.v, b.v));
+   b = (vec256){.d.u16 = {0, 15, 16, 31, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
    DO_BIN256("xvbitset.h", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 2), __lasx_xvbitset_h(a.v, b.v));
+   b = (vec256){.d.u32 = {0, 31, 32, 5, 0, 31, 32, 5}};
+   DO_BIN256("xvbitset.w", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 2), __lasx_xvbitset_w(a.v, b.v));
+   b = (vec256){.d.u64 = {0, 63, 64, 65}};
+   DO_BIN256("xvbitset.d", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 2), __lasx_xvbitset_d(a.v, b.v));
+   b = (vec256){.d.u8 = {
+      0, 7, 8, 15, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+      13, 14, 15, 16, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN256("xvbitrev.b", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 8, 32, 0), __lasx_xvbitrev_b(a.v, b.v));
+   b = (vec256){.d.u16 = {0, 15, 16, 31, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN256("xvbitrev.h", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 16, 16, 0), __lasx_xvbitrev_h(a.v, b.v));
+   b = (vec256){.d.u32 = {0, 31, 32, 5, 0, 31, 32, 5}};
+   DO_BIN256("xvbitrev.w", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 32, 8, 0), __lasx_xvbitrev_w(a.v, b.v));
    b = (vec256){.d.u64 = {0, 63, 64, 65}};
    DO_BIN256("xvbitrev.d", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 64, 4, 0), __lasx_xvbitrev_d(a.v, b.v));
    DO_IMM256("xvbitclri.b.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 8, 32, 0, 0), __lasx_xvbitclri_b(a.v, 0));
    DO_IMM256("xvbitclri.b.7", 7, model_bitop_imm(exp.d.u8, a.d.u8, 8, 32, 7, 0), __lasx_xvbitclri_b(a.v, 7));
+   DO_IMM256("xvbitclri.h.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 16, 16, 0, 0), __lasx_xvbitclri_h(a.v, 0));
+   DO_IMM256("xvbitclri.h.15", 15, model_bitop_imm(exp.d.u8, a.d.u8, 16, 16, 15, 0), __lasx_xvbitclri_h(a.v, 15));
+   DO_IMM256("xvbitclri.w.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 32, 8, 0, 0), __lasx_xvbitclri_w(a.v, 0));
+   DO_IMM256("xvbitclri.w.31", 31, model_bitop_imm(exp.d.u8, a.d.u8, 32, 8, 31, 0), __lasx_xvbitclri_w(a.v, 31));
+   DO_IMM256("xvbitclri.d.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 64, 4, 0, 0), __lasx_xvbitclri_d(a.v, 0));
+   DO_IMM256("xvbitclri.d.63", 63, model_bitop_imm(exp.d.u8, a.d.u8, 64, 4, 63, 0), __lasx_xvbitclri_d(a.v, 63));
+   DO_IMM256("xvbitseti.b.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 8, 32, 0, 1), __lasx_xvbitseti_b(a.v, 0));
+   DO_IMM256("xvbitseti.b.7", 7, model_bitop_imm(exp.d.u8, a.d.u8, 8, 32, 7, 1), __lasx_xvbitseti_b(a.v, 7));
    DO_IMM256("xvbitseti.h.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 16, 16, 0, 1), __lasx_xvbitseti_h(a.v, 0));
    DO_IMM256("xvbitseti.h.15", 15, model_bitop_imm(exp.d.u8, a.d.u8, 16, 16, 15, 1), __lasx_xvbitseti_h(a.v, 15));
+   DO_IMM256("xvbitseti.w.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 32, 8, 0, 1), __lasx_xvbitseti_w(a.v, 0));
+   DO_IMM256("xvbitseti.w.31", 31, model_bitop_imm(exp.d.u8, a.d.u8, 32, 8, 31, 1), __lasx_xvbitseti_w(a.v, 31));
+   DO_IMM256("xvbitseti.d.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 64, 4, 0, 1), __lasx_xvbitseti_d(a.v, 0));
+   DO_IMM256("xvbitseti.d.63", 63, model_bitop_imm(exp.d.u8, a.d.u8, 64, 4, 63, 1), __lasx_xvbitseti_d(a.v, 63));
+   DO_IMM256("xvbitrevi.h.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 16, 16, 0, 2), __lasx_xvbitrevi_h(a.v, 0));
+   DO_IMM256("xvbitrevi.h.15", 15, model_bitop_imm(exp.d.u8, a.d.u8, 16, 16, 15, 2), __lasx_xvbitrevi_h(a.v, 15));
+   DO_IMM256("xvbitrevi.w.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 32, 8, 0, 2), __lasx_xvbitrevi_w(a.v, 0));
+   DO_IMM256("xvbitrevi.w.31", 31, model_bitop_imm(exp.d.u8, a.d.u8, 32, 8, 31, 2), __lasx_xvbitrevi_w(a.v, 31));
    DO_IMM256("xvbitrevi.d.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 64, 4, 0, 2), __lasx_xvbitrevi_d(a.v, 0));
    DO_IMM256("xvbitrevi.d.63", 63, model_bitop_imm(exp.d.u8, a.d.u8, 64, 4, 63, 2), __lasx_xvbitrevi_d(a.v, 63));
 }
