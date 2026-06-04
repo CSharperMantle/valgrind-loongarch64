@@ -12707,6 +12707,8 @@ static Bool gen_vbsll_vbsrl ( DisResult* dres, UInt insn,
    UInt ui5   = SLICE(insn, 14, 10);
    UInt insTy = SLICE(insn, 16, 15);
 
+   const UChar shift = (ui5 * 8) % 128;
+
    IROp op = Iop_INVALID;
    switch (insTy) {
       case 0b00: op = Iop_ShlV128; break;
@@ -12720,7 +12722,7 @@ static Bool gen_vbsll_vbsrl ( DisResult* dres, UInt insn,
 
    STOP_ILL_IF_NO_HWCAP(VEX_HWCAPS_LOONGARCH_LSX);
 
-   putVReg(vd, binop(op, getVReg(vj), mkU8(ui5 * 8)));
+   putVReg(vd, binop(op, getVReg(vj), mkU8(shift)));
 
    return True;
 }
@@ -12742,28 +12744,13 @@ static Bool gen_xvbsll_xvbsrl ( DisResult* dres, UInt insn,
    assign(src, getXReg(xj));
    breakupV256toV128s(src, &srcHi, &srcLo);
 
+   const UChar shift = (ui5 * 8) % 128;
    if (insTy == 0b00) {
-      if (ui5 < 16) {
-         assign(resHi,
-                binop(Iop_OrV128,
-                      binop(Iop_ShlV128, mkexpr(srcHi), mkU8(ui5 * 8)),
-                      binop(Iop_ShrV128, mkexpr(srcLo), mkU8((16 - ui5) * 8))));
-         assign(resLo, binop(Iop_ShlV128, mkexpr(srcLo), mkU8(ui5 * 8)));
-      } else {
-         assign(resHi, binop(Iop_ShlV128, mkexpr(srcLo), mkU8((ui5 - 16) * 8)));
-         assign(resLo, mkV128(0x0000));
-      }
+      assign(resHi, binop(Iop_ShlV128, mkexpr(srcHi), mkU8(shift)));
+      assign(resLo, binop(Iop_ShlV128, mkexpr(srcLo), mkU8(shift)));
    } else if (insTy == 0b01) {
-      if (ui5 < 16) {
-         assign(resLo,
-                binop(Iop_OrV128,
-                      binop(Iop_ShrV128, mkexpr(srcLo), mkU8(ui5 * 8)),
-                      binop(Iop_ShlV128, mkexpr(srcHi), mkU8((16 - ui5) * 8))));
-         assign(resHi, binop(Iop_ShrV128, mkexpr(srcHi), mkU8(ui5 * 8)));
-      } else {
-         assign(resLo, binop(Iop_ShrV128, mkexpr(srcHi), mkU8((ui5 - 16) * 8)));
-         assign(resHi, mkV128(0x0000));
-      }
+      assign(resLo, binop(Iop_ShrV128, mkexpr(srcLo), mkU8(shift)));
+      assign(resHi, binop(Iop_ShrV128, mkexpr(srcHi), mkU8(shift)));
    } else {
       return False;
    }
