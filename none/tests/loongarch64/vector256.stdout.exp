@@ -1162,6 +1162,101 @@ insn xvmaddwod.q.du.d:
   v_arg2   = e01fe21de41be619 | e817ea15ec13ee11 | f00ff20df40bf609 | f807fa05fc03fe01
   v_arg3   = 21201f1e1d1c1b1a | 1918171615141312 | 11100f0e0d0c0b0a | 0908070605040302
   v_result = 2340413c5d36772e | 5b243c701fbe050e | 132020ec2cb6367e | 254416c00a3dffbe
+insn xvbsll.v.0:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+insn xvbsll.v.1:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000001
+  v_result = 0efdecdbcab9a897 | 8675645342312000 | efdecdbcab9a8978 | 6756453423128100
+insn xvbsll.v.4:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000004
+  v_result = dbcab9a897867564 | 5342312000000000 | bcab9a8978675645 | 3423128100000000
+insn xvbsll.v.8:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000008
+  v_result = 9786756453423120 | 0000000000000000 | 7867564534231281 | 0000000000000000
+insn xvbsll.v.15:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000000f
+  v_result = 2000000000000000 | 0000000000000000 | 8100000000000000 | 0000000000000000
+insn xvbsll.v.16:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000010
+  v_result = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+insn xvbsrl.v.0:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+insn xvbsrl.v.1:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000001
+  v_result = 001f0efdecdbcab9 | a897867564534231 | 0010efdecdbcab9a | 8978675645342312
+insn xvbsrl.v.4:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000004
+  v_result = 000000001f0efdec | dbcab9a897867564 | 0000000010efdecd | bcab9a8978675645
+insn xvbsrl.v.8:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000008
+  v_result = 0000000000000000 | 1f0efdecdbcab9a8 | 0000000000000000 | 10efdecdbcab9a89
+insn xvbsrl.v.15:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000000f
+  v_result = 0000000000000000 | 000000000000001f | 0000000000000000 | 0000000000000010
+insn xvbsrl.v.16:
+  v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000010
+  v_result = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
+insn xvfrstpi.b.lane_indep:
+  v_old_vd = cccccccccccccccc | cccccccccccccccc | cccccccccccccccc | cccccccccccccccc
+  v_vj     = 3030303030303030 | 3030303080303030 | 3030303030303030 | 3030303080303030
+  imm      = 7
+  v_result = cccccccccccccccc | 03cccccccccccccc | cccccccccccccccc | 03cccccccccccccc
+insn xvfrstpi.b.no_neg:
+  v_old_vd = cccccccccccccccc | cccccccccccccccc | cccccccccccccccc | cccccccccccccccc
+  v_vj     = 3030303030303030 | 3030303030303030 | 3030303030303030 | 3030303030303030
+  imm      = 3
+  v_result = cccccccccccccccc | cccccccc10cccccc | cccccccccccccccc | cccccccc10cccccc
+insn xvfrstpi.h.lane_indep:
+  v_old_vd = cccccccccccccccc | cccccccccccccccc | cccccccccccccccc | cccccccccccccccc
+  v_vj     = 3030303030303030 | 3030800030303030 | 3030303030303030 | 3030800030303030
+  imm      = 4
+  v_result = cccccccccccc0002 | cccccccccccccccc | cccccccccccc0002 | cccccccccccccccc
+insn xvfrstpi.h.no_neg:
+  v_old_vd = cccccccccccccccc | cccccccccccccccc | cccccccccccccccc | cccccccccccccccc
+  v_vj     = 3030303030303030 | 3030303030303030 | 3030303030303030 | 3030303030303030
+  imm      = 5
+  v_result = cccccccc0008cccc | cccccccccccccccc | cccccccc0008cccc | cccccccccccccccc
+insn xvldi.repli.b.zero:
+  imm      = 0x000
+  v_result = 0000000000000000 | 0000000000000000 | 0000000000000000 | 0000000000000000
+insn xvldi.repli.b.0x01:
+  imm      = 0x001
+  v_result = 0101010101010101 | 0101010101010101 | 0101010101010101 | 0101010101010101
+insn xvldi.repli.b.0xff:
+  imm      = 0x0ff
+  v_result = ffffffffffffffff | ffffffffffffffff | ffffffffffffffff | ffffffffffffffff
+insn xvldi.repli.h.0x0001:
+  imm      = 0x401
+  v_result = 0001000100010001 | 0001000100010001 | 0001000100010001 | 0001000100010001
+insn xvldi.repli.h.neg:
+  imm      = 0x600
+  v_result = fe00fe00fe00fe00 | fe00fe00fe00fe00 | fe00fe00fe00fe00 | fe00fe00fe00fe00
+insn xvldi.repli.w.0x0001:
+  imm      = 0x801
+  v_result = 0000000100000001 | 0000000100000001 | 0000000100000001 | 0000000100000001
+insn xvldi.repli.w.neg:
+  imm      = 0xbfe
+  v_result = fffffffefffffffe | fffffffefffffffe | fffffffefffffffe | fffffffefffffffe
+insn xvldi.repli.d.0x0001:
+  imm      = 0xc01
+  v_result = 0000000000000001 | 0000000000000001 | 0000000000000001 | 0000000000000001
+insn xvldi.repli.d.neg:
+  imm      = 0xffe
+  v_result = fffffffffffffffe | fffffffffffffffe | fffffffffffffffe | fffffffffffffffe
 insn xvdiv.b:
   v_arg1   = 1f0efdecdbcab9a8 | 9786756453423120 | 10efdecdbcab9a89 | 7867564534231281
   v_arg2   = 413f3d3b39373533 | 312f2d2b29272523 | 211f1d1b19171513 | 110f0d0b09070503
