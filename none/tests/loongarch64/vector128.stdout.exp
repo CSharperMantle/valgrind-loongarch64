@@ -1159,6 +1159,111 @@ insn vmaddwod.q.du.d:
   v_arg2   = f00ff20df40bf609 | f807fa05fc03fe01
   v_arg3   = 11100f0e0d0c0b0a | 0908070605040302
   v_result = 132020ec2cb6367e | 254416c00a3dffbe
+insn vbsll.v.0:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vbsll.v.1:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000001
+  v_result = efdecdbcab9a8978 | 6756453423128100
+insn vbsll.v.4:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000004
+  v_result = bcab9a8978675645 | 3423128100000000
+insn vbsll.v.8:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000008
+  v_result = 7867564534231281 | 0000000000000000
+insn vbsll.v.15:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000000f
+  v_result = 8100000000000000 | 0000000000000000
+insn vbsll.v.16:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000010
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vbsrl.v.0:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000000
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vbsrl.v.1:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000001
+  v_result = 0010efdecdbcab9a | 8978675645342312
+insn vbsrl.v.4:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000004
+  v_result = 0000000010efdecd | bcab9a8978675645
+insn vbsrl.v.8:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000008
+  v_result = 0000000000000000 | 10efdecdbcab9a89
+insn vbsrl.v.15:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 000000000000000f
+  v_result = 0000000000000000 | 0000000000000010
+insn vbsrl.v.16:
+  v_arg1   = 10efdecdbcab9a89 | 7867564534231281
+  imm      = 0000000000000010
+  v_result = 10efdecdbcab9a89 | 7867564534231281
+insn vfrstpi.b.no_neg:
+  v_old_vd = aaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaa
+  v_vj     = 1f1e1d1c1b1a1918 | 1716151413121110
+  imm      = 3
+  v_result = aaaaaaaaaaaaaaaa | aaaaaaaa10aaaaaa
+insn vfrstpi.b.neg_at_5:
+  v_old_vd = aaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaa
+  v_vj     = 2020202020202020 | 2020802020202020
+  imm      = 1
+  v_result = aaaaaaaaaaaaaaaa | aaaaaaaaaaaa05aa
+insn vfrstpi.b.first_neg_at_2:
+  v_old_vd = aaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaa
+  v_vj     = 2020202020209020 | 2020202020802020
+  imm      = 7
+  v_result = aaaaaaaaaaaaaaaa | 02aaaaaaaaaaaaaa
+insn vfrstpi.b.neg_at_0:
+  v_old_vd = aaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaa
+  v_vj     = 2020202020202020 | 2020202020202080
+  imm      = 15
+  v_result = 00aaaaaaaaaaaaaa | aaaaaaaaaaaaaaaa
+insn vfrstpi.h.neg_at_3:
+  v_old_vd = aaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaa
+  v_vj     = 0005000600070008 | 8000000200030004
+  imm      = 2
+  v_result = aaaaaaaaaaaaaaaa | aaaa0003aaaaaaaa
+insn vfrstpi.h.no_neg:
+  v_old_vd = aaaaaaaaaaaaaaaa | aaaaaaaaaaaaaaaa
+  v_vj     = 0005000600070008 | 0001000200030004
+  imm      = 5
+  v_result = aaaaaaaa0008aaaa | aaaaaaaaaaaaaaaa
+insn vldi.repli.b.zero:
+  imm      = 0x000
+  v_result = 0000000000000000 | 0000000000000000
+insn vldi.repli.b.0x01:
+  imm      = 0x001
+  v_result = 0101010101010101 | 0101010101010101
+insn vldi.repli.b.0xff:
+  imm      = 0x0ff
+  v_result = ffffffffffffffff | ffffffffffffffff
+insn vldi.repli.h.0x0001:
+  imm      = 0x401
+  v_result = 0001000100010001 | 0001000100010001
+insn vldi.repli.h.neg:
+  imm      = 0x600
+  v_result = fe00fe00fe00fe00 | fe00fe00fe00fe00
+insn vldi.repli.w.0x0001:
+  imm      = 0x801
+  v_result = 0000000100000001 | 0000000100000001
+insn vldi.repli.w.neg:
+  imm      = 0xbfe
+  v_result = fffffffefffffffe | fffffffefffffffe
+insn vldi.repli.d.0x0001:
+  imm      = 0xc01
+  v_result = 0000000000000001 | 0000000000000001
+insn vldi.repli.d.neg:
+  imm      = 0xffe
+  v_result = fffffffffffffffe | fffffffffffffffe
 insn vdiv.h:
   v_arg1   = 10efdecdbcab9a89 | 7867564534231281
   v_arg2   = 211f1d1b19171513 | 110f0d0b09070503
