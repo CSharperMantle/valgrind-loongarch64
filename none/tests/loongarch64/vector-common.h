@@ -1101,6 +1101,69 @@ static void model_xvshuf_hwd(uint8_t* dst, const uint8_t* id,
    model_vshuf_hwd_128chunk(dst + 16, id + 16, hi + 16, lo + 16, bits);
 }
 
+static void model_bsll_128chunk(uint8_t* dst, const uint8_t* src, int imm)
+{
+   int shift = imm % 16;
+   int i;
+   for (i = 0; i < 16; i++)
+      dst[i] = (i >= shift) ? src[i - shift] : 0;
+}
+
+static void model_bsrl_128chunk(uint8_t* dst, const uint8_t* src, int imm)
+{
+   int shift = imm % 16;
+   int i;
+   for (i = 0; i < 16; i++)
+      dst[i] = (i + shift < 16) ? src[i + shift] : 0;
+}
+
+static void model_xvbsll(uint8_t* dst, const uint8_t* src, int imm)
+{
+   model_bsll_128chunk(dst, src, imm);
+   model_bsll_128chunk(dst + 16, src + 16, imm);
+}
+
+static void model_xvbsrl(uint8_t* dst, const uint8_t* src, int imm)
+{
+   model_bsrl_128chunk(dst, src, imm);
+   model_bsrl_128chunk(dst + 16, src + 16, imm);
+}
+
+static void read_lane_i16(int16_t* dst, const uint8_t* src, unsigned lane)
+{
+   dst[0] = (int16_t)(src[lane * 2] | (src[lane * 2 + 1] << 8));
+}
+
+static void model_frstpi_128chunk(uint8_t* dst, const uint8_t* src,
+                                   unsigned bits, unsigned lanes,
+                                   unsigned imm)
+{
+   unsigned i;
+   unsigned found = lanes;
+   unsigned write_pos = imm % lanes;
+   if (bits == 8) {
+      for (i = 0; i < lanes; i++) {
+         if ((int8_t)src[i] < 0) { found = i; break; }
+      }
+      dst[write_pos] = (uint8_t)found;
+   } else if (bits == 16) {
+      for (i = 0; i < lanes; i++) {
+         int16_t val;
+         read_lane_i16(&val, src, i);
+         if (val < 0) { found = i; break; }
+      }
+      write_lane_u64(dst, 16, write_pos, found);
+   }
+}
+
+static void model_xvfrstpi(uint8_t* dst, const uint8_t* src,
+                            unsigned bits, unsigned lanes_128,
+                            unsigned imm)
+{
+   model_frstpi_128chunk(dst, src, bits, lanes_128, imm);
+   model_frstpi_128chunk(dst + 16, src + 16, bits, lanes_128, imm);
+}
+
 static void model_xvperm_w(uint8_t* dst, const uint8_t* a, const uint8_t* b)
 {
    unsigned i;

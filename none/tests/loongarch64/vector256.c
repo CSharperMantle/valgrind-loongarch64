@@ -824,6 +824,187 @@ static void test_widen(test_state* tst)
    DO_TRI256_ACC("xvmaddwod.q.du.d", model_maddw(exp.d.u8, acc.d.u8, a.d.u8, b.d.u8, 64, 128, 2, 1, 0, 1), __lasx_xvmaddwod_q_du_d(acc.v, a.v, b.v));
 }
 
+static void test_bsll_bsrl(test_state* tst)
+{
+   vec256 a = {.d.u8 = {
+       0x81, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78,
+       0x89, 0x9a, 0xab, 0xbc, 0xcd, 0xde, 0xef, 0x10,
+       0x20, 0x31, 0x42, 0x53, 0x64, 0x75, 0x86, 0x97,
+       0xa8, 0xb9, 0xca, 0xdb, 0xec, 0xfd, 0x0e, 0x1f}};
+   vec256 got, exp;
+
+   DO_IMM256("xvbsll.v.0", 0, model_xvbsll(exp.d.u8, a.d.u8, 0), __lasx_xvbsll_v(a.v, 0));
+   DO_IMM256("xvbsll.v.1", 1, model_xvbsll(exp.d.u8, a.d.u8, 1), __lasx_xvbsll_v(a.v, 1));
+   DO_IMM256("xvbsll.v.4", 4, model_xvbsll(exp.d.u8, a.d.u8, 4), __lasx_xvbsll_v(a.v, 4));
+   DO_IMM256("xvbsll.v.8", 8, model_xvbsll(exp.d.u8, a.d.u8, 8), __lasx_xvbsll_v(a.v, 8));
+   DO_IMM256("xvbsll.v.15", 15, model_xvbsll(exp.d.u8, a.d.u8, 15), __lasx_xvbsll_v(a.v, 15));
+   DO_IMM256("xvbsll.v.16", 16, model_xvbsll(exp.d.u8, a.d.u8, 16), __lasx_xvbsll_v(a.v, 16));
+   DO_IMM256("xvbsrl.v.0", 0, model_xvbsrl(exp.d.u8, a.d.u8, 0), __lasx_xvbsrl_v(a.v, 0));
+   DO_IMM256("xvbsrl.v.1", 1, model_xvbsrl(exp.d.u8, a.d.u8, 1), __lasx_xvbsrl_v(a.v, 1));
+   DO_IMM256("xvbsrl.v.4", 4, model_xvbsrl(exp.d.u8, a.d.u8, 4), __lasx_xvbsrl_v(a.v, 4));
+   DO_IMM256("xvbsrl.v.8", 8, model_xvbsrl(exp.d.u8, a.d.u8, 8), __lasx_xvbsrl_v(a.v, 8));
+   DO_IMM256("xvbsrl.v.15", 15, model_xvbsrl(exp.d.u8, a.d.u8, 15), __lasx_xvbsrl_v(a.v, 15));
+   DO_IMM256("xvbsrl.v.16", 16, model_xvbsrl(exp.d.u8, a.d.u8, 16), __lasx_xvbsrl_v(a.v, 16));
+}
+
+static void test_frstpi(test_state* tst)
+{
+   vec256 old_vd = {.d.u8 = {
+       0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc,
+       0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc,
+       0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc,
+       0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc}};
+   vec256 vj;
+   vec256 got, exp;
+
+   // xvfrstpi.b, neg at low-byte 3 and high-byte 19 (=3 in hi lane), imm=7
+   exp = old_vd;
+   for (int i = 0; i < 32; i++) vj.d.u8[i] = 0x30;
+   vj.d.u8[3] = 0x80;
+   vj.d.u8[19] = 0x80;
+   model_xvfrstpi(exp.d.u8, vj.d.u8, 8, 16, 7);
+   got.v = __lasx_xvfrstpi_b(old_vd.v, vj.v, 7);
+   printf("insn xvfrstpi.b.lane_indep:\n");
+   printf("  v_old_vd = "); print_u64x4(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x4(vj.d.u64);
+   printf("  imm      = 7\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvfrstpi.b.lane_indep", got.d.u8, exp.d.u8, 32);
+
+   // xvfrstpi.b, no negative, imm=3 -> write 16 to byte 3 and byte 19
+   exp = old_vd;
+   for (int i = 0; i < 32; i++) vj.d.u8[i] = 0x30;
+   model_xvfrstpi(exp.d.u8, vj.d.u8, 8, 16, 3);
+   got.v = __lasx_xvfrstpi_b(old_vd.v, vj.v, 3);
+   printf("insn xvfrstpi.b.no_neg:\n");
+   printf("  v_old_vd = "); print_u64x4(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x4(vj.d.u64);
+   printf("  imm      = 3\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvfrstpi.b.no_neg", got.d.u8, exp.d.u8, 32);
+
+   // xvfrstpi.h, neg at hword 2 in low, hword 10 (=2) in hi, imm=4
+   exp = old_vd;
+   for (int i = 0; i < 32; i++) vj.d.u8[i] = 0x30;
+   vj.d.u16[2] = 0x8000;
+   vj.d.u16[10] = 0x8000;
+   model_xvfrstpi(exp.d.u8, vj.d.u8, 16, 8, 4);
+   got.v = __lasx_xvfrstpi_h(old_vd.v, vj.v, 4);
+   printf("insn xvfrstpi.h.lane_indep:\n");
+   printf("  v_old_vd = "); print_u64x4(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x4(vj.d.u64);
+   printf("  imm      = 4\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvfrstpi.h.lane_indep", got.d.u8, exp.d.u8, 32);
+
+   // xvfrstpi.h, no negative, imm=5 -> write 8 to hword 5 and hword 13
+   exp = old_vd;
+   for (int i = 0; i < 32; i++) vj.d.u8[i] = 0x30;
+   model_xvfrstpi(exp.d.u8, vj.d.u8, 16, 8, 5);
+   got.v = __lasx_xvfrstpi_h(old_vd.v, vj.v, 5);
+   printf("insn xvfrstpi.h.no_neg:\n");
+   printf("  v_old_vd = "); print_u64x4(old_vd.d.u64);
+   printf("  v_vj     = "); print_u64x4(vj.d.u64);
+   printf("  imm      = 5\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvfrstpi.h.no_neg", got.d.u8, exp.d.u8, 32);
+}
+
+static void test_xvldi(test_state* tst)
+{
+   vec256 got, exp;
+
+   exp.d.u64[0] = 0x0000000000000000ULL;
+   exp.d.u64[1] = 0x0000000000000000ULL;
+   exp.d.u64[2] = 0x0000000000000000ULL;
+   exp.d.u64[3] = 0x0000000000000000ULL;
+   got.v = __lasx_xvldi(0x000);
+   printf("insn xvldi.repli.b.zero:\n");
+   printf("  imm      = 0x000\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.b.zero", got.d.u8, exp.d.u8, 32);
+
+   exp.d.u64[0] = 0x0101010101010101ULL;
+   exp.d.u64[1] = 0x0101010101010101ULL;
+   exp.d.u64[2] = 0x0101010101010101ULL;
+   exp.d.u64[3] = 0x0101010101010101ULL;
+   got.v = __lasx_xvldi(0x001);
+   printf("insn xvldi.repli.b.0x01:\n");
+   printf("  imm      = 0x001\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.b.0x01", got.d.u8, exp.d.u8, 32);
+
+   exp.d.u64[0] = 0xffffffffffffffffULL;
+   exp.d.u64[1] = 0xffffffffffffffffULL;
+   exp.d.u64[2] = 0xffffffffffffffffULL;
+   exp.d.u64[3] = 0xffffffffffffffffULL;
+   got.v = __lasx_xvldi(0x0ff);
+   printf("insn xvldi.repli.b.0xff:\n");
+   printf("  imm      = 0x0ff\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.b.0xff", got.d.u8, exp.d.u8, 32);
+
+   exp.d.u64[0] = 0x0001000100010001ULL;
+   exp.d.u64[1] = 0x0001000100010001ULL;
+   exp.d.u64[2] = 0x0001000100010001ULL;
+   exp.d.u64[3] = 0x0001000100010001ULL;
+   got.v = __lasx_xvldi(0x401);
+   printf("insn xvldi.repli.h.0x0001:\n");
+   printf("  imm      = 0x401\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.h.0x0001", got.d.u8, exp.d.u8, 32);
+
+   exp.d.u64[0] = 0xfe00fe00fe00fe00ULL;
+   exp.d.u64[1] = 0xfe00fe00fe00fe00ULL;
+   exp.d.u64[2] = 0xfe00fe00fe00fe00ULL;
+   exp.d.u64[3] = 0xfe00fe00fe00fe00ULL;
+   got.v = __lasx_xvldi(0x600);
+   printf("insn xvldi.repli.h.neg:\n");
+   printf("  imm      = 0x600\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.h.neg", got.d.u8, exp.d.u8, 32);
+
+   exp.d.u64[0] = 0x0000000100000001ULL;
+   exp.d.u64[1] = 0x0000000100000001ULL;
+   exp.d.u64[2] = 0x0000000100000001ULL;
+   exp.d.u64[3] = 0x0000000100000001ULL;
+   got.v = __lasx_xvldi(0x801);
+   printf("insn xvldi.repli.w.0x0001:\n");
+   printf("  imm      = 0x801\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.w.0x0001", got.d.u8, exp.d.u8, 32);
+
+   exp.d.u64[0] = 0xfffffffefffffffeULL;
+   exp.d.u64[1] = 0xfffffffefffffffeULL;
+   exp.d.u64[2] = 0xfffffffefffffffeULL;
+   exp.d.u64[3] = 0xfffffffefffffffeULL;
+   got.v = __lasx_xvldi(0xbfe);
+   printf("insn xvldi.repli.w.neg:\n");
+   printf("  imm      = 0xbfe\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.w.neg", got.d.u8, exp.d.u8, 32);
+
+   exp.d.u64[0] = 0x0000000000000001ULL;
+   exp.d.u64[1] = 0x0000000000000001ULL;
+   exp.d.u64[2] = 0x0000000000000001ULL;
+   exp.d.u64[3] = 0x0000000000000001ULL;
+   got.v = __lasx_xvldi(0xc01);
+   printf("insn xvldi.repli.d.0x0001:\n");
+   printf("  imm      = 0xc01\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.d.0x0001", got.d.u8, exp.d.u8, 32);
+
+   exp.d.u64[0] = 0xfffffffffffffffeULL;
+   exp.d.u64[1] = 0xfffffffffffffffeULL;
+   exp.d.u64[2] = 0xfffffffffffffffeULL;
+   exp.d.u64[3] = 0xfffffffffffffffeULL;
+   got.v = __lasx_xvldi(0xffe);
+   printf("insn xvldi.repli.d.neg:\n");
+   printf("  imm      = 0xffe\n");
+   printf("  v_result = "); print_u64x4(got.d.u64);
+   check_bytes(tst, "xvldi.repli.d.neg", got.d.u8, exp.d.u8, 32);
+}
+
 static void test_divmod(test_state* tst)
 {
    vec256 a = {.d.u8 = {
@@ -897,6 +1078,9 @@ int main(void)
    test_lane_move(&tst);
    test_lane_scalar(&tst);
    test_widen(&tst);
+   test_bsll_bsrl(&tst);
+   test_frstpi(&tst);
+   test_xvldi(&tst);
    test_divmod(&tst);
 
    return tst.fails != 0;
