@@ -222,7 +222,55 @@ static void test_basic(test_state* tst)
    DO_TRI128("vmsub.w", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 32, 4, 1), __lsx_vmsub_w(a.v, b.v, c.v));
    DO_BIN128("vdiv.b", model_divmod(exp.d.u8, a.d.u8, c.d.u8, 8, 16, 1, 0), __lsx_vdiv_b(a.v, c.v));
    DO_BIN128("vmod.hu", model_divmod(exp.d.u8, a.d.u8, c.d.u8, 16, 8, 0, 1), __lsx_vmod_hu(a.v, c.v));
-   DO_BIN128("vsigncov.d", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 64, 2), __lsx_vsigncov_d(a.v, b.v));
+   DO_BIN128("vadda.b", model_adda(exp.d.u8, a.d.u8, b.d.u8, 8, 16), __lsx_vadda_b(a.v, b.v));
+   DO_BIN128("vadda.h", model_adda(exp.d.u8, a.d.u8, b.d.u8, 16, 8), __lsx_vadda_h(a.v, b.v));
+   DO_BIN128("vadda.d", model_adda(exp.d.u8, a.d.u8, b.d.u8, 64, 2), __lsx_vadda_d(a.v, b.v));
+   DO_BIN128("vabsd.b", model_absd(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1), __lsx_vabsd_b(a.v, b.v));
+   DO_BIN128("vabsd.w", model_absd(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1), __lsx_vabsd_w(a.v, b.v));
+   DO_BIN128("vabsd.hu", model_absd(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0), __lsx_vabsd_hu(a.v, b.v));
+   DO_BIN128("vabsd.wu", model_absd(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0), __lsx_vabsd_wu(a.v, b.v));
+   DO_BIN128("vavg.h", model_avg(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1), __lsx_vavg_h(a.v, b.v));
+   DO_BIN128("vavg.w", model_avg(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1), __lsx_vavg_w(a.v, b.v));
+   DO_BIN128("vavg.d", model_avg(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1), __lsx_vavg_d(a.v, b.v));
+   DO_BIN128("vavg.bu", model_avg(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0), __lsx_vavg_bu(a.v, b.v));
+   DO_BIN128("vavg.wu", model_avg(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0), __lsx_vavg_wu(a.v, b.v));
+   DO_BIN128("vavg.du", model_avg(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0), __lsx_vavg_du(a.v, b.v));
+   DO_BIN128("vavgr.h", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1), __lsx_vavgr_h(a.v, b.v));
+   DO_BIN128("vavgr.w", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1), __lsx_vavgr_w(a.v, b.v));
+   DO_BIN128("vavgr.d", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1), __lsx_vavgr_d(a.v, b.v));
+   DO_BIN128("vavgr.bu", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0), __lsx_vavgr_bu(a.v, b.v));
+   DO_BIN128("vavgr.wu", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0), __lsx_vavgr_wu(a.v, b.v));
+   DO_BIN128("vavgr.du", model_avgr(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0), __lsx_vavgr_du(a.v, b.v));
+   DO_BIN128("vmax.h", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 0), __lsx_vmax_h(a.v, b.v));
+   DO_BIN128("vmax.w", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 0), __lsx_vmax_w(a.v, b.v));
+   DO_BIN128("vmax.d", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 0), __lsx_vmax_d(a.v, b.v));
+   DO_BIN128("vmin.b", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vmin_b(a.v, b.v));
+   DO_BIN128("vmin.w", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 1), __lsx_vmin_w(a.v, b.v));
+   DO_BIN128("vmin.d", model_minmax(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 1), __lsx_vmin_d(a.v, b.v));
+   DO_IMM128("vmaxi.b", 9, model_minmaxi(exp.d.u8, a.d.u8, 8, 16, 9, 1, 0), __lsx_vmaxi_b(a.v, 9));
+   DO_IMM128("vmaxi.h", -5, model_minmaxi(exp.d.u8, a.d.u8, 16, 8, -5, 1, 0), __lsx_vmaxi_h(a.v, -5));
+   DO_IMM128("vmaxi.d", 11, model_minmaxi(exp.d.u8, a.d.u8, 64, 2, 11, 1, 0), __lsx_vmaxi_d(a.v, 11));
+   DO_IMM128("vmini.b", -3, model_minmaxi(exp.d.u8, a.d.u8, 8, 16, -3, 1, 1), __lsx_vmini_b(a.v, -3));
+   DO_IMM128("vmini.h", 5, model_minmaxi(exp.d.u8, a.d.u8, 16, 8, 5, 1, 1), __lsx_vmini_h(a.v, 5));
+   DO_IMM128("vmini.w", -7, model_minmaxi(exp.d.u8, a.d.u8, 32, 4, -7, 1, 1), __lsx_vmini_w(a.v, -7));
+   DO_IMM128("vmaxi.bu", 9, model_minmaxi(exp.d.u8, a.d.u8, 8, 16, 9, 0, 0), __lsx_vmaxi_bu(a.v, 9));
+   DO_IMM128("vmaxi.du", 7, model_minmaxi(exp.d.u8, a.d.u8, 64, 2, 7, 0, 0), __lsx_vmaxi_du(a.v, 7));
+   DO_IMM128("vmini.bu", 23, model_minmaxi(exp.d.u8, a.d.u8, 8, 16, 23, 0, 1), __lsx_vmini_bu(a.v, 23));
+   DO_IMM128("vmini.hu", 13, model_minmaxi(exp.d.u8, a.d.u8, 16, 8, 13, 0, 1), __lsx_vmini_hu(a.v, 13));
+   DO_BIN128("vmul.b", model_mullo(exp.d.u8, a.d.u8, c.d.u8, 8, 16), __lsx_vmul_b(a.v, c.v));
+   DO_BIN128("vmul.w", model_mullo(exp.d.u8, a.d.u8, c.d.u8, 32, 4), __lsx_vmul_w(a.v, c.v));
+   DO_BIN128("vmul.d", model_mullo(exp.d.u8, a.d.u8, c.d.u8, 64, 2), __lsx_vmul_d(a.v, c.v));
+   DO_BIN128("vmuh.b", model_mulhi(exp.d.u8, a.d.u8, c.d.u8, 8, 16, 1), __lsx_vmuh_b(a.v, c.v));
+   DO_BIN128("vmuh.h", model_mulhi(exp.d.u8, a.d.u8, c.d.u8, 16, 8, 1), __lsx_vmuh_h(a.v, c.v));
+   DO_BIN128("vmuh.du", model_mulhi(exp.d.u8, a.d.u8, c.d.u8, 64, 2, 0), __lsx_vmuh_du(a.v, c.v));
+   DO_TRI128("vmadd.h", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 16, 8, 0), __lsx_vmadd_h(a.v, b.v, c.v));
+   DO_TRI128("vmadd.w", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 32, 4, 0), __lsx_vmadd_w(a.v, b.v, c.v));
+   DO_TRI128("vmadd.d", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 64, 2, 0), __lsx_vmadd_d(a.v, b.v, c.v));
+   DO_TRI128("vmsub.b", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 8, 16, 1), __lsx_vmsub_b(a.v, b.v, c.v));
+   DO_TRI128("vmsub.h", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 16, 8, 1), __lsx_vmsub_h(a.v, b.v, c.v));
+   DO_TRI128("vmsub.d", model_maddmsub(exp.d.u8, a.d.u8, b.d.u8, c.d.u8, 64, 2, 1), __lsx_vmsub_d(a.v, b.v, c.v));
+   DO_BIN128("vsigncov.b", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 8, 16), __lsx_vsigncov_b(a.v, b.v));
+   DO_BIN128("vsigncov.w", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 32, 4), __lsx_vsigncov_w(a.v, b.v));
 }
 
 static void test_sat(test_state* tst)
@@ -282,17 +330,81 @@ static void test_cmpmask(test_state* tst)
 {
    vec128 a = {.d.i8 = {-2, -1, 0, 1, 2, 3, 4, 5, -8, -7, -6, 6, 7, 8, 9, 10}};
    vec128 b = {.d.i8 = {-3, -1, 1, 1, 1, 4, 0, 5, -9, -7, -5, 5, 8, 7, 9, 11}};
+   vec128 au = {.d.u8 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
+   vec128 bu = {.d.u8 = {0, 2, 4, 6, 8, 10, 12, 14, 1, 3, 5, 7, 9, 11, 13, 15}};
+   vec128 ah = {.d.i16 = {-5, -4, -3, -2, -1, 0, 1, 2}};
+   vec128 aw = {.d.i32 = {-100, -50, 0, 50}};
+   vec128 ad = {.d.i64 = {-1000, 1000}};
    vec128 got, exp;
 
    DO_BIN128("vseq.b", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 0), __lsx_vseq_b(a.v, b.v));
    DO_BIN128("vsle.b", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vsle_b(a.v, b.v));
-   DO_BIN128("vslt.bu", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 2), __lsx_vslt_bu(a.v, b.v));
+   DO_BIN128("vslt.bu", model_cmp(exp.d.u8, au.d.u8, bu.d.u8, 8, 16, 0, 2), __lsx_vslt_bu(au.v, bu.v));
+   DO_BIN128("vseq.h", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 0), __lsx_vseq_h(a.v, b.v));
+   DO_BIN128("vseq.w", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 0), __lsx_vseq_w(a.v, b.v));
+   DO_BIN128("vseq.d", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 0), __lsx_vseq_d(a.v, b.v));
+   DO_BIN128("vsle.h", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 1), __lsx_vsle_h(a.v, b.v));
+   DO_BIN128("vsle.w", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 1), __lsx_vsle_w(a.v, b.v));
+   DO_BIN128("vsle.d", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 1), __lsx_vsle_d(a.v, b.v));
+   DO_BIN128("vslt.h", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 2), __lsx_vslt_h(a.v, b.v));
+   DO_BIN128("vslt.w", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 2), __lsx_vslt_w(a.v, b.v));
+   DO_BIN128("vslt.d", model_cmp(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 2), __lsx_vslt_d(a.v, b.v));
+   DO_BIN128("vsleu.b", model_cmp(exp.d.u8, au.d.u8, bu.d.u8, 8, 16, 0, 1), __lsx_vsle_bu(au.v, bu.v));
+   DO_BIN128("vsleu.h", model_cmp(exp.d.u8, au.d.u8, bu.d.u8, 16, 8, 0, 1), __lsx_vsle_hu(au.v, bu.v));
+   DO_BIN128("vsleu.w", model_cmp(exp.d.u8, au.d.u8, bu.d.u8, 32, 4, 0, 1), __lsx_vsle_wu(au.v, bu.v));
+   DO_BIN128("vsleu.d", model_cmp(exp.d.u8, au.d.u8, bu.d.u8, 64, 2, 0, 1), __lsx_vsle_du(au.v, bu.v));
+   DO_BIN128("vsltu.h", model_cmp(exp.d.u8, au.d.u8, bu.d.u8, 16, 8, 0, 2), __lsx_vslt_hu(au.v, bu.v));
+   DO_BIN128("vsltu.w", model_cmp(exp.d.u8, au.d.u8, bu.d.u8, 32, 4, 0, 2), __lsx_vslt_wu(au.v, bu.v));
+   DO_BIN128("vsltu.d", model_cmp(exp.d.u8, au.d.u8, bu.d.u8, 64, 2, 0, 2), __lsx_vslt_du(au.v, bu.v));
    DO_IMM128("vseqi.h", -1, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i16 = {-1, -1, -1, -1, -1, -1, -1, -1}}.d.u8, 16, 8, 1, 0), __lsx_vseqi_h(a.v, -1));
    DO_IMM128("vslei.h", 3, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i16 = {3, 3, 3, 3, 3, 3, 3, 3}}.d.u8, 16, 8, 1, 1), __lsx_vslei_h(a.v, 3));
    DO_IMM128("vslti.hu", 7, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u16 = {7, 7, 7, 7, 7, 7, 7, 7}}.d.u8, 16, 8, 0, 2), __lsx_vslti_hu(a.v, 7));
+   a = (vec128){.d.i8 = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}};
+   DO_IMM128("vseqi.b", 1, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i8 = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}}.d.u8, 8, 16, 1, 0), __lsx_vseqi_b(a.v, 1));
+   a = (vec128){.d.i32 = {-100, -50, 0, 50}};
+   DO_IMM128("vseqi.w", -1, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i32 = {-1, -1, -1, -1}}.d.u8, 32, 4, 1, 0), __lsx_vseqi_w(a.v, -1));
+   a = (vec128){.d.i64 = {-1000, 1000}};
+   DO_IMM128("vseqi.d", 7, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i64 = {7, 7}}.d.u8, 64, 2, 1, 0), __lsx_vseqi_d(a.v, 7));
+   a = (vec128){.d.i8 = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}};
+   DO_IMM128("vslei.b", 3, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i8 = {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3}}.d.u8, 8, 16, 1, 1), __lsx_vslei_b(a.v, 3));
+   a = (vec128){.d.i32 = {-100, -50, 0, 50}};
+   DO_IMM128("vslei.w", -2, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i32 = {-2, -2, -2, -2}}.d.u8, 32, 4, 1, 1), __lsx_vslei_w(a.v, -2));
+   a = (vec128){.d.i64 = {-1000, 1000}};
+   DO_IMM128("vslei.d", -5, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i64 = {-5, -5}}.d.u8, 64, 2, 1, 1), __lsx_vslei_d(a.v, -5));
+   a = (vec128){.d.u8 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
+   DO_IMM128("vsleiu.b", 3, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u8 = {3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3}}.d.u8, 8, 16, 0, 1), __lsx_vslei_bu(a.v, 3));
+   a = (vec128){.d.u16 = {0, 1, 100, 500, 1000, 5000, 60000, 65000}};
+   DO_IMM128("vsleiu.h", 7, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u16 = {7, 7, 7, 7, 7, 7, 7, 7}}.d.u8, 16, 8, 0, 1), __lsx_vslei_hu(a.v, 7));
+   a = (vec128){.d.u32 = {0, 1, 1000, 4000000000u}};
+   DO_IMM128("vsleiu.w", 31, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u32 = {31, 31, 31, 31}}.d.u8, 32, 4, 0, 1), __lsx_vslei_wu(a.v, 31));
+   a = (vec128){.d.u64 = {0, 100000}};
+   DO_IMM128("vsleiu.d", 31, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u64 = {31, 31}}.d.u8, 64, 2, 0, 1), __lsx_vslei_du(a.v, 31));
+   a = (vec128){.d.i8 = {-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}};
+   DO_IMM128("vslti.b", 1, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i8 = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}}.d.u8, 8, 16, 1, 2), __lsx_vslti_b(a.v, 1));
+   a = (vec128){.d.i32 = {-100, -50, 0, 50}};
+   DO_IMM128("vslti.w", -1, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i32 = {-1, -1, -1, -1}}.d.u8, 32, 4, 1, 2), __lsx_vslti_w(a.v, -1));
+   a = (vec128){.d.i64 = {-1000, 1000}};
+   DO_IMM128("vslti.d", -5, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.i64 = {-5, -5}}.d.u8, 64, 2, 1, 2), __lsx_vslti_d(a.v, -5));
+   a = (vec128){.d.u8 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}};
+   DO_IMM128("vsltiu.b", 1, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u8 = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}}.d.u8, 8, 16, 0, 2), __lsx_vslti_bu(a.v, 1));
+   a = (vec128){.d.u16 = {0, 1, 100, 500, 1000, 5000, 60000, 65000}};
+   DO_IMM128("vsltiu.h", 7, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u16 = {7, 7, 7, 7, 7, 7, 7, 7}}.d.u8, 16, 8, 0, 2), __lsx_vslti_hu(a.v, 7));
+   a = (vec128){.d.u32 = {0, 1, 1000, 4000000000u}};
+   DO_IMM128("vsltiu.w", 31, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u32 = {31, 31, 31, 31}}.d.u8, 32, 4, 0, 2), __lsx_vslti_wu(a.v, 31));
+   a = (vec128){.d.u64 = {0, 100000}};
+   DO_IMM128("vsltiu.d", 31, model_cmp(exp.d.u8, a.d.u8, (vec128){.d.u64 = {31, 31}}.d.u8, 64, 2, 0, 2), __lsx_vslti_du(a.v, 31));
+   a = ah;
    DO_UN128("vmskltz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 0), __lsx_vmskltz_b(a.v));
+   a = ah;
    DO_UN128("vmskgez.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 1), __lsx_vmskgez_b(a.v));
+   a = ah;
    DO_UN128("vmsknz.b", model_vmsk(exp.d.u8, a.d.u8, 8, sizeof(exp.d.u8), 2), __lsx_vmsknz_b(a.v));
+   a = ah;
+   DO_UN128("vmskltz.h", model_vmsk(exp.d.u8, a.d.u8, 16, sizeof(exp.d.u8), 0), __lsx_vmskltz_h(a.v));
+   a = aw;
+   DO_UN128("vmskltz.w", model_vmsk(exp.d.u8, a.d.u8, 32, sizeof(exp.d.u8), 0), __lsx_vmskltz_w(a.v));
+   a = ad;
+   DO_UN128("vmskltz.d", model_vmsk(exp.d.u8, a.d.u8, 64, sizeof(exp.d.u8), 0), __lsx_vmskltz_d(a.v));
 }
 
 static void test_vset(test_state* tst)
@@ -359,7 +471,9 @@ static void test_unary_more(test_state* tst)
    DO_UN128("vclo.w", model_clo(exp.d.u8, a.d.u8, 32, 4), __lsx_vclo_w(a.v));
    DO_UN128("vclz.d", model_clz(exp.d.u8, a.d.u8, 64, 2), __lsx_vclz_d(a.v));
    DO_UN128("vpcnt.b", model_pcnt(exp.d.u8, a.d.u8, 8, 16), __lsx_vpcnt_b(a.v));
+   DO_UN128("vneg.b", model_neg(exp.d.u8, a.d.u8, 8, 16), __lsx_vneg_b(a.v));
    DO_UN128("vneg.h", model_neg(exp.d.u8, a.d.u8, 16, 8), __lsx_vneg_h(a.v));
+   DO_UN128("vneg.w", model_neg(exp.d.u8, a.d.u8, 32, 4), __lsx_vneg_w(a.v));
    DO_BIN128("vsigncov.h", model_signcov(exp.d.u8, a.d.u8, b.d.u8, 16, 8), __lsx_vsigncov_h(a.v, b.v));
 }
 
@@ -411,14 +525,35 @@ static void test_shift(test_state* tst)
    vec128 mix = {.d.u8 = {
       7, 8, 9, 15, 1, 2, 3, 4,
       5, 6, 7, 8, 9, 10, 11, 12}};
+   vec128 mix16 = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 mix32 = {.d.u32 = {0, 16, 31, 8}};
+   vec128 mix64 = {.d.u64 = {0, 63}};
    vec128 got, exp, b;
 
    DO_IMM128("vslli.b.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 8, 16, 0, 0, 0), __lsx_vslli_b(a.v, 0));
    DO_IMM128("vslli.b.7", 7, model_shift_imm(exp.d.u8, a.d.u8, 8, 16, 7, 0, 0), __lsx_vslli_b(a.v, 7));
+   DO_IMM128("vslli.h.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 16, 8, 0, 0, 0), __lsx_vslli_h(a.v, 0));
+   DO_IMM128("vslli.h.15", 15, model_shift_imm(exp.d.u8, a.d.u8, 16, 8, 15, 0, 0), __lsx_vslli_h(a.v, 15));
+   DO_IMM128("vslli.w.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 32, 4, 0, 0, 0), __lsx_vslli_w(a.v, 0));
+   DO_IMM128("vslli.w.31", 31, model_shift_imm(exp.d.u8, a.d.u8, 32, 4, 31, 0, 0), __lsx_vslli_w(a.v, 31));
+   DO_IMM128("vslli.d.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 64, 2, 0, 0, 0), __lsx_vslli_d(a.v, 0));
+   DO_IMM128("vslli.d.63", 63, model_shift_imm(exp.d.u8, a.d.u8, 64, 2, 63, 0, 0), __lsx_vslli_d(a.v, 63));
    DO_IMM128("vsrli.h.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 16, 8, 0, 1, 0), __lsx_vsrli_h(a.v, 0));
    DO_IMM128("vsrli.h.15", 15, model_shift_imm(exp.d.u8, a.d.u8, 16, 8, 15, 1, 0), __lsx_vsrli_h(a.v, 15));
+   DO_IMM128("vsrli.b.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 8, 16, 0, 1, 0), __lsx_vsrli_b(a.v, 0));
+   DO_IMM128("vsrli.b.7", 7, model_shift_imm(exp.d.u8, a.d.u8, 8, 16, 7, 1, 0), __lsx_vsrli_b(a.v, 7));
+   DO_IMM128("vsrli.w.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 32, 4, 0, 1, 0), __lsx_vsrli_w(a.v, 0));
+   DO_IMM128("vsrli.w.31", 31, model_shift_imm(exp.d.u8, a.d.u8, 32, 4, 31, 1, 0), __lsx_vsrli_w(a.v, 31));
+   DO_IMM128("vsrli.d.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 64, 2, 0, 1, 0), __lsx_vsrli_d(a.v, 0));
+   DO_IMM128("vsrli.d.63", 63, model_shift_imm(exp.d.u8, a.d.u8, 64, 2, 63, 1, 0), __lsx_vsrli_d(a.v, 63));
    DO_IMM128("vsrai.d.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 64, 2, 0, 1, 1), __lsx_vsrai_d(a.v, 0));
    DO_IMM128("vsrai.d.63", 63, model_shift_imm(exp.d.u8, a.d.u8, 64, 2, 63, 1, 1), __lsx_vsrai_d(a.v, 63));
+   DO_IMM128("vsrai.b.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 8, 16, 0, 1, 1), __lsx_vsrai_b(a.v, 0));
+   DO_IMM128("vsrai.b.7", 7, model_shift_imm(exp.d.u8, a.d.u8, 8, 16, 7, 1, 1), __lsx_vsrai_b(a.v, 7));
+   DO_IMM128("vsrai.h.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 16, 8, 0, 1, 1), __lsx_vsrai_h(a.v, 0));
+   DO_IMM128("vsrai.h.15", 15, model_shift_imm(exp.d.u8, a.d.u8, 16, 8, 15, 1, 1), __lsx_vsrai_h(a.v, 15));
+   DO_IMM128("vsrai.w.0", 0, model_shift_imm(exp.d.u8, a.d.u8, 32, 4, 0, 1, 1), __lsx_vsrai_w(a.v, 0));
+   DO_IMM128("vsrai.w.31", 31, model_shift_imm(exp.d.u8, a.d.u8, 32, 4, 31, 1, 1), __lsx_vsrai_w(a.v, 31));
 
    b = mix;
    DO_BIN128("vsll.b.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0, 0), __lsx_vsll_b(a.v, b.v));
@@ -432,6 +567,42 @@ static void test_shift(test_state* tst)
    DO_BIN128("vsra.b.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vsra_b(a.v, b.v));
    b = zero;
    DO_BIN128("vsra.b.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1, 1), __lsx_vsra_b(a.v, b.v));
+   b = mix16;
+   DO_BIN128("vsll.h.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0, 0), __lsx_vsll_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsll.h.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0, 0), __lsx_vsll_h(a.v, b.v));
+   b = mix16;
+   DO_BIN128("vsrl.h.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 0), __lsx_vsrl_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrl.h.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 0), __lsx_vsrl_h(a.v, b.v));
+   b = mix16;
+   DO_BIN128("vsra.h.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 1), __lsx_vsra_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsra.h.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1, 1), __lsx_vsra_h(a.v, b.v));
+   b = mix32;
+   DO_BIN128("vsll.w.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0, 0), __lsx_vsll_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsll.w.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0, 0), __lsx_vsll_w(a.v, b.v));
+   b = mix32;
+   DO_BIN128("vsrl.w.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 0), __lsx_vsrl_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrl.w.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 0), __lsx_vsrl_w(a.v, b.v));
+   b = mix32;
+   DO_BIN128("vsra.w.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 1), __lsx_vsra_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsra.w.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1, 1), __lsx_vsra_w(a.v, b.v));
+   b = mix64;
+   DO_BIN128("vsll.d.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0, 0), __lsx_vsll_d(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsll.d.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0, 0), __lsx_vsll_d(a.v, b.v));
+   b = mix64;
+   DO_BIN128("vsrl.d.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 0), __lsx_vsrl_d(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrl.d.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 0), __lsx_vsrl_d(a.v, b.v));
+   b = mix64;
+   DO_BIN128("vsra.d.var", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 1), __lsx_vsra_d(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsra.d.zero", model_shift_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1, 1), __lsx_vsra_d(a.v, b.v));
 }
 
 static void test_shift_round(test_state* tst)
@@ -443,6 +614,9 @@ static void test_shift_round(test_state* tst)
    vec128 mix = {.d.u8 = {
       7, 8, 9, 15, 1, 2, 3, 4,
       5, 6, 7, 8, 9, 10, 11, 12}};
+   vec128 mix16 = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 mix32 = {.d.u32 = {0, 16, 31, 8}};
+   vec128 mix64 = {.d.u64 = {0, 63}};
    vec128 got, exp, b;
 
    b = mix;
@@ -453,40 +627,90 @@ static void test_shift_round(test_state* tst)
    DO_BIN128("vsrar.b.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1), __lsx_vsrar_b(a.v, b.v));
    b = zero;
    DO_BIN128("vsrar.b.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 1), __lsx_vsrar_b(a.v, b.v));
+   b = mix16;
+   DO_BIN128("vsrlr.h.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0), __lsx_vsrlr_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrlr.h.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0), __lsx_vsrlr_h(a.v, b.v));
+   b = mix16;
+   DO_BIN128("vsrar.h.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1), __lsx_vsrar_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrar.h.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1), __lsx_vsrar_h(a.v, b.v));
+   b = mix32;
+   DO_BIN128("vsrlr.w.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0), __lsx_vsrlr_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrlr.w.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0), __lsx_vsrlr_w(a.v, b.v));
+   b = mix32;
+   DO_BIN128("vsrar.w.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1), __lsx_vsrar_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrar.w.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1), __lsx_vsrar_w(a.v, b.v));
+   b = mix64;
+   DO_BIN128("vsrlr.d.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0), __lsx_vsrlr_d(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrlr.d.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 0), __lsx_vsrlr_d(a.v, b.v));
+   b = mix64;
+   DO_BIN128("vsrar.d.var", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1), __lsx_vsrar_d(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrar.d.zero", model_shift_round_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1), __lsx_vsrar_d(a.v, b.v));
 }
 
 static void test_shift_narrow(test_state* tst)
 {
-   vec128 a = {.d.u16 = {0x1281, 0x3423, 0x5645, 0x7867, 0x9a89, 0xbcab, 0xdecd, 0x10ef}};
+   vec128 a16 = {.d.u16 = {0x1281, 0x3423, 0x5645, 0x7867, 0x9a89, 0xbcab, 0xdecd, 0x10ef}};
+   vec128 a32 = {.d.u32 = {0x34231281, 0x78675645, 0xbcab9a89, 0x10efdecd}};
+   vec128 a = {0};
    vec128 zero = {.d.u16 = {0, 0, 0, 0, 0, 0, 0, 0}};
-   vec128 mix = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 mix16 = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 mix32 = {.d.u32 = {0, 1, 16, 31}};
    vec128 got, exp, b;
 
-   b = mix;
+   a = a16;
+   b = mix16;
    DO_BIN128("vsrln.b.h.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lsx_vsrln_b_h(a.v, b.v));
    b = zero;
    DO_BIN128("vsrln.b.h.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lsx_vsrln_b_h(a.v, b.v));
-   b = mix;
+   b = mix16;
    DO_BIN128("vsran.b.h.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsran_b_h(a.v, b.v));
    b = zero;
    DO_BIN128("vsran.b.h.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsran_b_h(a.v, b.v));
+   a = a32;
+   b = mix32;
+   DO_BIN128("vsrln.h.w.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lsx_vsrln_h_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrln.h.w.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lsx_vsrln_h_w(a.v, b.v));
+   b = mix32;
+   DO_BIN128("vsran.h.w.var", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lsx_vsran_h_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsran.h.w.zero", model_narrow_shift(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lsx_vsran_h_w(a.v, b.v));
 }
 
 static void test_shift_narrow_round(test_state* tst)
 {
-   vec128 a = {.d.u16 = {0x1281, 0x3423, 0x5645, 0x7867, 0x9a89, 0xbcab, 0xdecd, 0x10ef}};
+   vec128 a16 = {.d.u16 = {0x1281, 0x3423, 0x5645, 0x7867, 0x9a89, 0xbcab, 0xdecd, 0x10ef}};
+   vec128 a32 = {.d.u32 = {0x34231281, 0x78675645, 0xbcab9a89, 0x10efdecd}};
+   vec128 a = {0};
    vec128 zero = {.d.u16 = {0, 0, 0, 0, 0, 0, 0, 0}};
-   vec128 mix = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 mix16 = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 mix32 = {.d.u32 = {0, 1, 16, 31}};
    vec128 got, exp, b;
 
-   b = mix;
+   a = a16;
+   b = mix16;
    DO_BIN128("vsrlrn.b.h.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lsx_vsrlrn_b_h(a.v, b.v));
    b = zero;
    DO_BIN128("vsrlrn.b.h.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 0, sizeof(exp.d.u8)), __lsx_vsrlrn_b_h(a.v, b.v));
-   b = mix;
+   b = mix16;
    DO_BIN128("vsrarn.b.h.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsrarn_b_h(a.v, b.v));
    b = zero;
    DO_BIN128("vsrarn.b.h.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 8, 1, sizeof(exp.d.u8)), __lsx_vsrarn_b_h(a.v, b.v));
+   a = a32;
+   b = mix32;
+   DO_BIN128("vsrlrn.h.w.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lsx_vsrlrn_h_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrlrn.h.w.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 0, sizeof(exp.d.u8)), __lsx_vsrlrn_h_w(a.v, b.v));
+   b = mix32;
+   DO_BIN128("vsrarn.h.w.var", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lsx_vsrarn_h_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vsrarn.h.w.zero", model_narrow_shift_round(exp.d.u8, a.d.u8, b.d.u8, 32, 16, 4, 1, sizeof(exp.d.u8)), __lsx_vsrarn_h_w(a.v, b.v));
 }
 
 static void test_rotate(test_state* tst)
@@ -498,17 +722,36 @@ static void test_rotate(test_state* tst)
    vec128 mix = {.d.u8 = {
       7, 8, 9, 15, 1, 2, 3, 4,
       5, 6, 7, 8, 9, 10, 11, 12}};
+   vec128 mix16 = {.d.u16 = {0, 1, 8, 15, 0, 1, 8, 15}};
+   vec128 mix32 = {.d.u32 = {0, 16, 31, 8}};
+   vec128 mix64 = {.d.u64 = {0, 63}};
    vec128 got, exp, b;
 
    DO_IMM128("vrotri.b.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 8, 16, 0), __lsx_vrotri_b(a.v, 0));
    DO_IMM128("vrotri.b.7", 7, model_rotate_imm(exp.d.u8, a.d.u8, 8, 16, 7), __lsx_vrotri_b(a.v, 7));
    DO_IMM128("vrotri.d.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 64, 2, 0), __lsx_vrotri_d(a.v, 0));
    DO_IMM128("vrotri.d.63", 63, model_rotate_imm(exp.d.u8, a.d.u8, 64, 2, 63), __lsx_vrotri_d(a.v, 63));
+   DO_IMM128("vrotri.h.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 16, 8, 0), __lsx_vrotri_h(a.v, 0));
+   DO_IMM128("vrotri.h.15", 15, model_rotate_imm(exp.d.u8, a.d.u8, 16, 8, 15), __lsx_vrotri_h(a.v, 15));
+   DO_IMM128("vrotri.w.0", 0, model_rotate_imm(exp.d.u8, a.d.u8, 32, 4, 0), __lsx_vrotri_w(a.v, 0));
+   DO_IMM128("vrotri.w.31", 31, model_rotate_imm(exp.d.u8, a.d.u8, 32, 4, 31), __lsx_vrotri_w(a.v, 31));
 
    b = mix;
    DO_BIN128("vrotr.b.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16), __lsx_vrotr_b(a.v, b.v));
    b = zero;
    DO_BIN128("vrotr.b.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16), __lsx_vrotr_b(a.v, b.v));
+   b = mix16;
+   DO_BIN128("vrotr.h.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8), __lsx_vrotr_h(a.v, b.v));
+   b = zero;
+   DO_BIN128("vrotr.h.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8), __lsx_vrotr_h(a.v, b.v));
+   b = mix32;
+   DO_BIN128("vrotr.w.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4), __lsx_vrotr_w(a.v, b.v));
+   b = zero;
+   DO_BIN128("vrotr.w.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4), __lsx_vrotr_w(a.v, b.v));
+   b = mix64;
+   DO_BIN128("vrotr.d.var", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2), __lsx_vrotr_d(a.v, b.v));
+   b = zero;
+   DO_BIN128("vrotr.d.zero", model_rotate_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2), __lsx_vrotr_d(a.v, b.v));
 }
 
 static void test_logic_bit(test_state* tst)
@@ -547,12 +790,44 @@ static void test_logic_bit(test_state* tst)
    DO_BIN128("vbitset.h", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 2), __lsx_vbitset_h(a.v, b.v));
    b = (vec128){.d.u32 = {0, 31, 32, 33}};
    DO_BIN128("vbitrev.w", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 0), __lsx_vbitrev_w(a.v, b.v));
+   b = (vec128){.d.u16 = {0, 15, 16, 31, 1, 2, 3, 4}};
+   DO_BIN128("vbitclr.h", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 1), __lsx_vbitclr_h(a.v, b.v));
+   b = (vec128){.d.u32 = {0, 31, 32, 33}};
+   DO_BIN128("vbitclr.w", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 1), __lsx_vbitclr_w(a.v, b.v));
+   b = (vec128){.d.u64 = {0, 63}};
+   DO_BIN128("vbitclr.d", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 1), __lsx_vbitclr_d(a.v, b.v));
+   b = (vec128){.d.u8 = {0, 7, 8, 15, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN128("vbitset.b", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 2), __lsx_vbitset_b(a.v, b.v));
+   b = (vec128){.d.u32 = {0, 31, 32, 33}};
+   DO_BIN128("vbitset.w", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 32, 4, 2), __lsx_vbitset_w(a.v, b.v));
+   b = (vec128){.d.u64 = {0, 63}};
+   DO_BIN128("vbitset.d", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 64, 2, 2), __lsx_vbitset_d(a.v, b.v));
+   b = (vec128){.d.u8 = {0, 7, 8, 15, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}};
+   DO_BIN128("vbitrev.b", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 8, 16, 0), __lsx_vbitrev_b(a.v, b.v));
+   b = (vec128){.d.u16 = {0, 15, 16, 31, 1, 2, 3, 4}};
+   DO_BIN128("vbitrev.h", model_bitop_var(exp.d.u8, a.d.u8, b.d.u8, 16, 8, 0), __lsx_vbitrev_h(a.v, b.v));
    DO_IMM128("vbitclri.b.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 8, 16, 0, 0), __lsx_vbitclri_b(a.v, 0));
    DO_IMM128("vbitclri.b.7", 7, model_bitop_imm(exp.d.u8, a.d.u8, 8, 16, 7, 0), __lsx_vbitclri_b(a.v, 7));
+   DO_IMM128("vbitclri.h.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 16, 8, 0, 0), __lsx_vbitclri_h(a.v, 0));
+   DO_IMM128("vbitclri.h.15", 15, model_bitop_imm(exp.d.u8, a.d.u8, 16, 8, 15, 0), __lsx_vbitclri_h(a.v, 15));
+   DO_IMM128("vbitclri.w.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 32, 4, 0, 0), __lsx_vbitclri_w(a.v, 0));
+   DO_IMM128("vbitclri.w.31", 31, model_bitop_imm(exp.d.u8, a.d.u8, 32, 4, 31, 0), __lsx_vbitclri_w(a.v, 31));
+   DO_IMM128("vbitclri.d.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 64, 2, 0, 0), __lsx_vbitclri_d(a.v, 0));
+   DO_IMM128("vbitclri.d.63", 63, model_bitop_imm(exp.d.u8, a.d.u8, 64, 2, 63, 0), __lsx_vbitclri_d(a.v, 63));
    DO_IMM128("vbitseti.h.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 16, 8, 0, 1), __lsx_vbitseti_h(a.v, 0));
    DO_IMM128("vbitseti.h.15", 15, model_bitop_imm(exp.d.u8, a.d.u8, 16, 8, 15, 1), __lsx_vbitseti_h(a.v, 15));
+   DO_IMM128("vbitseti.b.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 8, 16, 0, 1), __lsx_vbitseti_b(a.v, 0));
+   DO_IMM128("vbitseti.b.7", 7, model_bitop_imm(exp.d.u8, a.d.u8, 8, 16, 7, 1), __lsx_vbitseti_b(a.v, 7));
+   DO_IMM128("vbitseti.w.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 32, 4, 0, 1), __lsx_vbitseti_w(a.v, 0));
+   DO_IMM128("vbitseti.w.31", 31, model_bitop_imm(exp.d.u8, a.d.u8, 32, 4, 31, 1), __lsx_vbitseti_w(a.v, 31));
+   DO_IMM128("vbitseti.d.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 64, 2, 0, 1), __lsx_vbitseti_d(a.v, 0));
+   DO_IMM128("vbitseti.d.63", 63, model_bitop_imm(exp.d.u8, a.d.u8, 64, 2, 63, 1), __lsx_vbitseti_d(a.v, 63));
    DO_IMM128("vbitrevi.d.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 64, 2, 0, 2), __lsx_vbitrevi_d(a.v, 0));
    DO_IMM128("vbitrevi.d.63", 63, model_bitop_imm(exp.d.u8, a.d.u8, 64, 2, 63, 2), __lsx_vbitrevi_d(a.v, 63));
+   DO_IMM128("vbitrevi.b.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 8, 16, 0, 2), __lsx_vbitrevi_b(a.v, 0));
+   DO_IMM128("vbitrevi.b.7", 7, model_bitop_imm(exp.d.u8, a.d.u8, 8, 16, 7, 2), __lsx_vbitrevi_b(a.v, 7));
+   DO_IMM128("vbitrevi.h.0", 0, model_bitop_imm(exp.d.u8, a.d.u8, 16, 8, 0, 2), __lsx_vbitrevi_h(a.v, 0));
+   DO_IMM128("vbitrevi.h.15", 15, model_bitop_imm(exp.d.u8, a.d.u8, 16, 8, 15, 2), __lsx_vbitrevi_h(a.v, 15));
 }
 
 static void test_lane_move(test_state* tst)
